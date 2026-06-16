@@ -3,15 +3,22 @@ export default function RegistroInfluencerPage() {
     <main className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-8">
 
-        <h1 className="text-3xl font-bold mb-8">
-          Registro de Influencer
-        </h1>
+        <div className="mb-8">
+            <h1 className="text-3xl font-bold">
+                Registro de Influencer
+            </h1>
+            
+            <p className="text-gray-600 mt-2">
+                Ingresa los datos de perfil para añadirlo al sistema
+            </p>
+        </div>
+        
 
         <form className="grid grid-cols-2 gap-6">
 
           <div>
             <label className="block mb-2 font-medium">
-              Nombre Completo
+              NOMBRE COMPLETO
             </label>
 
             <input
@@ -22,7 +29,7 @@ export default function RegistroInfluencerPage() {
 
           <div>
             <label className="block mb-2 font-medium">
-              Usuario Instagram
+              USUARIO DE IG
             </label>
 
             <input
@@ -33,7 +40,7 @@ export default function RegistroInfluencerPage() {
 
           <div>
             <label className="block mb-2 font-medium">
-              Correo Electrónico
+              CORREO ELECTRÓNICO
             </label>
 
             <input
@@ -44,7 +51,7 @@ export default function RegistroInfluencerPage() {
 
           <div>
             <label className="block mb-2 font-medium">
-              Teléfono
+              TELÉFONO (OPCIONAL)
             </label>
 
             <input
