@@ -11,11 +11,11 @@ export default function GestionInfluencersPage() {
           </p>
         </div>
 
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
           <input
             type="text"
             placeholder="Buscar influencer..."
-            className="border rounded-lg p-3 w-80"
+            className="border rounded-lg p-3 w-full md:w-80"
           />
           <button className="bg-green-600 text-white px-4 py-2 rounded-lg">
             + Nuevo Influencer
@@ -44,39 +44,68 @@ export default function GestionInfluencersPage() {
             <option>100k+</option>
           </select>
         </div>
-
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-200">
                 <th className="p-3 text-left">Influencer</th>
-                <th className="p-3 text-left">Temática</th>
+                <th className="p-3 text-left">Red Social</th>
                 <th className="p-3 text-left">Seguidores</th>
+                <th className="p-3 text-left">Engagement</th>
+                <th className="p-3 text-left">Score IA</th>
                 <th className="p-3 text-left">Estado</th>
                 <th className="p-3 text-left">Acciones</th>
               </tr>
             </thead>
-
             <tbody>
               <tr className="border-b">
                 <td className="p-3">Andrea Paz</td>
-                <td className="p-3">Ambiental</td>
+                <td className="p-3">Instagram</td>
                 <td className="p-3">150k</td>
-                <td className="p-3">Pendiente</td>
+                <td className="p-3">4.5%</td>
+                <td className="p-3">92</td>
+                <td className="p-3">
+                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
+                    Validado
+                  </span>
+                </td>
                 <td className="p-3">Ver | Editar</td>
               </tr>
-
               <tr className="border-b">
                 <td className="p-3">Carlos Rivera</td>
-                <td className="p-3">Social</td>
+                <td className="p-3">TikTok</td>
                 <td className="p-3">90k</td>
-                <td className="p-3">Validado</td>
+                <td className="p-3">3.8%</td>
+                <td className="p-3">85</td>
+                <td className="p-3">
+                  <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm">
+                    Pendiente
+                  </span>
+                </td>
                 <td className="p-3">Ver | Editar</td>
               </tr>
             </tbody>
           </table>
         </div>
+        <div className="flex justify-end mt-6 gap-2">
+          <button className="border px-3 py-1 rounded">
+            Anterior
+          </button>
+
+          <button className="bg-green-600 text-white px-3 py-1 rounded">
+            1
+          </button>
+
+          <button className="border px-3 py-1 rounded">
+            2
+          </button>
+
+          <button className="border px-3 py-1 rounded">
+            Siguiente
+          </button>
+        </div>
       </div>
     </main>
   );
 }
+
