@@ -1,84 +1,48 @@
+import { LeftPanel } from "@/components/login/LeftPanel";
+import { LoginForm } from "@/components/login/LoginForm";
+import { LoginFooter } from "@/components/login/LoginFooter";
+
 export default function LoginPage() {
-    return (
-        <main className="min-h-screen flex">
-            {/* Panel Izquierdo */}
-            <div className="hidden md:flex md:w-1/2 relative text-white p-12 flex-col justify-end bg-cover bg-center" 
-            style={{backgroundImage: "url('/images/login-background.jpg')",}}
-            >
-                <h1 className="text-5xl font-bold mb-6 leading-tight">
-                    Gestiona
-                    <br />
-                    influencers
-                    <br />
-                    de impacto social
-                </h1>
-                <p className="text-lg">
-                    Automatiza validaciones, campañas, agendas y seguimiento con nuestra plataforma inteligente diseñada para el cambio.
-                </p>
+  return (
+    <main className="min-h-screen flex">
+      <LeftPanel />
+      <div className="w-full md:w-1/2 flex items-center justify-center bg-white">
+        <div className="w-full max-w-[450px] px-8 py-12 flex flex-col min-h-screen md:min-h-0">
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#003D2D] to-[#0B5E47] flex items-center justify-center shadow-lg">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-white"
+                >
+                  <path d="M12 2a10 10 0 0 1 7.07 17.07A10 10 0 0 1 4.93 4.93 10 10 0 0 1 12 2z" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+              </div>
+              <span className="text-xl font-bold text-[#003D2D] tracking-tight">
+                Sembrando Perú
+              </span>
             </div>
-            {/* Panel Derecho */}
-            <div className="w-full md:w-1/2 flex items-center justify-center bg-white">
-                <div className="w-full max-w-md p-8">
-                    <div className="mb-8">
 
-                        <div className="mb-8">
-                            <h2 className="text-2xl font-bold text-green-800">
-                                Sembrando Perú
-                            </h2>
-                        </div>
+            <h1 className="text-3xl font-bold text-gray-900">Bienvenido</h1>
+            <p className="text-gray-500 mt-2 text-sm">
+              Ingresa tus credenciales para acceder a la plataforma.
+            </p>
+          </div>
 
-                        <h1 className="text-4xl font-bold">
-                            Bienvenido
-                        </h1>
+          <LoginForm />
 
-                        <p className="text-gray-600 mt-2">
-                            Ingresa tus credenciales para acceder a la plataforma.
-                        </p>
-
-                    </div>
-                    <form className="space-y-6">
-                        <div>
-                            <label className="block mb-2 font-medium">
-                                Correo electrónico
-                            </label>
-                            <input
-                                type="email"
-                                placeholder="nombre@ejemplo.com"
-                                className="w-full border rounded-lg p-3"
-                            />
-                        </div>
-                        <div>
-                            <label className="block mb-2 font-medium">
-                                Contraseña
-                            </label>
-                            <input
-                                type="password"
-                                placeholder="********"
-                                className="w-full border rounded-lg p-3"
-                            />
-                        </div>
-                        <div className="flex justify-between items-center">
-
-                            <label className="flex items-center gap-2">
-                                <input type="checkbox" />
-                                Recordarme
-                            </label>
-                            <a
-                                href="#"
-                                className="text-green-700 hover:underline"
-                            >
-                                ¿Olvidaste tu contraseña?
-                            </a>
-                        </div>
-                        <button
-                            type="submit"
-                            className="w-full bg-green-900 text-white py-3 rounded-lg font-medium hover:bg-green-800"
-                        >
-                            Ingresar
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </main>
-    );
+          <LoginFooter />
+        </div>
+      </div>
+    </main>
+  );
 }
