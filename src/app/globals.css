@@ -10,6 +10,12 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-verde-principal: #003D2D;
+  --color-verde-oscuro: #01281E;
+  --color-verde-secundario: #0B5E47;
+  --color-verde-claro: #20D18F;
+  --color-gris-texto: #6B7280;
+  --color-borde: #D1D5DB;
 }
 
 @media (prefers-color-scheme: dark) {
