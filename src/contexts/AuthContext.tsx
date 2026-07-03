@@ -53,8 +53,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const cookieToken = getCookie(COOKIE_NAME)
 
     if (storedToken && storedUser && cookieToken) {
-      setToken(storedToken)
-      setUser(JSON.parse(storedUser))
+      try {
+        const parsedUser = JSON.parse(storedUser)
+        setToken(storedToken)
+        setUser(parsedUser)
+      } catch {
+        localStorage.removeItem(STORAGE_KEY_TOKEN)
+        localStorage.removeItem(STORAGE_KEY_USER)
+        clearCookie(COOKIE_NAME)
+      }
     }
     setIsLoading(false)
   }, [])
@@ -71,12 +78,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(async () => {
-    await authService.logout()
-    setToken(null)
-    setUser(null)
-    localStorage.removeItem(STORAGE_KEY_TOKEN)
-    localStorage.removeItem(STORAGE_KEY_USER)
-    clearCookie(COOKIE_NAME)
+    try {
+      await authService.logout()
+    } finally {
+      setToken(null)
+      setUser(null)
+      localStorage.removeItem(STORAGE_KEY_TOKEN)
+      localStorage.removeItem(STORAGE_KEY_USER)
+      clearCookie(COOKIE_NAME)
+    }
   }, [])
 
   return (
