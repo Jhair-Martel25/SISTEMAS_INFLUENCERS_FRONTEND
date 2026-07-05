@@ -18,12 +18,17 @@
   --color-borde: #D1D5DB;
 }
 
+/*
+quitar esta aparte del codigo porque diseño está construido 100%
+ para tema claro (fondos blancos/gris claro). Este bloque hace 
+ que el texto se vuelva casi blanco cuando el sistema operativo
+  del usuario está en modo oscuro.
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
-}
+}*/
 
 body {
   background: var(--background);
