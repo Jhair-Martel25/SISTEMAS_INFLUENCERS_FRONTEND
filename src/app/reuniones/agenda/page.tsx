@@ -4,8 +4,8 @@ export default function DisponibilidadAgendaPage() {
       <div className="max-w-7xl mx-auto">
 
         {/* Encabezado */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">
+        <div className="mb-10">
+          <h1 className="text-4xl font-bold text-[#003D2D]">
             Disponibilidad y Agenda
           </h1>
 
@@ -17,29 +17,33 @@ export default function DisponibilidadAgendaPage() {
         {/* Resumen */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
 
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="text-gray-500 text-sm">Reuniones programadas</h3>
-            <p className="text-3xl font-bold mt-2">12</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
+            <h3 className="text-gray-500 text-sm">📅 Reuniones programadas</h3>
+            <p className="text-4xl font-bold text-[#003D2D]">12</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="text-gray-500 text-sm">Voluntarios disponibles</h3>
-            <p className="text-3xl font-bold mt-2">8</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
+            <h3 className="text-gray-500 text-sm">👥 Voluntarios disponibles</h3>
+            <p className="text-4xl font-bold text-[#003D2D]">8</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="text-gray-500 text-sm">Pendientes</h3>
-            <p className="text-3xl font-bold mt-2">4</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
+            <h3 className="text-gray-500 text-sm">⏳ Pendientes</h3>
+            <p className="text-4xl font-bold text-[#003D2D]">4</p>
           </div>
 
         </div>
 
         {/* Agenda semanal */}
-        <div className="bg-white rounded-xl shadow p-6 mb-8">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-8">
 
-          <h2 className="text-xl font-semibold mb-6">
-            Agenda Semanal
+          <h2 className="text-xl font-semibold">
+            Agenda semanal
           </h2>
+
+          <p className="text-gray-500 text-sm mt-1 mb-6">
+            Visualiza las reuniones programadas durante la semana.
+          </p>
 
           <table className="w-full border-collapse">
 
@@ -60,31 +64,31 @@ export default function DisponibilidadAgendaPage() {
 
             <tbody>
 
-              <tr className="border-b">
+              <tr className="border-b hover:bg-gray-50 transition-colors">
                 <td className="p-3 font-medium">09:00</td>
-                <td className="p-3 bg-green-100 rounded">Andrea</td>
+                <td className="p-3"><span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium">Andrea</span></td>
                 <td className="p-3"></td>
-                <td className="p-3 bg-blue-100 rounded">Carlos</td>
+                <td className="p-3"><span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">Carlos</span></td>
                 <td className="p-3"></td>
-                <td className="p-3 bg-green-100 rounded">Lucía</td>
+                <td className="p-3"><span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium">Lucía</span></td>
               </tr>
 
-              <tr className="border-b">
+              <tr className="border-b hover:bg-gray-50 transition-colors">
                 <td className="p-3 font-medium">11:00</td>
                 <td></td>
-                <td className="p-3 bg-yellow-100 rounded">María</td>
+                <td className="p-3"><span className="inline-block px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm font-medium">María</span></td>
                 <td></td>
-                <td className="p-3 bg-green-100 rounded">José</td>
+                <td className="p-3"><span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium">José</span></td>
                 <td></td>
               </tr>
 
               <tr>
                 <td className="p-3 font-medium">15:00</td>
-                <td className="p-3 bg-red-100 rounded">Ocupado</td>
+                <td className="p-3"><span className="inline-block px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-medium">Ocupado</span></td>
                 <td></td>
-                <td className="p-3 bg-green-100 rounded">Pedro</td>
+                <td className="p-3"><span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium">Pedro</span></td>
                 <td></td>
-                <td className="p-3 bg-blue-100 rounded">Ana</td>
+                <td className="p-3"><span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">Ana</span></td>
               </tr>
 
             </tbody>
@@ -94,17 +98,21 @@ export default function DisponibilidadAgendaPage() {
         </div>
 
         {/* Disponibilidad */}
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
 
-          <h2 className="text-xl font-semibold mb-4">
-            Disponibilidad de Voluntarios
+          <h2 className="text-xl font-semibold">
+            Disponibilidad de voluntarios
           </h2>
+
+          <p className="text-gray-500 text-sm mt-1 mb-6">
+            Consulta los horarios registrados para asignar reuniones.
+          </p>
 
           <table className="w-full">
 
             <thead>
 
-              <tr className="border-b">
+              <tr className="border-b hover:bg-gray-50 transition-colors">
 
                 <th className="text-left p-3">Voluntario</th>
                 <th className="text-left p-3">Horario</th>
@@ -116,22 +124,40 @@ export default function DisponibilidadAgendaPage() {
 
             <tbody>
 
-              <tr className="border-b">
+              <tr className="border-b hover:bg-gray-50 transition-colors">
                 <td className="p-3">Luis Vega</td>
-                <td className="p-3">09:00 - 13:00</td>
-                <td className="p-3 text-green-600">Disponible</td>
+                <td className="p-3">
+                  09:00 - 13:00
+                </td>
+                <td className="p-3">
+                  <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                    Disponible
+                  </span>
+                </td>
               </tr>
 
-              <tr className="border-b">
+              <tr className="border-b hover:bg-gray-50 transition-colors">
                 <td className="p-3">Marta Paz</td>
-                <td className="p-3">10:00 - 17:00</td>
-                <td className="p-3 text-yellow-600">Parcial</td>
+                <td className="p-3">
+                  10:00 - 17:00
+                </td>
+                <td className="p-3">
+                  <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold">
+                    Parcial
+                  </span>
+                </td>
               </tr>
 
-              <tr>
+              <tr className="border-b hover:bg-gray-50 transition-colors">
                 <td className="p-3">Fabio Ruiz</td>
-                <td className="p-3">08:00 - 12:00</td>
-                <td className="p-3 text-red-600">No disponible</td>
+                <td className="p-3">
+                  08:00 - 12:00
+                </td>
+                <td className="p-3">
+                  <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold">
+                    No disponible
+                  </span>
+                </td>
               </tr>
 
             </tbody>

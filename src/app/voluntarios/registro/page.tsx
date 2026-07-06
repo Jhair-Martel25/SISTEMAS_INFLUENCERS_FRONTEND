@@ -73,6 +73,9 @@ export default function RegistroVoluntarioPage() {
                         </span>
                         Disponibilidad
                     </h2>
+                    <p className="text-gray-500 text-sm mt-2 mb-8">
+                        Selecciona los días y el horario en el que el voluntario estará disponible para participar en actividades.
+                    </p>
                     {/* Días disponibles */}
                     <div className="mb-8">
                         <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -95,43 +98,31 @@ export default function RegistroVoluntarioPage() {
                             <button className="px-5 py-2 rounded-lg border">
                                 Sáb
                             </button>
-                            <button className="px-5 py-2 rounded-lg border">
-                                Dom
-                            </button>
                         </div>
                     </div>
-                    {/* Horas y reuniones */}
-                    <div className="grid grid-cols-2 gap-8">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-4">
-                                Máximo de horas por día
-                            </label>
-                            <div className="flex items-center justify-between bg-gray-100 rounded-xl p-4">
-                                <span className="text-gray-500">
-                                    1h
-                                </span>
-                                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                                    Actual: 4h
-                                </span>
-                                <span className="text-gray-500">
-                                    8h+
-                                </span>
+                    {/* Horario disponible */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-4">
+                            Horario disponible
+                        </label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-2">
+                                    Hora de inicio
+                                </label>
+                                <input
+                                    type="time"
+                                    className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#003D2D] focus:border-[#003D2D]"
+                                />
                             </div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-4">
-                                Máximo reuniones/semana
-                            </label>
-                            <div className="flex items-center justify-between bg-gray-100 rounded-xl p-4">
-                                <button className="w-10 h-10 rounded-lg bg-white shadow">
-                                    −
-                                </button>
-                                <span className="text-3xl font-bold text-[#003D2D]">
-                                    05
-                                </span>
-                                <button className="w-10 h-10 rounded-lg bg-white shadow">
-                                    +
-                                </button>
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-2">
+                                    Hora de fin
+                                </label>
+                                <input
+                                    type="time"
+                                    className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#003D2D] focus:border-[#003D2D]"
+                                />
                             </div>
                         </div>
                     </div>
