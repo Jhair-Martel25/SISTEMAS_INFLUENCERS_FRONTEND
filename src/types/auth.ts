@@ -2,18 +2,21 @@ export interface User {
   id: string
   nombre: string
   email: string
-  rol: 'admin' | 'voluntario' | 'supervisor'
+  role: 'ADMIN' | 'VOLUNTARIO'
 }
 
 export interface LoginCredentials {
   email: string
   password: string
-  rememberMe?: boolean
+  recordar?: boolean
 }
 
 export interface AuthResponse {
-  user: User
-  token: string
+  data: {
+    usuario: User
+    backendToken: string
+  }
+  mensaje: string
 }
 
 export interface AuthState {

@@ -6,7 +6,7 @@
  */
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api'
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'
 
 export class ApiError extends Error {
   status: number
@@ -23,7 +23,7 @@ export class ApiError extends Error {
 /** Recupera el token guardado tras el login (localStorage, solo en cliente). */
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
-  return window.localStorage.getItem('token')
+  return window.localStorage.getItem('sp_token')
 }
 
 function buildHeaders(customHeaders?: HeadersInit): HeadersInit {

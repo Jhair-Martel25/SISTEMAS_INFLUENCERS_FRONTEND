@@ -49,8 +49,9 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
-      await login({ email, password, rememberMe })
-      router.push('/dashboard')
+      await login({ email, password, recordar: rememberMe })
+      console.log("Login correcto")
+      router.push("/dashboard")
     } catch (err) {
       setApiError(
         err instanceof Error ? err.message : 'Error al iniciar sesión'

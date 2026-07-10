@@ -69,14 +69,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (credentials: LoginCredentials) => {
     const response = await authService.login(credentials)
 
-    setToken(response.token)
-    setUser(response.user)
+    console.log("Respuesta backend:", response)
 
-    localStorage.setItem(STORAGE_KEY_TOKEN, response.token)
-    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(response.user))
-    setCookie(COOKIE_NAME, response.token)
+    const token = response.data.backendToken
+    const user = response.data.usuario
+
+    console.log("Token:", token)
+    console.log("Usuario:", user)
+
+    setToken(token)
+    setUser(user)
+
+    localStorage.setItem(STORAGE_KEY_TOKEN, token)
+    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user))
+    setCookie(COOKIE_NAME, token)
   }, [])
-
   const logout = useCallback(async () => {
     try {
       await authService.logout()

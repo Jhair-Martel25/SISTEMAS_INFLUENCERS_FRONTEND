@@ -8,11 +8,26 @@ export default function DashboardPage() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
 
+  console.log({
+    user,
+    token: isAuthenticated,
+    isAuthenticated,
+    isLoading,
+  });
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push("/login");
     }
   }, [isAuthenticated, isLoading, router]);
+
+  useEffect(() => {
+  console.log({
+    user,
+    isAuthenticated,
+    isLoading,
+  });
+}, [user, isAuthenticated, isLoading]);
 
   if (isLoading || !isAuthenticated) {
     return (
@@ -50,7 +65,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-500">{user?.nombre}</span>
             <span className="text-[10px] uppercase tracking-wider bg-[#003D2D]/10 text-[#003D2D] px-3 py-1 rounded-full font-medium">
-              {user?.rol}
+              {user?.role}
             </span>
             <button
               onClick={logout}
@@ -173,8 +188,8 @@ export default function DashboardPage() {
             <span className="font-medium text-gray-900">{user?.email}</span>.
           </p>
           <p className="text-gray-500 mt-1">
-            Credenciales de prueba: <strong>admin@sembrandoperu.com</strong> /
-            <strong>123456</strong>
+            Usuario de ejemplo: <strong>voluntario@sembrandoperu.org</strong> /
+            Contraseña: <strong>Sembrando2026*</strong>
           </p>
         </div>
       </div>
