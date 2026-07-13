@@ -1,9 +1,12 @@
 export type EstadoInfluencer = 'Pendiente' | 'Validado' | 'Rechazado'
+export type RedSocial = 'Instagram' | 'TikTok' | 'YouTube' | 'Facebook'
 
 export interface Influencer {
   id: string
   nombreCompleto: string
   usuarioIG: string
+  redSocial: RedSocial
+  scoreIA: number
   correo: string
   telefono?: string
   pais: string

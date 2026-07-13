@@ -3,6 +3,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -22,12 +23,12 @@ export default function DashboardPage() {
   }, [isAuthenticated, isLoading, router]);
 
   useEffect(() => {
-  console.log({
-    user,
-    isAuthenticated,
-    isLoading,
-  });
-}, [user, isAuthenticated, isLoading]);
+    console.log({
+      user,
+      isAuthenticated,
+      isLoading,
+    });
+  }, [user, isAuthenticated, isLoading]);
 
   if (isLoading || !isAuthenticated) {
     return (
@@ -103,7 +104,10 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <Link
+            href="/influencers/gestion"
+            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow block"
+          >
             <div className="w-12 h-12 rounded-xl bg-[#003D2D]/10 flex items-center justify-center mb-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -128,7 +132,7 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-500 mt-1">
               Administra y valida influencers
             </p>
-          </div>
+          </Link>
 
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="w-12 h-12 rounded-xl bg-[#0B5E47]/10 flex items-center justify-center mb-4">
