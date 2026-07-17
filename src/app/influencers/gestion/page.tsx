@@ -1,9 +1,20 @@
 ﻿'use client'
 
-import { useState, useMemo } from 'react'
+/**
+ * Vista: Gestión de Influencers
+ * ------------------------------
+ * Muestra la lista de influencers registrados con búsqueda, filtros
+ * (estado, temática, seguidores), paginación y estados de carga/error.
+ * El filtro de Estado y la paginación ya consumen el GET real del backend
+ * (vía services/influencers.ts); Temática y Seguidores filtran temporalmente
+ * en el cliente porque aún no están confirmados como parámetros del backend.
+ * Si la API falla, cae a datos mock para no dejar la pantalla en blanco.
+ */
+import { useState, useEffect } from 'react'
 import { Plus, Eye, Pencil, Search, X } from 'lucide-react'
 import Link from 'next/link'
 import type { Influencer, EstadoInfluencer, RedSocial } from '@/types/influencer'
+import { listarInfluencers } from '@/services/influencers'
 // Datos simulados (mock) mientras se conecta el listado real del backend.
 // Más adelante esto se reemplaza por influencersService.listar() en un useEffect
 const MOCK_INFLUENCERS: Influencer[] = [
@@ -87,12 +98,17 @@ function estiloEstado(estado: EstadoInfluencer) {
 }
 
 export default function GestionInfluencersPage() {
-  const [influencers, setInfluencers] = useState<Influencer[]>(MOCK_INFLUENCERS)
-  const [busqueda, setBusqueda] = useState('')
-  const [estadoFiltro, setEstadoFiltro] = useState('')
-  const [tematicaFiltro, setTematicaFiltro] = useState('')
-  const [seguidoresFiltro, setSeguidoresFiltro] = useState('')
-  const [pagina, setPagina] = useState(1)
+  const [influencers, setInfluencers] = useState<Influencer[]>([]);
+  const [totalResultados, setTotalResultados] = useState(0);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [busqueda, setBusqueda] = useState("");
+  const [estadoFiltro, setEstadoFiltro] = useState<EstadoInfluencer | "">("");
+  const [tematicaFiltro, setTematicaFiltro] = useState("");
+  const [seguidoresFiltro, setSeguidoresFiltro] = useState("");
+  const [pagina, setPagina] = useState(1);
+  const LIMITE = 5;
 
   const [viendoInfluencer, setViendoInfluencer] = useState<Influencer | null>(null)
   const [editandoInfluencer, setEditandoInfluencer] = useState<Influencer | null>(null)
@@ -110,31 +126,63 @@ export default function GestionInfluencersPage() {
     setEditandoInfluencer(null)
   }
 
-  const influencersFiltrados = useMemo(() => {
-    return influencers.filter((inf) => {
-      const coincideBusqueda = inf.nombreCompleto
-        .toLowerCase()
-        .includes(busqueda.toLowerCase())
+  useEffect(() => {
+    let cancelado = false;
 
-      const coincideEstado = !estadoFiltro || inf.estado === estadoFiltro
-      const coincideTematica = !tematicaFiltro || inf.tematica === tematicaFiltro
+    async function cargar() {
+      setCargando(true);
+      setError(null);
+      try {
+        const respuesta = await listarInfluencers({
+          busqueda,
+          estado: estadoFiltro,
+          page: pagina,
+          limit: LIMITE,
+        });
+        if (!cancelado) {
+          setInfluencers(respuesta.data);
+          setTotalResultados(respuesta.total);
+        }
+      } catch (err) {
+        if (!cancelado) {
+          // Fallback temporal: si el backend aún no responde, usa el mock
+          // para no dejar la pantalla en blanco durante el desarrollo.
+          console.warn("Fallo la conexión real, usando datos mock:", err);
+          setInfluencers(MOCK_INFLUENCERS);
+          setTotalResultados(MOCK_INFLUENCERS.length);
+          setError(
+            err instanceof Error ? err.message : "Error al cargar influencers."
+          );
+        }
+      } finally {
+        if (!cancelado) setCargando(false);
+      }
+    }
 
-      const seguidoresNum = parseInt(inf.seguidores.replace(/[^0-9]/g, ''), 10)
-      let coincideSeguidores = true
-      if (seguidoresFiltro === '0 - 10k') coincideSeguidores = seguidoresNum <= 10
-      if (seguidoresFiltro === '10k - 100k')
-        coincideSeguidores = seguidoresNum > 10 && seguidoresNum <= 100
-      if (seguidoresFiltro === '100k+') coincideSeguidores = seguidoresNum > 100
+    // Debounce de 400ms para no disparar un fetch en cada tecla de búsqueda
+    const timeoutId = setTimeout(cargar, 400);
+    return () => {
+      cancelado = true;
+      clearTimeout(timeoutId);
+    };
+  }, [busqueda, estadoFiltro, pagina]);
 
-      return coincideBusqueda && coincideEstado && coincideTematica && coincideSeguidores
-    })
-  }, [influencers, busqueda, estadoFiltro, tematicaFiltro, seguidoresFiltro])
+  const totalPaginas = Math.max(1, Math.ceil(totalResultados / LIMITE));
 
-  const totalPaginas = Math.max(1, Math.ceil(influencersFiltrados.length / PAGE_SIZE))
-  const influencersPagina = influencersFiltrados.slice(
-    (pagina - 1) * PAGE_SIZE,
-    pagina * PAGE_SIZE
-  )
+  // Filtro temporal en el cliente para Temática y Seguidores, mientras se confirma
+  // si el backend los soporta como query params (no aparecían en el Swagger de GET /influencers).
+  const influencersMostrados = influencers.filter((inf) => {
+    const coincideTematica = !tematicaFiltro || inf.tematica === tematicaFiltro;
+
+    const seguidoresNum = parseInt(inf.seguidores.replace(/[^0-9]/g, ""), 10);
+    let coincideSeguidores = true;
+    if (seguidoresFiltro === "0 - 10k") coincideSeguidores = seguidoresNum <= 10;
+    if (seguidoresFiltro === "10k - 100k")
+      coincideSeguidores = seguidoresNum > 10 && seguidoresNum <= 100;
+    if (seguidoresFiltro === "100k+") coincideSeguidores = seguidoresNum > 100;
+
+    return coincideTematica && coincideSeguidores;
+  });
 
   const totalInfluencers = influencers.length
   const totalPendientes = influencers.filter((i) => i.estado === 'Pendiente').length
@@ -203,10 +251,10 @@ export default function GestionInfluencersPage() {
           <select
             className="border rounded-lg p-3"
             value={estadoFiltro}
-            onChange={(e) => {
-              setEstadoFiltro(e.target.value)
+               onChange={(e) => {
+              setEstadoFiltro(e.target.value as EstadoInfluencer | "")
               setPagina(1)
-            }}
+             }}
           >
             <option value="">Estado</option>
             <option value="Pendiente">Pendiente</option>
@@ -214,33 +262,31 @@ export default function GestionInfluencersPage() {
             <option value="Rechazado">Rechazado</option>
           </select>
 
-          <select
+           <select
             className="border rounded-lg p-3"
             value={tematicaFiltro}
-            onChange={(e) => {
-              setTematicaFiltro(e.target.value)
-              setPagina(1)
-            }}
+            onChange={(e) => setTematicaFiltro(e.target.value)}
           >
             <option value="">Temática</option>
             <option value="Ambiental">Ambiental</option>
             <option value="Social">Social</option>
             <option value="Educación">Educación</option>
+            <option value="Moda">Moda</option>
+            <option value="Tecnología">Tecnología</option>
           </select>
 
           <select
             className="border rounded-lg p-3"
             value={seguidoresFiltro}
-            onChange={(e) => {
-              setSeguidoresFiltro(e.target.value)
-              setPagina(1)
-            }}
+            onChange={(e) => setSeguidoresFiltro(e.target.value)}
           >
             <option value="">Seguidores</option>
             <option value="0 - 10k">0 - 10k</option>
             <option value="10k - 100k">10k - 100k</option>
             <option value="100k+">100k+</option>
           </select>
+
+        
         </div>
 
         <div className="overflow-x-auto">
@@ -257,7 +303,7 @@ export default function GestionInfluencersPage() {
               </tr>
             </thead>
             <tbody>
-              {influencersPagina.length === 0 && (
+              {!cargando && influencersMostrados.length === 0 && (
                 <tr>
                   <td colSpan={7} className="p-6 text-center text-gray-500">
                     No se encontraron influencers con esos filtros.
@@ -265,7 +311,7 @@ export default function GestionInfluencersPage() {
                 </tr>
               )}
 
-              {influencersPagina.map((inf) => (
+             {influencersMostrados.map((inf: Influencer) => (
                 <tr
                   key={inf.id}
                   className="border-b hover:bg-gray-50 transition-colors duration-150"

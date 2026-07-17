@@ -1,3 +1,11 @@
+
+/**
+ * Tipos: Influencer
+ * ------------------
+ * Define la forma de un influencer y sus valores posibles (estado, red
+ * social), para que toda la app (formulario, tabla, servicio) use la
+ * misma estructura de datos sin repetirla en cada archivo.
+ */
 export type EstadoInfluencer = 'Pendiente' | 'Validado' | 'Rechazado'
 export type RedSocial = 'Instagram' | 'TikTok' | 'YouTube' | 'Facebook'
 
