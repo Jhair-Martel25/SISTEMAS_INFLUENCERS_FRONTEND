@@ -1,25 +1,36 @@
-export type RangoSeguidores = '0-10k' | '10k-50k' | '50k+'
+/**
+ * Tipos: Consulta IA
+ * -------------------
+ * Refleja exactamente el DTO y la respuesta reales del backend
+ * (CreateConsultaIaDto y ConsultasIaService.ejecutarPrompt).
+ */
 
 export interface ConsultaIAInput {
-  prompt: string
-  objetivoBusqueda?: string
-  rangoSeguidores?: RangoSeguidores
-  cantidadMinima?: number
+  descripcionPrompt: string
+  cantidadSolicitada: number
+  rangoSeguidores: string
+  plantillaId: string
 }
 
 export interface InfluencerSugerido {
-  nombreCompleto: string
-  usuarioIG: string
-  seguidores: string
-  engagement: string
-  tematica: string
-  linkPerfil: string
-  justificacion: string
+  id: string
+  nombre: string
+  usuarioIg: string
+  linkIg: string
+  seguidoresGemini: number
+  likesGemini: number
 }
 
 export interface ConsultaIAResultado {
-  id: string
-  input: ConsultaIAInput
-  sugerencias: InfluencerSugerido[]
-  createdAt: string
+  consulta: {
+    id: string
+    descripcionPrompt: string
+    cantidadSolicitada: number
+    rangoSeguidores: string
+    estado: string
+    fecha: string
+    voluntarioId: string
+    plantillaId: string
+  }
+  influencers: InfluencerSugerido[]
 }
