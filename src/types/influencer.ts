@@ -53,3 +53,17 @@ export interface InfluencerFiltros {
   page?: number
   pageSize?: number
 }
+
+export interface InfluencersResponse {
+  mensaje: string
+  data: {
+    data: Influencer[]
+    meta: {
+      total: number
+      page: number
+      limit: number
+      totalPages: number
+    }
+  }
+}
+

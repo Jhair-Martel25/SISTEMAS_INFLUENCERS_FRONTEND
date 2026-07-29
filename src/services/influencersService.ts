@@ -4,13 +4,19 @@ import type {
   CrearInfluencerInput,
   ActualizarInfluencerInput,
   InfluencerFiltros,
+  InfluencersResponse,
 } from '@/types/influencer'
 
 const BASE_PATH = '/influencers'
 
 export const influencersService = {
-  async listar(filtros?: InfluencerFiltros): Promise<Influencer[]> {
-    return apiClient.get<Influencer[]>(BASE_PATH, { params: filtros })
+  async listar(
+    filtros?: InfluencerFiltros
+  ): Promise<InfluencersResponse> {
+    return apiClient.get<InfluencersResponse>(
+      BASE_PATH,
+      { params: filtros }
+    )
   },
 
   async obtenerPorId(id: string): Promise<Influencer> {

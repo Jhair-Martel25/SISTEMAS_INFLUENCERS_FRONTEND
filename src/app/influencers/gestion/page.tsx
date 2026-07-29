@@ -14,7 +14,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Eye, Pencil, Search, X } from 'lucide-react'
 import Link from 'next/link'
 import type { Influencer, EstadoInfluencer, RedSocial } from '@/types/influencer'
-import { listarInfluencers } from '@/services/influencers'
+import { listarInfluencers, actualizarEstadoInfluencer, } from "@/services/influencers";
 // Datos simulados (mock) mientras se conecta el listado real del backend.
 // Más adelante esto se reemplaza por influencersService.listar() en un useEffect
 const MOCK_INFLUENCERS: Influencer[] = [
@@ -49,35 +49,35 @@ const MOCK_INFLUENCERS: Influencer[] = [
     estado: 'Pendiente',
   },
   {
-  id: '3',
-  nombreCompleto: 'María Fernández',
-  usuarioIG: '@mariafernandez',
-  redSocial: 'Instagram',
-  scoreIA: 91,
-  correo: 'maria@example.com',
-  pais: 'Perú',
-  ciudad: 'Lima',
-  seguidores: '150k',
-  engagement: '5.2%',
-  tematica: 'Moda',
-  linkPerfil: 'https://instagram.com/mariafernandez',
-  estado: 'Validado',
-},
-{
-  id: '4',
-  nombreCompleto: 'Diego Salazar',
-  usuarioIG: '@diegosalazar',
-  redSocial: 'YouTube',
-  scoreIA: 78,
-  correo: 'diego@example.com',
-  pais: 'Perú',
-  ciudad: 'Trujillo',
-  seguidores: '210k',
-  engagement: '4.5%',
-  tematica: 'Tecnología',
-  linkPerfil: 'https://youtube.com/@diegosalazar',
-  estado: 'Rechazado',
-},
+    id: '3',
+    nombreCompleto: 'María Fernández',
+    usuarioIG: '@mariafernandez',
+    redSocial: 'Instagram',
+    scoreIA: 91,
+    correo: 'maria@example.com',
+    pais: 'Perú',
+    ciudad: 'Lima',
+    seguidores: '150k',
+    engagement: '5.2%',
+    tematica: 'Moda',
+    linkPerfil: 'https://instagram.com/mariafernandez',
+    estado: 'Validado',
+  },
+  {
+    id: '4',
+    nombreCompleto: 'Diego Salazar',
+    usuarioIG: '@diegosalazar',
+    redSocial: 'YouTube',
+    scoreIA: 78,
+    correo: 'diego@example.com',
+    pais: 'Perú',
+    ciudad: 'Trujillo',
+    seguidores: '210k',
+    engagement: '4.5%',
+    tematica: 'Tecnología',
+    linkPerfil: 'https://youtube.com/@diegosalazar',
+    estado: 'Rechazado',
+  },
 ]
 
 const PAGE_SIZE = 5
@@ -113,10 +113,26 @@ export default function GestionInfluencersPage() {
   const [viendoInfluencer, setViendoInfluencer] = useState<Influencer | null>(null)
   const [editandoInfluencer, setEditandoInfluencer] = useState<Influencer | null>(null)
 
-  function cambiarEstado(id: string, nuevoEstado: EstadoInfluencer) {
-    setInfluencers((prev) =>
-      prev.map((inf) => (inf.id === id ? { ...inf, estado: nuevoEstado } : inf))
-    )
+  async function cambiarEstado(
+    id: string,
+    nuevoEstado: EstadoInfluencer
+  ) {
+    try {
+      await actualizarEstadoInfluencer(id, nuevoEstado);
+
+      setInfluencers((prev) =>
+        prev.map((inf) =>
+          inf.id === id
+            ? { ...inf, estado: nuevoEstado }
+            : inf
+        )
+      );
+
+      console.log("Estado actualizado correctamente.");
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo actualizar el estado del influencer.");
+    }
   }
 
   function guardarEdicion(actualizado: Influencer) {
@@ -138,10 +154,13 @@ export default function GestionInfluencersPage() {
           estado: estadoFiltro,
           page: pagina,
           limit: LIMITE,
-        });
+        })
+
         if (!cancelado) {
-          setInfluencers(respuesta.data);
-          setTotalResultados(respuesta.total);
+          console.log("Primer influencer:", respuesta.data.data[0])
+
+          setInfluencers(respuesta.data.data)
+          setTotalResultados(respuesta.data.meta.total)
         }
       } catch (err) {
         if (!cancelado) {
@@ -251,10 +270,10 @@ export default function GestionInfluencersPage() {
           <select
             className="border rounded-lg p-3"
             value={estadoFiltro}
-               onChange={(e) => {
+            onChange={(e) => {
               setEstadoFiltro(e.target.value as EstadoInfluencer | "")
               setPagina(1)
-             }}
+            }}
           >
             <option value="">Estado</option>
             <option value="Pendiente">Pendiente</option>
@@ -262,7 +281,7 @@ export default function GestionInfluencersPage() {
             <option value="Rechazado">Rechazado</option>
           </select>
 
-           <select
+          <select
             className="border rounded-lg p-3"
             value={tematicaFiltro}
             onChange={(e) => setTematicaFiltro(e.target.value)}
@@ -286,7 +305,7 @@ export default function GestionInfluencersPage() {
             <option value="100k+">100k+</option>
           </select>
 
-        
+
         </div>
 
         <div className="overflow-x-auto">
@@ -311,7 +330,7 @@ export default function GestionInfluencersPage() {
                 </tr>
               )}
 
-             {influencersMostrados.map((inf: Influencer) => (
+              {influencersMostrados.map((inf: Influencer) => (
                 <tr
                   key={inf.id}
                   className="border-b hover:bg-gray-50 transition-colors duration-150"
@@ -467,14 +486,14 @@ export default function GestionInfluencersPage() {
 
                 <p className="text-gray-500">Link de perfil</p>
                 <a
-                
+
                   href={viendoInfluencer.linkPerfil}
 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-medium text-[#003D2D] underline break-all"
-                  >
-                
+                >
+
                   {viendoInfluencer.linkPerfil}
                 </a>
               </div>

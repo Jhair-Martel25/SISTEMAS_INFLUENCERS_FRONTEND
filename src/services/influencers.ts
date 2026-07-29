@@ -26,10 +26,57 @@ export interface FiltrosInfluencers {
 }
 
 export interface RespuestaInfluencers {
-  data: Influencer[];
-  total: number;
-  page: number;
-  limit: number;
+  mensaje: string;
+  data: {
+    data: Influencer[];
+    meta: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  };
+}
+
+function adaptarInfluencer(item: any): Influencer {
+  return {
+    id: item.id,
+
+    nombreCompleto: item.nombre,
+    usuarioIG: item.usuarioIg,
+
+    correo: item.email ?? "",
+    telefono: item.phone ?? "",
+
+    pais: "",
+    ciudad: "",
+
+    seguidores: item.seguidores ?? "",
+    engagement: "",
+
+    tematica:
+      item.consultaIa?.plantilla?.nombre ??
+      "",
+
+    linkPerfil: item.linkIg,
+
+    estado:
+      item.estadoValidacion === "VALIDADO"
+        ? "Validado"
+        : item.estadoValidacion === "RECHAZADO"
+          ? "Rechazado"
+          : "Pendiente",
+
+    redSocial: "Instagram",
+
+    scoreIA: 0,
+
+    voluntarioEncargadoId:
+      item.validadoPor?.id,
+
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
 }
 
 export async function listarInfluencers(
@@ -57,6 +104,38 @@ export async function listarInfluencers(
   }
   if (!res.ok) {
     throw new Error("No se pudo obtener la lista de influencers.");
+  }
+
+  const json = await res.json();
+
+  return {
+    mensaje: json.mensaje,
+    data: {
+      data: json.data.data.map(adaptarInfluencer),
+      meta: json.data.meta,
+    },
+  };
+}
+
+export async function actualizarEstadoInfluencer(
+  id: string,
+  estado: EstadoInfluencer
+) {
+  const token = localStorage.getItem("sp_token");
+
+  const res = await fetch(`${API_URL}/influencers/${id}/editar`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({
+      estadoValidacion: ESTADO_VALIDACION_MAP[estado],
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("No se pudo actualizar el estado.");
   }
 
   return res.json();
