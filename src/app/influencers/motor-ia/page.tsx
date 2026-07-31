@@ -64,13 +64,20 @@ export default function MotorIAPage() {
 
     try {
       setLoading(true);
+      console.log("Payload enviado:", payload);
       const response: ConsultaIAResultado = await consultaIAService.generar(payload);
       setInfluencers(response.influencers || []);
       setMensajeExito("La búsqueda se realizó correctamente.");
       setTimeout(() => setMensajeExito(""), 3500);
-    } catch (error) {
-      console.error(error);
-      setMensajeError("No fue posible generar la búsqueda mediante IA.");
+    } catch (error: any) {
+      console.error("Error completo:", error);
+      console.error("Respuesta backend:", error.data);
+
+      setMensajeError(
+        error.data?.mensaje ||
+        error.message ||
+        "No fue posible generar la búsqueda mediante IA."
+      );
     } finally {
       setLoading(false);
     }
@@ -214,12 +221,12 @@ export default function MotorIAPage() {
                     </div>
                   </div>
 
-                  
+
                   <div>
                     <p className="text-sm text-gray-500 mb-2">Perfil de Instagram</p>
-                    
-                      href={influencer.linkIg}
-                      <a
+
+                    href={influencer.linkIg}
+                    <a
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline break-all"

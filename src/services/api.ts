@@ -57,9 +57,15 @@ async function handleResponse<T>(response: Response): Promise<T> {
   const body = isJson ? await response.json().catch(() => null) : null
 
   if (!response.ok) {
+    console.log("Respuesta completa del backend:", body);
     const message =
-      (body && typeof body === 'object' && 'message' in body && String(body.message)) ||
-      `Error ${response.status} al comunicarse con el servidor`
+      body && typeof body === 'object'
+        ? String(
+          (body as any).mensaje ??
+          (body as any).message ??
+          `Error ${response.status}`
+        )
+        : `Error ${response.status}`;
 
     throw new ApiError(message, response.status, body)
   }
