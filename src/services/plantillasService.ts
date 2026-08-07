@@ -12,14 +12,7 @@ function adaptarPlantilla(item: any): Plantilla {
   return {
     id: item.id,
     nombre: item.nombre,
-
-    // El backend aún no devuelve este dato.
-    // Temporalmente colocamos un valor por defecto.
-    tipo: "correo",
-
     asunto: item.asunto,
-
-    // El backend lo llama "cuerpo"
     contenido: item.cuerpo,
   };
 }
@@ -36,11 +29,36 @@ export const plantillasService = {
   },
 
   async crear(input: CrearPlantillaInput): Promise<Plantilla> {
-    return apiClient.post<Plantilla>(BASE_PATH, input)
+    const payload = {
+      nombre: input.nombre,
+      descripcion: "",
+      asunto: input.asunto,
+      cuerpo: input.contenido,
+    };
+
+    const response = await apiClient.post<any>(BASE_PATH, payload);
+
+    return adaptarPlantilla(response);
   },
 
-  async actualizar(id: string, input: ActualizarPlantillaInput): Promise<Plantilla> {
-    return apiClient.put<Plantilla>(`${BASE_PATH}/${id}`, input)
+  async actualizar(
+    id: string,
+    input: ActualizarPlantillaInput
+  ): Promise<Plantilla> {
+
+    const payload = {
+      nombre: input.nombre,
+      descripcion: "",
+      asunto: input.asunto,
+      cuerpo: input.contenido,
+    };
+
+    const response = await apiClient.patch<any>(
+      `${BASE_PATH}/${id}`,
+      payload
+    );
+
+    return adaptarPlantilla(response);
   },
 
   async eliminar(id: string): Promise<void> {
