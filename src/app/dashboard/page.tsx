@@ -193,6 +193,38 @@ export default function DashboardPage() {
               Añade nuevos voluntarios al sistema
             </p>
           </Link>
+
+          <Link
+            href="/plantillas"
+            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 block cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-[#F4E8C1] flex items-center justify-center mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#003D2D"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M4 4h16v16H4z" />
+                <path d="M8 8h8" />
+                <path d="M8 12h8" />
+                <path d="M8 16h5" />
+              </svg>
+            </div>
+
+            <h3 className="font-semibold text-gray-900">
+              Gestión de Plantillas
+            </h3>
+
+            <p className="text-sm text-gray-500 mt-1">
+              Gestiona las plantillas de correo y comunicación del sistema.
+            </p>
+          </Link>
         </div>
 
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
