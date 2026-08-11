@@ -1,31 +1,40 @@
 import { apiClient } from '@/services/api'
 import type {
-  Voluntario,
-  CrearVoluntarioInput,
-  ActualizarVoluntarioInput,
-  VoluntarioFiltros,
-} from '@/types/voluntario'
+  Usuario,
+  CrearUsuarioInput,
+  ActualizarUsuarioInput,
+  UsuarioFiltros,
+  UsuariosResponse,
+} from '@/types/usuario'
 
 const BASE_PATH = '/usuarios'
 
 export const usuariosService = {
-  async listar(filtros?: VoluntarioFiltros): Promise<Voluntario[]> {
-    return apiClient.get<Voluntario[]>(BASE_PATH, { params: filtros })
+  async listar(filtros?: UsuarioFiltros): Promise<UsuariosResponse> {
+    return apiClient.get<UsuariosResponse>(BASE_PATH, {
+      params: filtros,
+    });
   },
 
-  async obtenerPorId(id: string): Promise<Voluntario> {
-    return apiClient.get<Voluntario>(`${BASE_PATH}/${id}`)
+  async obtenerPorId(id: string): Promise<Usuario> {
+    return apiClient.get<Usuario>(`${BASE_PATH}/${id}`)
   },
 
-  async crear(input: CrearVoluntarioInput): Promise<Voluntario> {
-    return apiClient.post<Voluntario>(BASE_PATH, input)
+  async crear(input: CrearUsuarioInput): Promise<Usuario> {
+    return apiClient.post<Usuario>(BASE_PATH, input)
   },
 
-  async actualizar(id: string, input: ActualizarVoluntarioInput): Promise<Voluntario> {
-    return apiClient.put<Voluntario>(`${BASE_PATH}/${id}`, input)
+  async actualizar(
+    id: string,
+    input: ActualizarUsuarioInput
+  ): Promise<Usuario> {
+    return apiClient.patch<Usuario>(
+      `${BASE_PATH}/${id}`,
+      input
+    )
   },
 
-  async eliminar(id: string): Promise<void> {
-    return apiClient.delete<void>(`${BASE_PATH}/${id}`)
+  async desactivar(id: string): Promise<Usuario> {
+    return apiClient.patch(`${BASE_PATH}/${id}/desactivar`, {});
   },
 }
