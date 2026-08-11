@@ -1,22 +1,43 @@
-export type EstadoDisponibilidad = 'Disponible' | 'Parcial' | 'No disponible'
+export type DiaSemana =
+  | 'LUNES' | 'MARTES' | 'MIERCOLES' | 'JUEVES' | 'VIERNES' | 'SABADO' | 'DOMINGO'
 
-export interface Disponibilidad {
+export const DIAS_SEMANA: { value: DiaSemana; corto: string }[] = [
+  { value: 'LUNES', corto: 'Lun' },
+  { value: 'MARTES', corto: 'Mar' },
+  { value: 'MIERCOLES', corto: 'Mié' },
+  { value: 'JUEVES', corto: 'Jue' },
+  { value: 'VIERNES', corto: 'Vie' },
+  { value: 'SABADO', corto: 'Sáb' },
+  { value: 'DOMINGO', corto: 'Dom' },
+]
+
+export interface Horario {
   id: string
+  diaSemana: DiaSemana
+  horaInicio: string
+  horaFin: string
   voluntarioId: string
-  voluntarioNombre: string
-  horaInicio: string // "HH:mm"
-  horaFin: string // "HH:mm"
-  estado: EstadoDisponibilidad
 }
 
-export interface DisponibilidadResumen {
-  reunionesProgramadas: number
-  voluntariosDisponibles: number
-  pendientes: number
+export interface CrearHorarioInput {
+  diaSemana: DiaSemana
+  horaInicio: string
+  horaFin: string
 }
 
-export interface ActualizarDisponibilidadInput {
-  horaInicio?: string
-  horaFin?: string
-  estado?: EstadoDisponibilidad
+export type ActualizarHorarioInput = Partial<CrearHorarioInput>
+
+export interface DisponibilidadCita {
+  id: string
+  fechaHora: string
+  disponible: boolean
+  voluntarioId: string
+  voluntarioNombre?: string
+}
+
+export interface DisponibilidadFiltros {
+  voluntarioId?: string
+  disponible?: boolean
+  desde?: string
+  hasta?: string
 }
