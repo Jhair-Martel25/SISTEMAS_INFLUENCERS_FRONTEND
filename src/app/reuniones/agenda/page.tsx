@@ -1,173 +1,142 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { Calendar, Users, Hourglass } from 'lucide-react'
+import type { DisponibilidadCita } from '@/types/disponibilidad'
+import { disponibilidadService } from '@/services/disponibilidadService'
+import { reunionesService } from '@/services/horariosService'
+
+function formatearBloque(iso: string) {
+  const fecha = new Date(iso)
+  const fechaTexto = fecha.toLocaleDateString('es-PE', { weekday: 'long', day: '2-digit', month: 'short' })
+  const horaTexto = fecha.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
+  return `${fechaTexto} - ${horaTexto}`
+}
+
 export default function DisponibilidadAgendaPage() {
+  const [bloques, setBloques] = useState<DisponibilidadCita[]>([])
+  const [reunionesPendientes, setReunionesPendientes] = useState<number | null>(null)
+  const [cargando, setCargando] = useState(true)
+  const [ultimaReunion, setUltimaReunion] = useState<{ fechaHora: string; id: string } | null>(null)
+
+  useEffect(() => {
+    let cancelado = false
+
+    async function cargar() {
+      setCargando(true)
+
+      const [bloquesRes, reunionesRes] = await Promise.allSettled([
+        disponibilidadService.listarDisponibles(),
+        reunionesService.listar({ estado: 'PENDIENTE' }),
+      ])
+
+      if (!cancelado) {
+        if (bloquesRes.status === 'fulfilled') {
+          setBloques(bloquesRes.value)
+        } else {
+          console.error('Error cargando bloques disponibles:', bloquesRes.reason)
+        }
+
+        if (reunionesRes.status === 'fulfilled') {
+          setReunionesPendientes(reunionesRes.value.length)
+        } else {
+          // La lista de reuniones requiere login (ADMIN/VOLUNTARIO).
+          // Como esta página es pública, es normal que falle si nadie inició sesión.
+          setReunionesPendientes(null)
+        }
+
+        setCargando(false)
+      }
+    }
+
+    cargar()
+
+    if (typeof window !== 'undefined') {
+      const guardada = window.localStorage.getItem('sp_ultima_reunion')
+      if (guardada) {
+        try {
+          setUltimaReunion(JSON.parse(guardada))
+        } catch {
+          // ignorar JSON corrupto
+        }
+      }
+    }
+
+    return () => {
+      cancelado = true
+    }
+  }, [])
+
+  const voluntariosConBloques = new Set(bloques.map((b) => b.voluntarioId)).size
+
   return (
     <main className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-6xl mx-auto">
 
-        {/* Encabezado */}
-        <div className="mb-10">
-          <h1 className="text-4xl font-bold text-[#003D2D]">
-            Disponibilidad y Agenda
-          </h1>
-
-          <p className="text-gray-600 mt-2">
-            Consulta la disponibilidad semanal de los voluntarios y organiza las reuniones.
-          </p>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-[#003D2D]">Disponibilidad y Agenda</h1>
+          <p className="text-gray-600 mt-2">Consulta la disponibilidad real de los voluntarios y organiza las reuniones.</p>
         </div>
 
-        {/* Resumen */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-gray-500 text-sm">📅 Reuniones programadas</h3>
-            <p className="text-4xl font-bold text-[#003D2D]">12</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h3 className="text-gray-500 text-sm flex items-center gap-2"><Calendar size={16} /> Reuniones pendientes</h3>
+            <p className="text-4xl font-bold text-[#003D2D] mt-1">{reunionesPendientes === null ? '(inicia sesión)' : reunionesPendientes}</p>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-gray-500 text-sm">👥 Voluntarios disponibles</h3>
-            <p className="text-4xl font-bold text-[#003D2D]">8</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h3 className="text-gray-500 text-sm flex items-center gap-2"><Users size={16} /> Voluntarios con bloques disponibles</h3>
+            <p className="text-4xl font-bold text-[#003D2D] mt-1">{cargando ? '...' : voluntariosConBloques}</p>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-gray-500 text-sm">⏳ Pendientes</h3>
-            <p className="text-4xl font-bold text-[#003D2D]">4</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h3 className="text-gray-500 text-sm flex items-center gap-2"><Hourglass size={16} /> Bloques disponibles</h3>
+            <p className="text-4xl font-bold text-[#003D2D] mt-1">{cargando ? '...' : bloques.length}</p>
           </div>
-
         </div>
 
-        {/* Agenda semanal */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-8">
+          <h2 className="text-xl font-semibold">Tu ultima reunion agendada</h2>
+          <p className="text-gray-500 text-sm mt-1 mb-4">Registrada en este navegador.</p>
 
-          <h2 className="text-xl font-semibold">
-            Agenda semanal
-          </h2>
-
-          <p className="text-gray-500 text-sm mt-1 mb-6">
-            Visualiza las reuniones programadas durante la semana.
-          </p>
-
-          <table className="w-full border-collapse">
-
-            <thead>
-
-              <tr className="bg-gray-100">
-
-                <th className="p-3 text-left">Hora</th>
-                <th className="p-3">Lun</th>
-                <th className="p-3">Mar</th>
-                <th className="p-3">Mié</th>
-                <th className="p-3">Jue</th>
-                <th className="p-3">Vie</th>
-                <th className="p-3">Sáb</th>
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              <tr className="border-b hover:bg-gray-50 transition-colors">
-                <td className="p-3 font-medium">09:00</td>
-                <td className="p-3 text-center align-top"><span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium">Andrea</span></td>
-                <td className="p-3 text-center align-top"></td>
-                <td className="p-3 text-center align-top"><span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">Carlos</span></td>
-                <td className="p-3 text-center align-top"></td>
-                <td className="p-3 text-center align-top"><span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium">Lucía</span></td>
-              </tr>
-
-              <tr className="border-b hover:bg-gray-50 transition-colors">
-                <td className="p-3 font-medium">11:00</td>
-                <td></td>
-                <td className="p-3 text-center align-top"><span className="inline-block px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm font-medium">María</span></td>
-                <td></td>
-                <td className="p-3 text-center align-top"><span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium">José</span></td>
-                <td></td>
-                <td className="p-3 text-center align-top"><span className="inline-block px-3 py-1 rounded-xl bg-blue-100 text-blue-700 text-sm font-medium">Rosa</span></td>
-              </tr>
-
-              <tr className="border-b hover:bg-gray-50 transition-colors">
-                <td className="p-3 font-medium">15:00</td>
-                <td className="p-3 text-center align-top"><span className="inline-block px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-medium">Ocupado</span></td>
-                <td></td>
-                <td className="p-3 text-center align-top"><span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium">Pedro</span></td>
-                <td></td>
-                <td className="p-3 text-center align-top"><span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">Ana</span></td>
-              </tr>
-
-            </tbody>
-
-          </table>
-
+          {ultimaReunion ? (
+            <div className="flex items-center justify-between bg-green-50 border border-green-100 rounded-xl p-4">
+              <p className="text-green-800 font-medium">{formatearBloque(ultimaReunion.fechaHora)}</p>
+              <Link href={`/reuniones/gestionar/${ultimaReunion.id}`} className="text-sm text-[#003D2D] hover:underline">
+                Ver detalle
+              </Link>
+            </div>
+          ) : (
+            <p className="text-gray-400 text-sm">
+              Aun no has agendado ninguna reunion desde este navegador.{' '}
+              <Link href="/reuniones/agendar" className="text-[#003D2D] hover:underline">Agendar una ahora</Link>
+            </p>
+          )}
         </div>
 
-        {/* Disponibilidad */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-xl font-semibold">Bloques disponibles</h2>
+          <p className="text-gray-500 text-sm mt-1 mb-6">Proximos bloques de 20 min abiertos para agendar.</p>
 
-          <h2 className="text-xl font-semibold">
-            Disponibilidad de voluntarios
-          </h2>
-
-          <p className="text-gray-500 text-sm mt-1 mb-6">
-            Consulta los horarios registrados para asignar reuniones.
-          </p>
-
-          <table className="w-full">
-
-            <thead>
-
-              <tr className="border-b hover:bg-gray-50 transition-colors">
-
-                <th className="p-3 text-center align-top">Voluntario</th>
-                <th className="p-3 text-center align-top">Horario</th>
-                <th className="p-3 text-center align-top">Estado</th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              <tr className="border-b hover:bg-gray-50 transition-colors">
-                <td className="p-3 text-center align-top">Luis Vega</td>
-                <td className="p-3 text-center align-top">
-                  09:00 - 13:00
-                </td>
-                <td className="p-3 text-center align-top">
-                  <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
-                    Disponible
-                  </span>
-                </td>
-              </tr>
-
-              <tr className="border-b hover:bg-gray-50 transition-colors">
-                <td className="p-3 text-center align-top">Marta Paz</td>
-                <td className="p-3 text-center align-top">
-                  10:00 - 17:00
-                </td>
-                <td className="p-3 text-center align-top">
-                  <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold">
-                    Parcial
-                  </span>
-                </td>
-              </tr>
-
-              <tr className="border-b hover:bg-gray-50 transition-colors">
-                <td className="p-3 text-center align-top">Fabio Ruiz</td>
-                <td className="p-3 text-center align-top">
-                  08:00 - 12:00
-                </td>
-                <td className="p-3 text-center align-top">
-                  <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold">
-                    No disponible
-                  </span>
-                </td>
-              </tr>
-
-            </tbody>
-
-          </table>
-
+          {cargando ? (
+            <div className="flex justify-center py-10">
+              <div className="animate-spin h-8 w-8 border-4 border-[#003D2D] border-t-transparent rounded-full" />
+            </div>
+          ) : bloques.length === 0 ? (
+            <p className="text-center text-gray-400 py-10">No hay bloques disponibles en este momento.</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {bloques.map((b) => (
+                <div key={b.id} className="border border-gray-200 rounded-xl p-3 text-center hover:border-[#003D2D] transition-colors">
+                  <p className="text-sm font-medium text-gray-800 capitalize">{formatearBloque(b.fechaHora)}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>
     </main>
-  );
+  )
 }

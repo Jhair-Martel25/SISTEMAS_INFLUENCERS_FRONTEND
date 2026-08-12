@@ -1,29 +1,35 @@
 import { apiClient } from '@/services/api'
-import type {
-  Disponibilidad,
-  DisponibilidadResumen,
-  ActualizarDisponibilidadInput,
-} from '@/types/disponibilidad'
+import type { DisponibilidadCita, DisponibilidadFiltros } from '@/types/disponibilidad'
 
-const BASE_PATH = '/disponibilidad'
+const BASE_PATH = '/disponibilidades'
+
+interface ApiEnvelope<T> {
+  data: T
+  mensaje: string
+}
 
 export const disponibilidadService = {
-  async listar(): Promise<Disponibilidad[]> {
-    return apiClient.get<Disponibilidad[]>(BASE_PATH)
+  async listarDisponibles(filtros?: DisponibilidadFiltros): Promise<DisponibilidadCita[]> {
+    const res = await apiClient.get<ApiEnvelope<DisponibilidadCita[]>>(`${BASE_PATH}/disponibles`, { params: filtros })
+    return res.data
   },
-
-  async obtenerResumen(): Promise<DisponibilidadResumen> {
-    return apiClient.get<DisponibilidadResumen>(`${BASE_PATH}/resumen`)
+  async listarMisBloques(): Promise<DisponibilidadCita[]> {
+    const res = await apiClient.get<ApiEnvelope<DisponibilidadCita[]>>(`${BASE_PATH}/mis-bloques`)
+    return res.data
   },
-
-  async obtenerPorVoluntario(voluntarioId: string): Promise<Disponibilidad> {
-    return apiClient.get<Disponibilidad>(`${BASE_PATH}/voluntario/${voluntarioId}`)
+  async generarDesdeHorarios(): Promise<DisponibilidadCita[]> {
+    const res = await apiClient.post<ApiEnvelope<DisponibilidadCita[]>>(`${BASE_PATH}/generar`, {})
+    return res.data
   },
-
-  async actualizar(
-    voluntarioId: string,
-    input: ActualizarDisponibilidadInput
-  ): Promise<Disponibilidad> {
-    return apiClient.put<Disponibilidad>(`${BASE_PATH}/voluntario/${voluntarioId}`, input)
+  async crear(horarioId: string, timeZone?: string): Promise<DisponibilidadCita> {
+    const res = await apiClient.post<ApiEnvelope<DisponibilidadCita>>(BASE_PATH, { horarioId, timeZone })
+    return res.data
+  },
+  async toggle(id: string): Promise<DisponibilidadCita> {
+    const res = await apiClient.patch<ApiEnvelope<DisponibilidadCita>>(`${BASE_PATH}/${id}/toggle`, {})
+    return res.data
+  },
+  async eliminar(id: string): Promise<void> {
+    await apiClient.delete<ApiEnvelope<null>>(`${BASE_PATH}/${id}`)
   },
 }

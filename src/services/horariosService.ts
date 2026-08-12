@@ -1,43 +1,61 @@
 import { apiClient } from '@/services/api'
 import type {
   Reunion,
-  CrearReunionInput,
-  ActualizarReunionInput,
-  AgendaSemanal,
+  EstadoReunion,
+  AgendarReunionInput,
+  ActualizarEstadoReunionInput,
 } from '@/types/reunion'
+import type {
+  Horario,
+  CrearHorarioInput,
+  ActualizarHorarioInput,
+} from '@/types/disponibilidad'
 
-const BASE_PATH = '/reuniones'
+const REUNIONES_PATH = '/reuniones'
+const HORARIOS_PATH = '/horarios'
+
+interface ApiEnvelope<T> {
+  data: T
+  mensaje: string
+}
+
+export const reunionesService = {
+  async listar(filtros?: { estado?: EstadoReunion }): Promise<Reunion[]> {
+    const res = await apiClient.get<ApiEnvelope<Reunion[]>>(REUNIONES_PATH, { params: filtros })
+    return res.data
+  },
+  async obtenerPorId(id: string): Promise<Reunion> {
+    const res = await apiClient.get<ApiEnvelope<Reunion>>(`${REUNIONES_PATH}/${id}`)
+    return res.data
+  },
+  async agendar(input: AgendarReunionInput): Promise<Reunion> {
+    const res = await apiClient.post<ApiEnvelope<Reunion>>(REUNIONES_PATH, input)
+    return res.data
+  },
+  async actualizarEstado(id: string, input: ActualizarEstadoReunionInput): Promise<Reunion> {
+    const res = await apiClient.patch<ApiEnvelope<Reunion>>(`${REUNIONES_PATH}/${id}/estado`, input)
+    return res.data
+  },
+}
 
 export const horariosService = {
-  /** Lista de reuniones, con filtros opcionales por fecha/estado. */
-  async listarReuniones(filtros?: { fecha?: string; estado?: Reunion['estado'] }): Promise<Reunion[]> {
-    return apiClient.get<Reunion[]>(BASE_PATH, { params: filtros })
+  async listar(): Promise<Horario[]> {
+    const res = await apiClient.get<ApiEnvelope<Horario[]>>(HORARIOS_PATH)
+    return res.data
   },
-
-  async obtenerReunion(id: string): Promise<Reunion> {
-    return apiClient.get<Reunion>(`${BASE_PATH}/${id}`)
+  async listarMisHorarios(): Promise<Horario[]> {
+    const res = await apiClient.get<ApiEnvelope<Horario[]>>(`${HORARIOS_PATH}/mis-horarios`)
+    return res.data
   },
-
-  async crearReunion(input: CrearReunionInput): Promise<Reunion> {
-    return apiClient.post<Reunion>(BASE_PATH, input)
+  async crear(input: CrearHorarioInput): Promise<Horario> {
+    const res = await apiClient.post<ApiEnvelope<Horario>>(HORARIOS_PATH, input)
+    return res.data
   },
-
-  async actualizarReunion(id: string, input: ActualizarReunionInput): Promise<Reunion> {
-    return apiClient.put<Reunion>(`${BASE_PATH}/${id}`, input)
+  async actualizar(id: string, input: ActualizarHorarioInput): Promise<Horario> {
+    const res = await apiClient.patch<ApiEnvelope<Horario>>(`${HORARIOS_PATH}/${id}`, input)
+    return res.data
   },
-
-  async reagendar(id: string, fecha: string, hora: string): Promise<Reunion> {
-    return apiClient.patch<Reunion>(`${BASE_PATH}/${id}/reagendar`, { fecha, hora })
-  },
-
-  async cancelar(id: string): Promise<Reunion> {
-    return apiClient.patch<Reunion>(`${BASE_PATH}/${id}/cancelar`, {})
-  },
-
-  /** Trae la agenda semanal (grilla día x hora) que se muestra en /reuniones/agenda. */
-  async obtenerAgendaSemanal(semana?: string): Promise<AgendaSemanal> {
-    return apiClient.get<AgendaSemanal>(`${BASE_PATH}/agenda`, {
-      params: semana ? { semana } : undefined,
-    })
+  async eliminar(id: string): Promise<void> {
+    await apiClient.delete<ApiEnvelope<null>>(`${HORARIOS_PATH}/${id}`)
   },
 }
