@@ -287,6 +287,36 @@ export default function DashboardPage() {
               Gestiona las plantillas de correo y comunicación del sistema.
             </p>
           </Link>
+
+          <Link
+            href="/email"
+            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 block cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-[#F4E8C1] flex items-center justify-center mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#003D2D"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="5" width="18" height="14" rx="2" ry="2" />
+                <path d="m3 7 9 6 9-6" />
+              </svg>
+            </div>
+
+            <h3 className="font-semibold text-gray-900">
+              Módulo Email
+            </h3>
+
+            <p className="text-sm text-gray-500 mt-1">
+              Envía correos a influencers mediante plantillas predefinidas.
+            </p>
+          </Link>
         </div>
 
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
