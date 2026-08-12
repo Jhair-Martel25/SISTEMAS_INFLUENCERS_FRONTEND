@@ -10,8 +10,11 @@
  * en el cliente porque aún no están confirmados como parámetros del backend.
  * Si la API falla, cae a datos mock para no dejar la pantalla en blanco.
  */
+
+
+import { Plus, Eye, Pencil, Search, X, ArrowLeft } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { Plus, Eye, Pencil, Search, X } from 'lucide-react'
+
 import Link from 'next/link'
 import type { Influencer, EstadoInfluencer, RedSocial } from '@/types/influencer'
 import { listarInfluencers, actualizarEstadoInfluencer, } from "@/services/influencers";
@@ -212,7 +215,14 @@ export default function GestionInfluencersPage() {
   return (
     <main className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-md p-8">
-        <div className="mb-8">
+       <div className="mb-8">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#003D2D] transition-colors duration-150 mb-4"
+          >
+            <ArrowLeft size={16} />
+            Volver al Dashboard
+          </Link>
           <h1 className="text-3xl font-bold">Gestión de Influencers</h1>
           <p className="text-gray-600 mt-2">
             Administra, consulta y valida los influencers registrados en el sistema.

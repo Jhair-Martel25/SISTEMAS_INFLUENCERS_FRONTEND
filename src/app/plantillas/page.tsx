@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { plantillasService } from "@/services/plantillasService";
 import type { Plantilla, CrearPlantillaInput, } from "@/types/plantilla";
 import PlantillaForm from "@/components/plantillas/PlantillaForm";
@@ -88,7 +90,14 @@ export default function GestionPlantillas() {
 
   return (
     <main className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-md p-8">
+     <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-md p-8">
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#003D2D] transition-colors duration-150 mb-4"
+        >
+          <ArrowLeft size={16} />
+          Volver al Dashboard
+        </Link>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[#003D2D]">

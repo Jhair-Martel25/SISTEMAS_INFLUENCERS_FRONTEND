@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface FormData {
   nombre: string;
@@ -37,6 +38,7 @@ const initialFormData: FormData = {
 };
 
 export default function RegistroInfluencerPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -200,6 +202,7 @@ export default function RegistroInfluencerPage() {
     setFormData(initialFormData);
     setErrors({});
     setSubmitStatus("idle");
+    router.push("/influencers/gestion");
   };
 
   return (

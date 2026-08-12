@@ -1,5 +1,9 @@
 "use client";
 
+
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+
 import { useEffect, useState } from "react";
 import { usuariosService } from "@/services/usuariosService";
 import UsuarioForm from "@/components/usuarios/UsuarioForm";
@@ -161,9 +165,17 @@ export default function GestionUsuarios() {
         {/* Encabezado */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
+             <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#003D2D] transition-colors duration-150 mb-4"
+               >
+                <ArrowLeft size={16} />
+                 Volver al Dashboard
+                 </Link>
             <h1 className="text-2xl font-bold text-[#003D2D]">
               Gestión de Usuarios
             </h1>
+            
 
             <p className="text-gray-600 mt-2">
               Administra los usuarios registrados en el sistema.

@@ -1,10 +1,22 @@
-import { Plus, CalendarPlus } from "lucide-react";
+"use client";
+
+import { Plus, CalendarPlus, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function GestionVoluntariosPage() {
+    const router = useRouter();
     return (
         <main className="min-h-screen bg-gray-100 p-8">
             <div className="max-w-7xl mx-auto">
-                {/* Encabezado */}
+               {/* Encabezado */}
+                <Link
+                    href="/dashboard"
+                    className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#003D2D] transition-colors duration-150 mb-4"
+                >
+                    <ArrowLeft size={16} />
+                    Volver al Dashboard
+                </Link>
                 <div className="flex justify-between items-center mb-8">
                     <div>
                         <h1 className="text-3xl font-bold text-[#003D2D]">
@@ -15,11 +27,17 @@ export default function GestionVoluntariosPage() {
                         </p>
                     </div>
                     <div className="flex gap-3">
-                         <button className="bg-[#003D2D] text-white px-5 py-3 rounded-xl hover:bg-[#0B5E47] transition-colors duration-200 flex items-center gap-2">
+                         <button
+                            onClick={() => router.push("/voluntarios/registro")}
+                            className="bg-[#003D2D] text-white px-5 py-3 rounded-xl hover:bg-[#0B5E47] transition-colors duration-200 flex items-center gap-2"
+                         >
                             <Plus size={18} />
                             Nuevo voluntario
                         </button>
-                        <button className="bg-white text-[#003D2D] border border-[#003D2D] px-5 py-3 rounded-xl hover:bg-gray-50 transition-colors duration-200 flex items-center gap-2">
+                        <button
+                            onClick={() => router.push("/reuniones/agenda")}
+                            className="bg-white text-[#003D2D] border border-[#003D2D] px-5 py-3 rounded-xl hover:bg-gray-50 transition-colors duration-200 flex items-center gap-2"
+                        >
                             <CalendarPlus size={18} />
                             Agendar voluntario
                         </button>

@@ -1,9 +1,10 @@
 "use client";
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { useRouter } from "next/navigation";import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
 
 export default function RegistroVoluntarioPage() {
+    const router = useRouter();
     const [nombre, setNombre] = useState("");
     const [correo, setCorreo] = useState("");
     const [foto, setFoto] = useState<File | null>(null);
@@ -51,7 +52,7 @@ export default function RegistroVoluntarioPage() {
                         </h1>
                     </div>
                     <div className="flex gap-4">
-                        <Button variant="ghost">
+                       <Button variant="ghost" onClick={() => router.push("/dashboard")}>
                             Cancelar
                         </Button>
 

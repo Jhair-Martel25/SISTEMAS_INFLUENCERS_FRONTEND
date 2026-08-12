@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { consultaIAService } from "@/services/consultaIAService";
 import { plantillasService } from "@/services/plantillasService";
 import type { ConsultaIAInput, ConsultaIAResultado, InfluencerSugerido } from "@/types/consultaIA";
@@ -87,7 +89,14 @@ export default function MotorIAPage() {
     <main className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-md p-8">
 
-        <div className="mb-8">
+      <div className="mb-8">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#003D2D] transition-colors duration-150 mb-4"
+          >
+            <ArrowLeft size={16} />
+            Volver al Dashboard
+          </Link>
           <h1 className="text-3xl font-bold text-[#003D2D]">Motor IA de Captación</h1>
           <p className="text-gray-600 mt-2">
             Genera estrategias de impacto social mediante análisis inteligente de audiencias.
