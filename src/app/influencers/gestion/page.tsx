@@ -1,89 +1,63 @@
 ﻿'use client'
 
-/**
- * Vista: Gestión de Influencers
- * ------------------------------
- * Muestra la lista de influencers registrados con búsqueda, filtros
- * (estado, temática, seguidores), paginación y estados de carga/error.
- * El filtro de Estado y la paginación ya consumen el GET real del backend
- * (vía services/influencers.ts); Temática y Seguidores filtran temporalmente
- * en el cliente porque aún no están confirmados como parámetros del backend.
- * Si la API falla, cae a datos mock para no dejar la pantalla en blanco.
- */
-
-
 import { Plus, Eye, Pencil, Search, X, ArrowLeft } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 import Link from 'next/link'
-import type { Influencer, EstadoInfluencer, RedSocial } from '@/types/influencer'
-import { listarInfluencers, actualizarEstadoInfluencer, } from "@/services/influencers";
-// Datos simulados (mock) mientras se conecta el listado real del backend.
-// Más adelante esto se reemplaza por influencersService.listar() en un useEffect
+import type { EstadoValidacion } from '@/types/api'
+import type { Influencer } from '@/types/influencer'
+import { ESTADO_VALIDACION } from '@/types/api'
+import { etiquetaEstado } from '@/lib/utils/format'
+import { influencersService } from '@/features/influencers/services/influencers.service'
+
 const MOCK_INFLUENCERS: Influencer[] = [
   {
     id: '1',
-    nombreCompleto: 'Andrea Paz',
-    usuarioIG: '@andreapaz',
-    redSocial: 'Instagram',
-    scoreIA: 92,
-    correo: 'andrea@example.com',
-    pais: 'Perú',
-    ciudad: 'Lima',
-    seguidores: '150k',
-    engagement: '4.5%',
-    tematica: 'Ambiental',
-    linkPerfil: 'https://instagram.com/andreapaz',
-    estado: 'Validado',
+    nombre: 'Andrea Paz',
+    usuarioIg: 'andreapaz',
+    linkIg: 'https://instagram.com/andreapaz',
+    email: 'andrea@example.com',
+    seguidores: '150000',
+    cantidad_post: '120',
+    estadoValidacion: 'VALIDADO',
+    estadoContacto: 'SIN_CONTACTAR',
   },
   {
     id: '2',
-    nombreCompleto: 'Carlos Rivera',
-    usuarioIG: '@carlosrivera',
-    redSocial: 'TikTok',
-    scoreIA: 85,
-    correo: 'carlos@example.com',
-    pais: 'Perú',
-    ciudad: 'Arequipa',
-    seguidores: '90k',
-    engagement: '3.8%',
-    tematica: 'Social',
-    linkPerfil: 'https://tiktok.com/@carlosrivera',
-    estado: 'Pendiente',
+    nombre: 'Carlos Rivera',
+    usuarioIg: 'carlosrivera',
+    linkIg: 'https://instagram.com/carlosrivera',
+    email: 'carlos@example.com',
+    seguidores: '90000',
+    cantidad_post: '80',
+    estadoValidacion: 'PENDIENTE',
+    estadoContacto: 'SIN_CONTACTAR',
   },
   {
     id: '3',
-    nombreCompleto: 'María Fernández',
-    usuarioIG: '@mariafernandez',
-    redSocial: 'Instagram',
-    scoreIA: 91,
-    correo: 'maria@example.com',
-    pais: 'Perú',
-    ciudad: 'Lima',
-    seguidores: '150k',
-    engagement: '5.2%',
-    tematica: 'Moda',
-    linkPerfil: 'https://instagram.com/mariafernandez',
-    estado: 'Validado',
+    nombre: 'María Fernández',
+    usuarioIg: 'mariafernandez',
+    linkIg: 'https://instagram.com/mariafernandez',
+    email: 'maria@example.com',
+    seguidores: '150000',
+    cantidad_post: '150',
+    estadoValidacion: 'VALIDADO',
+    estadoContacto: 'SIN_CONTACTAR',
   },
   {
     id: '4',
-    nombreCompleto: 'Diego Salazar',
-    usuarioIG: '@diegosalazar',
-    redSocial: 'YouTube',
-    scoreIA: 78,
-    correo: 'diego@example.com',
-    pais: 'Perú',
-    ciudad: 'Trujillo',
-    seguidores: '210k',
-    engagement: '4.5%',
-    tematica: 'Tecnología',
-    linkPerfil: 'https://youtube.com/@diegosalazar',
-    estado: 'Rechazado',
+    nombre: 'Diego Salazar',
+    usuarioIg: 'diegosalazar',
+    linkIg: 'https://instagram.com/diegosalazar',
+    email: 'diego@example.com',
+    seguidores: '210000',
+    cantidad_post: '200',
+    estadoValidacion: 'RECHAZADO',
+    estadoContacto: 'SIN_CONTACTAR',
   },
 ]
 
-const PAGE_SIZE = 5
+const LIMITE = 5
 
 function iniciales(nombre: string) {
   return nombre
@@ -94,9 +68,9 @@ function iniciales(nombre: string) {
     .toUpperCase()
 }
 
-function estiloEstado(estado: EstadoInfluencer) {
-  if (estado === 'Validado') return 'bg-green-100 text-green-700'
-  if (estado === 'Pendiente') return 'bg-yellow-100 text-yellow-700'
+function estiloEstado(estado: EstadoValidacion) {
+  if (estado === 'VALIDADO') return 'bg-green-100 text-green-700'
+  if (estado === 'PENDIENTE') return 'bg-yellow-100 text-yellow-700'
   return 'bg-red-100 text-red-700'
 }
 
@@ -104,34 +78,30 @@ export default function GestionInfluencersPage() {
   const [influencers, setInfluencers] = useState<Influencer[]>([]);
   const [totalResultados, setTotalResultados] = useState(0);
   const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
 
   const [busqueda, setBusqueda] = useState("");
-  const [estadoFiltro, setEstadoFiltro] = useState<EstadoInfluencer | "">("");
-  const [tematicaFiltro, setTematicaFiltro] = useState("");
+  const [estadoFiltro, setEstadoFiltro] = useState<EstadoValidacion | "">("");
   const [seguidoresFiltro, setSeguidoresFiltro] = useState("");
   const [pagina, setPagina] = useState(1);
-  const LIMITE = 5;
 
   const [viendoInfluencer, setViendoInfluencer] = useState<Influencer | null>(null)
   const [editandoInfluencer, setEditandoInfluencer] = useState<Influencer | null>(null)
 
   async function cambiarEstado(
     id: string,
-    nuevoEstado: EstadoInfluencer
+    nuevoEstado: EstadoValidacion
   ) {
     try {
-      await actualizarEstadoInfluencer(id, nuevoEstado);
+      await influencersService.editar(id, { estadoValidacion: nuevoEstado });
 
       setInfluencers((prev) =>
         prev.map((inf) =>
           inf.id === id
-            ? { ...inf, estado: nuevoEstado }
+            ? { ...inf, estadoValidacion: nuevoEstado }
             : inf
         )
       );
-
-      console.log("Estado actualizado correctamente.");
     } catch (error) {
       console.error(error);
       alert("No se pudo actualizar el estado del influencer.");
@@ -152,23 +122,18 @@ export default function GestionInfluencersPage() {
       setCargando(true);
       setError(null);
       try {
-        const respuesta = await listarInfluencers({
-          busqueda,
-          estado: estadoFiltro,
+        const respuesta = await influencersService.listar({
+          estadoValidacion: estadoFiltro || undefined,
           page: pagina,
           limit: LIMITE,
         })
 
         if (!cancelado) {
-          console.log("Primer influencer:", respuesta.data.data[0])
-
-          setInfluencers(respuesta.data.data)
-          setTotalResultados(respuesta.data.meta.total)
+          setInfluencers(respuesta.data)
+          setTotalResultados(respuesta.meta.total)
         }
       } catch (err) {
         if (!cancelado) {
-          // Fallback temporal: si el backend aún no responde, usa el mock
-          // para no dejar la pantalla en blanco durante el desarrollo.
           console.warn("Fallo la conexión real, usando datos mock:", err);
           setInfluencers(MOCK_INFLUENCERS);
           setTotalResultados(MOCK_INFLUENCERS.length);
@@ -181,7 +146,6 @@ export default function GestionInfluencersPage() {
       }
     }
 
-    // Debounce de 400ms para no disparar un fetch en cada tecla de búsqueda
     const timeoutId = setTimeout(cargar, 400);
     return () => {
       cancelado = true;
@@ -191,26 +155,21 @@ export default function GestionInfluencersPage() {
 
   const totalPaginas = Math.max(1, Math.ceil(totalResultados / LIMITE));
 
-  // Filtro temporal en el cliente para Temática y Seguidores, mientras se confirma
-  // si el backend los soporta como query params (no aparecían en el Swagger de GET /influencers).
+  // Filtro de seguidores en el cliente (rango sobre el string de seguidores).
   const influencersMostrados = influencers.filter((inf) => {
-    const coincideTematica = !tematicaFiltro || inf.tematica === tematicaFiltro;
-
-    const seguidoresNum = parseInt(inf.seguidores.replace(/[^0-9]/g, ""), 10);
+    const seguidoresNum = parseInt((inf.seguidores ?? '0').replace(/[^0-9]/g, ""), 10);
     let coincideSeguidores = true;
-    if (seguidoresFiltro === "0 - 10k") coincideSeguidores = seguidoresNum <= 10;
+    if (seguidoresFiltro === "0 - 10k") coincideSeguidores = seguidoresNum <= 10000;
     if (seguidoresFiltro === "10k - 100k")
-      coincideSeguidores = seguidoresNum > 10 && seguidoresNum <= 100;
-    if (seguidoresFiltro === "100k+") coincideSeguidores = seguidoresNum > 100;
+      coincideSeguidores = seguidoresNum > 10000 && seguidoresNum <= 100000;
+    if (seguidoresFiltro === "100k+") coincideSeguidores = seguidoresNum > 100000;
 
-    return coincideTematica && coincideSeguidores;
+    return coincideSeguidores;
   });
 
   const totalInfluencers = influencers.length
-  const totalPendientes = influencers.filter((i) => i.estado === 'Pendiente').length
-  const totalValidados = influencers.filter((i) => i.estado === 'Validado').length
-  const scorePromedio =
-    influencers.reduce((acumulado, i) => acumulado + i.scoreIA, 0) / totalInfluencers
+  const totalPendientes = influencers.filter((i) => i.estadoValidacion === 'PENDIENTE').length
+  const totalValidados = influencers.filter((i) => i.estadoValidacion === 'VALIDADO').length
 
   return (
     <main className="min-h-screen bg-gray-100 p-8">
@@ -255,7 +214,7 @@ export default function GestionInfluencersPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-5">
             <p className="text-sm text-gray-500">Total Influencers</p>
             <p className="text-2xl font-bold text-[#003D2D] mt-1">{totalInfluencers}</p>
@@ -268,40 +227,23 @@ export default function GestionInfluencersPage() {
             <p className="text-sm text-gray-500">Validados</p>
             <p className="text-2xl font-bold text-[#003D2D] mt-1">{totalValidados}</p>
           </div>
-          <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-5">
-            <p className="text-sm text-gray-500">Score IA promedio</p>
-            <p className="text-2xl font-bold text-[#003D2D] mt-1">
-              {scorePromedio.toFixed(1)}
-            </p>
-          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <select
             className="border rounded-lg p-3"
             value={estadoFiltro}
             onChange={(e) => {
-              setEstadoFiltro(e.target.value as EstadoInfluencer | "")
+              setEstadoFiltro(e.target.value as EstadoValidacion | "")
               setPagina(1)
             }}
           >
             <option value="">Estado</option>
-            <option value="Pendiente">Pendiente</option>
-            <option value="Validado">Validado</option>
-            <option value="Rechazado">Rechazado</option>
-          </select>
-
-          <select
-            className="border rounded-lg p-3"
-            value={tematicaFiltro}
-            onChange={(e) => setTematicaFiltro(e.target.value)}
-          >
-            <option value="">Temática</option>
-            <option value="Ambiental">Ambiental</option>
-            <option value="Social">Social</option>
-            <option value="Educación">Educación</option>
-            <option value="Moda">Moda</option>
-            <option value="Tecnología">Tecnología</option>
+            {Object.values(ESTADO_VALIDACION).map((estado) => (
+              <option key={estado} value={estado}>
+                {etiquetaEstado(estado, 'validacion')}
+              </option>
+            ))}
           </select>
 
           <select
@@ -314,8 +256,6 @@ export default function GestionInfluencersPage() {
             <option value="10k - 100k">10k - 100k</option>
             <option value="100k+">100k+</option>
           </select>
-
-
         </div>
 
         <div className="overflow-x-auto">
@@ -323,11 +263,11 @@ export default function GestionInfluencersPage() {
             <thead>
               <tr className="bg-gray-50">
                 <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Influencer</th>
-                <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Red Social</th>
+                <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Instagram</th>
                 <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Seguidores</th>
-                <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Engagement</th>
-                <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Score IA</th>
-                <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
+                <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Publicaciones</th>
+                <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Validación</th>
+                <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Contacto</th>
                 <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
@@ -348,37 +288,31 @@ export default function GestionInfluencersPage() {
                   <td className="p-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-[#003D2D] text-white flex items-center justify-center text-xs font-semibold shrink-0">
-                        {iniciales(inf.nombreCompleto)}
+                        {iniciales(inf.nombre)}
                       </div>
-                      <span className="text-gray-900">{inf.nombreCompleto}</span>
+                      <span className="text-gray-900">{inf.nombre}</span>
                     </div>
                   </td>
-                  <td className="p-3 text-gray-700">{inf.redSocial}</td>
-                  <td className="p-3 text-gray-700">{inf.seguidores}</td>
-                  <td className="p-3 text-gray-700">{inf.engagement}</td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-[#20D18F] h-2 rounded-full"
-                          style={{ width: `${inf.scoreIA}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm text-gray-600">{inf.scoreIA}</span>
-                    </div>
-                  </td>
+                  <td className="p-3 text-gray-700">@{inf.usuarioIg}</td>
+                  <td className="p-3 text-gray-700">{inf.seguidores ?? '—'}</td>
+                  <td className="p-3 text-gray-700">{inf.cantidad_post ?? '—'}</td>
                   <td className="p-3">
                     <select
-                      value={inf.estado}
+                      value={inf.estadoValidacion}
                       onChange={(e) =>
-                        cambiarEstado(inf.id, e.target.value as EstadoInfluencer)
+                        cambiarEstado(inf.id, e.target.value as EstadoValidacion)
                       }
-                      className={`border-0 cursor-pointer rounded-full px-3 py-1 text-sm font-medium ${estiloEstado(inf.estado)}`}
+                      className={`border-0 cursor-pointer rounded-full px-3 py-1 text-sm font-medium ${estiloEstado(inf.estadoValidacion)}`}
                     >
-                      <option value="Pendiente">🟡 Pendiente</option>
-                      <option value="Validado">🟢 Validado</option>
-                      <option value="Rechazado">🔴 Rechazado</option>
+                      {Object.values(ESTADO_VALIDACION).map((estado) => (
+                        <option key={estado} value={estado}>
+                          {etiquetaEstado(estado, 'validacion')}
+                        </option>
+                      ))}
                     </select>
+                  </td>
+                  <td className="p-3 text-gray-700">
+                    {etiquetaEstado(inf.estadoContacto, 'contacto')}
                   </td>
                   <td className="p-3">
                     <div className="flex items-center gap-3 text-gray-500">
@@ -449,70 +383,48 @@ export default function GestionInfluencersPage() {
 
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 rounded-full bg-[#003D2D] text-white flex items-center justify-center text-sm font-semibold">
-                {iniciales(viendoInfluencer.nombreCompleto)}
+                {iniciales(viendoInfluencer.nombre)}
               </div>
               <div>
-                <h2 className="text-xl font-bold">{viendoInfluencer.nombreCompleto}</h2>
-                <p className="text-sm text-gray-500">{viendoInfluencer.usuarioIG}</p>
+                <h2 className="text-xl font-bold">{viendoInfluencer.nombre}</h2>
+                <p className="text-sm text-gray-500">@{viendoInfluencer.usuarioIg}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-500">Correo</p>
-                <p className="font-medium">{viendoInfluencer.correo}</p>
+                <p className="font-medium">{viendoInfluencer.email || '—'}</p>
               </div>
               <div>
                 <p className="text-gray-500">Teléfono</p>
-                <p className="font-medium">{viendoInfluencer.telefono || '—'}</p>
-              </div>
-              <div>
-                <p className="text-gray-500">País / Ciudad</p>
-                <p className="font-medium">
-                  {viendoInfluencer.pais} / {viendoInfluencer.ciudad}
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-500">Red social</p>
-                <p className="font-medium">{viendoInfluencer.redSocial}</p>
+                <p className="font-medium">{viendoInfluencer.phone || '—'}</p>
               </div>
               <div>
                 <p className="text-gray-500">Seguidores</p>
-                <p className="font-medium">{viendoInfluencer.seguidores}</p>
+                <p className="font-medium">{viendoInfluencer.seguidores || '—'}</p>
               </div>
               <div>
-                <p className="text-gray-500">Engagement</p>
-                <p className="font-medium">{viendoInfluencer.engagement}</p>
-              </div>
-              <div>
-                <p className="text-gray-500">Temática</p>
-                <p className="font-medium">{viendoInfluencer.tematica}</p>
-              </div>
-              <div>
-                <p className="text-gray-500">Score IA</p>
-                <p className="font-medium">{viendoInfluencer.scoreIA}</p>
+                <p className="text-gray-500">Publicaciones</p>
+                <p className="font-medium">{viendoInfluencer.cantidad_post || '—'}</p>
               </div>
               <div className="col-span-2">
-
                 <p className="text-gray-500">Link de perfil</p>
                 <a
-
-                  href={viendoInfluencer.linkPerfil}
-
+                  href={viendoInfluencer.linkIg}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-medium text-[#003D2D] underline break-all"
                 >
-
-                  {viendoInfluencer.linkPerfil}
+                  {viendoInfluencer.linkIg}
                 </a>
               </div>
               <div className="col-span-2">
-                <p className="text-gray-500">Estado</p>
+                <p className="text-gray-500">Estado de validación</p>
                 <span
-                  className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-medium ${estiloEstado(viendoInfluencer.estado)}`}
+                  className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-medium ${estiloEstado(viendoInfluencer.estadoValidacion)}`}
                 >
-                  {viendoInfluencer.estado}
+                  {etiquetaEstado(viendoInfluencer.estadoValidacion, 'validacion')}
                 </span>
               </div>
             </div>
@@ -566,11 +478,11 @@ function ModalEditarInfluencer({
           className="space-y-4"
         >
           <div>
-            <label className="text-sm text-gray-600">Nombre completo</label>
+            <label className="text-sm text-gray-600">Nombre</label>
             <input
               type="text"
-              value={form.nombreCompleto}
-              onChange={(e) => actualizarCampo('nombreCompleto', e.target.value)}
+              value={form.nombre}
+              onChange={(e) => actualizarCampo('nombre', e.target.value)}
               className="border rounded-lg p-2.5 w-full mt-1"
               required
             />
@@ -581,54 +493,18 @@ function ModalEditarInfluencer({
               <label className="text-sm text-gray-600">Usuario IG</label>
               <input
                 type="text"
-                value={form.usuarioIG}
-                onChange={(e) => actualizarCampo('usuarioIG', e.target.value)}
+                value={form.usuarioIg}
+                onChange={(e) => actualizarCampo('usuarioIg', e.target.value)}
                 className="border rounded-lg p-2.5 w-full mt-1"
                 required
               />
             </div>
             <div>
-              <label className="text-sm text-gray-600">Red social</label>
-              <select
-                value={form.redSocial}
-                onChange={(e) => actualizarCampo('redSocial', e.target.value as RedSocial)}
-                className="border rounded-lg p-2.5 w-full mt-1"
-              >
-                <option value="Instagram">Instagram</option>
-                <option value="TikTok">TikTok</option>
-                <option value="YouTube">YouTube</option>
-                <option value="Facebook">Facebook</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm text-gray-600">Correo</label>
-            <input
-              type="email"
-              value={form.correo}
-              onChange={(e) => actualizarCampo('correo', e.target.value)}
-              className="border rounded-lg p-2.5 w-full mt-1"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-gray-600">País</label>
+              <label className="text-sm text-gray-600">Email</label>
               <input
-                type="text"
-                value={form.pais}
-                onChange={(e) => actualizarCampo('pais', e.target.value)}
-                className="border rounded-lg p-2.5 w-full mt-1"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-gray-600">Ciudad</label>
-              <input
-                type="text"
-                value={form.ciudad}
-                onChange={(e) => actualizarCampo('ciudad', e.target.value)}
+                type="email"
+                value={form.email ?? ''}
+                onChange={(e) => actualizarCampo('email', e.target.value)}
                 className="border rounded-lg p-2.5 w-full mt-1"
               />
             </div>
@@ -639,40 +515,47 @@ function ModalEditarInfluencer({
               <label className="text-sm text-gray-600">Seguidores</label>
               <input
                 type="text"
-                value={form.seguidores}
+                value={form.seguidores ?? ''}
                 onChange={(e) => actualizarCampo('seguidores', e.target.value)}
                 className="border rounded-lg p-2.5 w-full mt-1"
               />
             </div>
             <div>
-              <label className="text-sm text-gray-600">Engagement</label>
+              <label className="text-sm text-gray-600">Publicaciones</label>
               <input
                 type="text"
-                value={form.engagement}
-                onChange={(e) => actualizarCampo('engagement', e.target.value)}
+                value={form.cantidad_post ?? ''}
+                onChange={(e) => actualizarCampo('cantidad_post', e.target.value)}
                 className="border rounded-lg p-2.5 w-full mt-1"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="text-sm text-gray-600">Temática</label>
-            <input
-              type="text"
-              value={form.tematica}
-              onChange={(e) => actualizarCampo('tematica', e.target.value)}
-              className="border rounded-lg p-2.5 w-full mt-1"
-            />
           </div>
 
           <div>
             <label className="text-sm text-gray-600">Link de perfil</label>
             <input
               type="url"
-              value={form.linkPerfil}
-              onChange={(e) => actualizarCampo('linkPerfil', e.target.value)}
+              value={form.linkIg}
+              onChange={(e) => actualizarCampo('linkIg', e.target.value)}
               className="border rounded-lg p-2.5 w-full mt-1"
             />
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-600">Estado de validación</label>
+            <select
+              value={form.estadoValidacion}
+              onChange={(e) =>
+                actualizarCampo('estadoValidacion', e.target.value as EstadoValidacion)
+              }
+              className="border rounded-lg p-2.5 w-full mt-1"
+            >
+              {Object.values(ESTADO_VALIDACION).map((estado) => (
+                <option key={estado} value={estado}>
+                  {etiquetaEstado(estado, 'validacion')}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

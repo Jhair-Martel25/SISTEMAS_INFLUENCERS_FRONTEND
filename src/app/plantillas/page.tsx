@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { plantillasService } from "@/services/plantillasService";
+import { plantillasService } from "@/features/plantillas/services/plantillas.service";
 import type { Plantilla, CrearPlantillaInput, } from "@/types/plantilla";
 import PlantillaForm from "@/components/plantillas/PlantillaForm";
 
@@ -85,6 +85,7 @@ export default function GestionPlantillas() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Patrón legacy de carga; se migrará a TanStack Query en Fase 2.
     void cargarPlantillas();
   }, []);
 
@@ -170,7 +171,7 @@ export default function GestionPlantillas() {
                   <tr key={plantilla.id} className="border-b hover:bg-gray-50">
                     <td className="px-4 py-3">{plantilla.nombre}</td>
                     <td className="px-4 py-3">{plantilla.asunto || "-"}</td>
-                    <td className="px-4 py-3 max-w-sm truncate">{plantilla.contenido}</td>
+                    <td className="px-4 py-3 max-w-sm truncate">{plantilla.cuerpo}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-center gap-2">
                         <button

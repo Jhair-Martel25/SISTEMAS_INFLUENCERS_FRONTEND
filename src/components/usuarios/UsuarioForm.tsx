@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type {
   Usuario,
   CrearUsuarioInput,
@@ -20,9 +20,9 @@ export default function UsuarioForm({
   onGuardar,
   onCancelar,
 }: Props) {
-  const [email, setEmail] = useState("");
-  const [nombre, setNombre] = useState("");
-  const [roleId, setRoleId] = useState(2);
+  const [email, setEmail] = useState(usuario?.email ?? "");
+  const [nombre, setNombre] = useState(usuario?.nombre ?? "");
+  const [roleId, setRoleId] = useState(usuario?.roleId ?? 2);
   const [guardando, setGuardando] = useState(false);
 
   const [errores, setErrores] = useState({
@@ -30,24 +30,6 @@ export default function UsuarioForm({
     nombre: "",
     roleId: "",
   });
-
-  useEffect(() => {
-    if (usuario) {
-      setEmail(usuario.email);
-      setNombre(usuario.nombre);
-      setRoleId(usuario.roleId);
-    } else {
-      setEmail("");
-      setNombre("");
-      setRoleId(2);
-    }
-
-    setErrores({
-      email: "",
-      nombre: "",
-      roleId: "",
-    });
-  }, [usuario]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

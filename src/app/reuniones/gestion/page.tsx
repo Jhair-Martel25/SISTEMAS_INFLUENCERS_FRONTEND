@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Calendar, Video, Eye } from 'lucide-react'
-import type { Reunion, EstadoReunion } from '@/types/reunion'
-import { etiquetaEstadoReunion } from '@/types/reunion'
-import { reunionesService } from '@/services/horariosService'
+import type { EstadoReunion } from '@/types/api'
+import type { Reunion } from '@/types/reunion'
+import { etiquetaEstado } from '@/lib/utils/format'
+import { reunionesService } from '@/features/reuniones/services/reuniones.service'
 
 const MOCK_REUNIONES: Reunion[] = [
   {
@@ -174,7 +175,7 @@ export default function GestionReunionesPage() {
                       )}
                     </td>
                     <td className="text-center p-3">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${estiloEstado(r.estado)}`}>{etiquetaEstadoReunion(r.estado)}</span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${estiloEstado(r.estado)}`}>{etiquetaEstado(r.estado, 'reunion')}</span>
                     </td>
                     <td className="text-center p-3">
                       <Link href={`/reuniones/gestionar/${r.id}`} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#003D2D] text-white text-sm hover:bg-[#01281E] transition-colors">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Plantilla, CrearPlantillaInput } from "@/types/plantilla"
 
 interface Props {
@@ -14,40 +14,28 @@ export default function PlantillaForm({
   onGuardar,
   onCancelar,
 }: Props) {
-  const [nombre, setNombre] = useState("");
-  const [asunto, setAsunto] = useState("");
-  const [contenido, setContenido] = useState("");
+  const [nombre, setNombre] = useState(plantilla?.nombre ?? "");
+  const [asunto, setAsunto] = useState(plantilla?.asunto ?? "");
+  const [cuerpo, setCuerpo] = useState(plantilla?.cuerpo ?? "");
   const [guardando, setGuardando] = useState(false);
   const [errores, setErrores] = useState({
     nombre: "",
     asunto: "",
-    contenido: "",
+    cuerpo: "",
   });
-
-  useEffect(() => {
-    if (plantilla) {
-      setNombre(plantilla.nombre);
-      setAsunto(plantilla.asunto || "");
-      setContenido(plantilla.contenido);
-    } else {
-      setNombre("");
-      setAsunto("");
-      setContenido("");
-    }
-  }, [plantilla]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrores({
       nombre: "",
       asunto: "",
-      contenido: "",
+      cuerpo: "",
     });
 
     const nuevosErrores = {
       nombre: "",
       asunto: "",
-      contenido: "",
+      cuerpo: "",
     };
 
     if (!nombre.trim()) {
@@ -56,14 +44,14 @@ export default function PlantillaForm({
     if (!asunto.trim()) {
       nuevosErrores.asunto = "El asunto es obligatorio.";
     }
-    if (!contenido.trim()) {
-      nuevosErrores.contenido = "El contenido es obligatorio.";
+    if (!cuerpo.trim()) {
+      nuevosErrores.cuerpo = "El contenido es obligatorio.";
     }
 
     if (
       nuevosErrores.nombre ||
       nuevosErrores.asunto ||
-      nuevosErrores.contenido
+      nuevosErrores.cuerpo
     ) {
       setErrores(nuevosErrores);
       return;
@@ -71,7 +59,7 @@ export default function PlantillaForm({
 
     setGuardando(true);
     try {
-      await onGuardar({ nombre, asunto, contenido });
+      await onGuardar({ nombre, asunto, cuerpo });
     } finally {
       setGuardando(false);
     }
@@ -125,17 +113,17 @@ export default function PlantillaForm({
         <textarea
           required
           rows={6}
-          value={contenido}
+          value={cuerpo}
           onChange={(e) => {
-            setContenido(e.target.value);
-            if (errores.contenido) {
-              setErrores((prev) => ({ ...prev, contenido: "" }));
+            setCuerpo(e.target.value);
+            if (errores.cuerpo) {
+              setErrores((prev) => ({ ...prev, cuerpo: "" }));
             }
           }}
           className="w-full border rounded-lg p-3"
         />
-        {errores.contenido && (
-          <p className="mt-1 text-sm text-red-600">{errores.contenido}</p>
+        {errores.cuerpo && (
+          <p className="mt-1 text-sm text-red-600">{errores.cuerpo}</p>
         )}
       </div>
 

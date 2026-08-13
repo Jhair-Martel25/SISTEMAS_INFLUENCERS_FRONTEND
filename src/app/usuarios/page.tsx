@@ -4,15 +4,14 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-import { useEffect, useState } from "react";
-import { usuariosService } from "@/services/usuariosService";
+import { useEffect, useState, useCallback } from "react";
+import { usuariosService } from "@/features/usuarios/services/usuarios.service";
 import UsuarioForm from "@/components/usuarios/UsuarioForm";
 import type {
   Usuario,
   CrearUsuarioInput,
   ActualizarUsuarioInput,
   UsuarioFiltros,
-  UsuariosResponse,
 } from "@/types/usuario";
 
 export default function GestionUsuarios() {
@@ -38,7 +37,7 @@ export default function GestionUsuarios() {
 
   const limite = 10;
 
-  async function cargarUsuarios() {
+  const cargarUsuarios = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -56,8 +55,7 @@ export default function GestionUsuarios() {
         filtros.roleId = roleFiltro;
       }
 
-      const respuesta: UsuariosResponse =
-        await usuariosService.listar(filtros);
+      const respuesta = await usuariosService.listar(filtros);
 
       setUsuarios(respuesta.data);
       setTotal(respuesta.meta.total);
@@ -67,11 +65,12 @@ export default function GestionUsuarios() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [pagina, estadoFiltro, roleFiltro]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Patrón legacy de carga; se migrará a TanStack Query en Fase 2.
     void cargarUsuarios();
-  }, [pagina, estadoFiltro, roleFiltro]);
+  }, [cargarUsuarios]);
 
   function mostrarMensajeExito(mensaje: string) {
     setMensajeExito(mensaje);

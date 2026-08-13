@@ -3,9 +3,10 @@
 import { useEffect, useState, use as usePromise } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Video } from 'lucide-react'
-import type { Reunion, EstadoReunion } from '@/types/reunion'
-import { etiquetaEstadoReunion } from '@/types/reunion'
-import { reunionesService } from '@/services/horariosService'
+import type { EstadoReunion } from '@/types/api'
+import type { Reunion } from '@/types/reunion'
+import { etiquetaEstado } from '@/lib/utils/format'
+import { reunionesService } from '@/features/reuniones/services/reuniones.service'
 
 const MOCK_REUNION: Reunion = {
   id: 'mock-id',
@@ -119,7 +120,7 @@ export default function GestionarReunionPage({ params }: { params: Promise<{ id:
               <p className="text-gray-500 mt-2">Consulta el estado de la reunion y actualizalo si corresponde.</p>
             </div>
             <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${reunion.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' : reunion.estado === 'REALIZADA' ? 'bg-green-100 text-green-700' : reunion.estado === 'CANCELADA' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-600'}`}>
-              {etiquetaEstadoReunion(reunion.estado)}
+              {etiquetaEstado(reunion.estado, 'reunion')}
             </span>
           </div>
 

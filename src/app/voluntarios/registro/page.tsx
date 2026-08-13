@@ -3,9 +3,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
-import { horarioVoluntarioService } from "@/services/horarioVoluntarioService";
-import { ApiError } from "@/services/api";
-import type { DiaSemana } from "@/types/horario";
+import { horariosService } from "@/features/horarios/services/horarios.service";
+import { ApiError } from "@/lib/http";
+import type { DiaSemana } from "@/types/api";
 
 const DIAS: { corto: string; valor: DiaSemana }[] = [
     { corto: "Lun", valor: "LUNES" },
@@ -28,7 +28,7 @@ export default function RegistroVoluntarioPage() {
     const router = useRouter();
     const [nombre, setNombre] = useState("");
     const [correo, setCorreo] = useState("");
-    const [foto, setFoto] = useState<File | null>(null);
+    const [, setFoto] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
 
     // Día que se está configurando en este momento
@@ -107,7 +107,7 @@ export default function RegistroVoluntarioPage() {
         try {
             await Promise.all(
                 horariosAcumulados.map((h) =>
-                    horarioVoluntarioService.crear({
+                    horariosService.crear({
                         diaSemana: h.diaSemana,
                         horaInicio: h.horaInicio,
                         horaFin: h.horaFin,
@@ -201,6 +201,7 @@ export default function RegistroVoluntarioPage() {
                             />
                             <label htmlFor="foto" className="cursor-pointer flex flex-col items-center justify-center w-full h-full gap-2">
                                 {preview ? (
+                                    // eslint-disable-next-line @next/next/no-img-element -- Vista previa local; se migrará a next/image en Fase 2.
                                     <img src={preview} alt="Preview" className="w-36 h-36 rounded-full object-cover" />
                                 ) : (
                                     <>

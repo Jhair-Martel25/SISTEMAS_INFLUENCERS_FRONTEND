@@ -1,12 +1,26 @@
 'use client'
 
-import { useContext } from 'react'
-import { AuthContext } from '@/contexts/AuthContext'
+import { useShallow } from 'zustand/react/shallow'
+import { useAuthStore } from '@/store/auth-store'
 
+/**
+ * Hook de autenticación.
+ * Lee el estado del store de Zustand (ya no usa React Context).
+ */
 export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth debe usarse dentro de un AuthProvider')
-  }
-  return context
+  return useAuthStore(
+    useShallow((state) => ({
+      user: state.user,
+      token: state.backendToken,
+      backendToken: state.backendToken,
+      refreshToken: state.refreshToken,
+      isAuthenticated: state.isAuthenticated,
+      isLoading: state.isLoading,
+      isAdmin: state.isAdmin,
+      isVoluntario: state.isVoluntario,
+      login: state.login,
+      logout: state.logout,
+      refreshSession: state.refreshSession,
+    })),
+  )
 }

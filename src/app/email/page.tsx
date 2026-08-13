@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { enviarEmail } from "@/services/emailService";
+import { emailService } from "@/features/email/services/email.service";
 
 export default function EmailPage() {
   const router = useRouter();
@@ -33,7 +33,7 @@ export default function EmailPage() {
     try {
       setEnviando(true);
 
-      const resultado = await enviarEmail({
+      const resultado = await emailService.enviar({
         influencerId,
         plantillaId,
       });

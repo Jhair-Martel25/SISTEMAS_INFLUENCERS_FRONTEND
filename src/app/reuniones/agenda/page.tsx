@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Calendar, Users, Hourglass } from 'lucide-react'
 import type { DisponibilidadCita } from '@/types/disponibilidad'
-import { disponibilidadService } from '@/services/disponibilidadService'
-import { reunionesService } from '@/services/horariosService'
+import { disponibilidadesService } from '@/features/disponibilidades/services/disponibilidades.service'
+import { reunionesService } from '@/features/reuniones/services/reuniones.service'
 
 function formatearBloque(iso: string) {
   const fecha = new Date(iso)
@@ -18,7 +18,16 @@ export default function DisponibilidadAgendaPage() {
   const [bloques, setBloques] = useState<DisponibilidadCita[]>([])
   const [reunionesPendientes, setReunionesPendientes] = useState<number | null>(null)
   const [cargando, setCargando] = useState(true)
-  const [ultimaReunion, setUltimaReunion] = useState<{ fechaHora: string; id: string } | null>(null)
+  const [ultimaReunion] = useState<{ fechaHora: string; id: string } | null>(() => {
+    if (typeof window === 'undefined') return null
+    const guardada = window.localStorage.getItem('sp_ultima_reunion')
+    if (!guardada) return null
+    try {
+      return JSON.parse(guardada) as { fechaHora: string; id: string }
+    } catch {
+      return null
+    }
+  })
 
   useEffect(() => {
     let cancelado = false
@@ -27,7 +36,7 @@ export default function DisponibilidadAgendaPage() {
       setCargando(true)
 
       const [bloquesRes, reunionesRes] = await Promise.allSettled([
-        disponibilidadService.listarDisponibles(),
+        disponibilidadesService.listarDisponibles(),
         reunionesService.listar({ estado: 'PENDIENTE' }),
       ])
 
@@ -51,17 +60,6 @@ export default function DisponibilidadAgendaPage() {
     }
 
     cargar()
-
-    if (typeof window !== 'undefined') {
-      const guardada = window.localStorage.getItem('sp_ultima_reunion')
-      if (guardada) {
-        try {
-          setUltimaReunion(JSON.parse(guardada))
-        } catch {
-          // ignorar JSON corrupto
-        }
-      }
-    }
 
     return () => {
       cancelado = true

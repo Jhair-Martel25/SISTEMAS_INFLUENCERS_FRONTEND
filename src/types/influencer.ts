@@ -1,69 +1,86 @@
+import type { EstadoContacto, EstadoValidacion } from './api'
 
 /**
- * Tipos: Influencer
- * ------------------
- * Define la forma de un influencer y sus valores posibles (estado, red
- * social), para que toda la app (formulario, tabla, servicio) use la
- * misma estructura de datos sin repetirla en cada archivo.
+ * Influencers
+ * -----------
+ * Entidad tal como la devuelve el backend (GET /influencers, POST, etc.).
+ * Ver CONTEXTO_FRONTEND.md §3.5.
+ *
+ * Nota: `seguidores` y `cantidad_post` son STRING (no número) por decisión
+ * del backend. No convertirlos a number al tipar.
  */
-export type EstadoInfluencer = 'Pendiente' | 'Validado' | 'Rechazado'
-export type RedSocial = 'Instagram' | 'TikTok' | 'YouTube' | 'Facebook'
 
+export interface InfluencerResumenUsuario {
+  id: string
+  nombre: string
+}
+
+export interface InfluencerConsultaIaResumen {
+  id: string
+  voluntarioId: string
+}
+
+/** Influencer completo (respuesta del backend). */
 export interface Influencer {
   id: string
-  nombreCompleto: string
-  usuarioIG: string
-  redSocial: RedSocial
-  scoreIA: number
-  correo: string
-  telefono?: string
-  pais: string
-  ciudad: string
-  seguidores: string
-  engagement: string
-  tematica: string
-  linkPerfil: string
-  estado: EstadoInfluencer
-  voluntarioEncargadoId?: string
+  nombre: string
+  usuarioIg: string
+  linkIg: string
+  email?: string | null
+  phone?: string | null
+  seguidores?: string | null
+  cantidad_post?: string | null
+  biografia?: string | null
+  mensajePersonalizado?: string | null
+  estadoValidacion: EstadoValidacion
+  estadoContacto: EstadoContacto
   createdAt?: string
   updatedAt?: string
+  /** Origen: consulta IA que lo generó (incluye voluntario). */
+  consultaIa?: InfluencerConsultaIaResumen | null
+  /** Quién lo validó/actualizó por última vez. */
+  validadoPor?: InfluencerResumenUsuario | null
 }
 
+/** Body de POST /influencers (creación manual, sin Apify). */
 export interface CrearInfluencerInput {
-  nombreCompleto: string
-  usuarioIG: string
-  correo: string
-  telefono?: string
-  pais: string
-  ciudad: string
-  seguidores: string
-  engagement: string
-  tematica: string
-  linkPerfil: string
-  estado: EstadoInfluencer
-  voluntarioEncargadoId?: string
+  nombre: string
+  usuarioIg: string
+  linkIg: string
+  email?: string
+  phone?: string
+  seguidores?: string
+  cantidad_post?: string
+  biografia?: string
+  mensajePersonalizado?: string
+  estadoValidacion?: EstadoValidacion
 }
 
-export type ActualizarInfluencerInput = Partial<CrearInfluencerInput>
+/** Body de PATCH /influencers/:id/editar (cuerpo parcial). */
+export interface ActualizarInfluencerInput {
+  nombre?: string
+  usuarioIg?: string
+  linkIg?: string
+  email?: string
+  phone?: string
+  seguidores?: string
+  cantidad_post?: string
+  biografia?: string
+  mensajePersonalizado?: string
+  estadoValidacion?: EstadoValidacion
+  estadoContacto?: EstadoContacto
+}
 
+/** Body de PATCH /influencers/:id/contactar (solo ADMIN). */
+export interface ContactarInfluencerInput {
+  estadoContacto: EstadoContacto
+}
+
+/** Query params de GET /influencers. */
 export interface InfluencerFiltros {
-  busqueda?: string
-  estado?: EstadoInfluencer
+  estadoValidacion?: EstadoValidacion
+  estadoContacto?: EstadoContacto
   tematica?: string
   page?: number
-  pageSize?: number
+  limit?: number
 }
-
-export interface InfluencersResponse {
-  mensaje: string
-  data: {
-    data: Influencer[]
-    meta: {
-      total: number
-      page: number
-      limit: number
-      totalPages: number
-    }
-  }
-}
-

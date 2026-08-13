@@ -1,10 +1,13 @@
+import type { EstadoConsultaIA, EstadoValidacion } from './api'
+
 /**
- * Tipos: Consulta IA
- * -------------------
- * Refleja exactamente el DTO y la respuesta reales del backend
- * (CreateConsultaIaDto y ConsultasIaService.ejecutarPrompt).
+ * Consultas IA (prospección con Apify)
+ * ------------------------------------
+ * Refleja POST /consultas-ia y GET /consultas-ia.
+ * Ver CONTEXTO_FRONTEND.md §3.4.
  */
 
+/** Body de POST /consultas-ia. */
 export interface ConsultaIAInput {
   descripcionPrompt: string
   cantidadSolicitada: number
@@ -12,25 +15,48 @@ export interface ConsultaIAInput {
   plantillaId: string
 }
 
+/** Influencer generado por la IA (incluido en la respuesta de POST). */
 export interface InfluencerSugerido {
   id: string
   nombre: string
   usuarioIg: string
   linkIg: string
-  seguidoresGemini: number
-  likesGemini: number
+  seguidores: string
+  cantidad_post: string
+  biografia?: string | null
+  email?: string | null
+  estadoValidacion: EstadoValidacion
+  mensajePersonalizado?: string | null
 }
 
-export interface ConsultaIAResultado {
-  consulta: {
-    id: string
-    descripcionPrompt: string
-    cantidadSolicitada: number
-    rangoSeguidores: string
-    estado: string
-    fecha: string
-    voluntarioId: string
-    plantillaId: string
-  }
-  influencers: InfluencerSugerido[]
+/** Resumen de la ejecución de la consulta. */
+export interface ResumenConsultaIA {
+  totalPerfilesReales: number
+  nuevos: number
+  duplicados: number
+  conEmail: number
 }
+
+/** Respuesta de POST /consultas-ia. */
+export interface ConsultaIAResultado {
+  consulta: ConsultaIA
+  influencers: InfluencerSugerido[]
+  resumen: ResumenConsultaIA
+}
+
+/** Consulta IA (como aparece en GET /consultas-ia). */
+export interface ConsultaIA {
+  id: string
+  descripcionPrompt: string
+  cantidadSolicitada: number
+  rangoSeguidores: string
+  estado: EstadoConsultaIA
+  fecha: string
+  voluntarioId: string
+  plantillaId: string
+  voluntario?: { id: string; nombre: string }
+  plantilla?: { id: string; nombre: string }
+}
+
+/** Respuesta de GET /consultas-ia (arreglo de consultas). */
+export type ConsultaIAHistorial = ConsultaIA[]

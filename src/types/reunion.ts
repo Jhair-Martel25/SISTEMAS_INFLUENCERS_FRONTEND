@@ -1,4 +1,14 @@
-export type EstadoReunion = 'PENDIENTE' | 'REALIZADA' | 'CANCELADA' | 'NO_ASISTIO'
+import type { EstadoReunion } from './api'
+
+/**
+ * Reuniones
+ * ---------
+ * Entidad tal como la devuelve el backend (GET /reuniones, POST /reuniones).
+ * Ver CONTEXTO_FRONTEND.md §3.8.
+ *
+ * ⚠️ El campo se llama `googleMeetLink` por herencia, pero el link real es de
+ * Jitsi (meet.jit.si). En la UI mostrarlo como "link de la videollamada".
+ */
 
 export interface VoluntarioResumen {
   id: string
@@ -31,6 +41,7 @@ export interface Reunion {
   influencer: InfluencerResumen
 }
 
+/** Body de POST /reuniones (público — lo usa el influencer). */
 export interface AgendarReunionInput {
   email: string
   disponibilidadCitaId: string
@@ -38,8 +49,14 @@ export interface AgendarReunionInput {
   zonaHoraria?: string
 }
 
+/** Body de PATCH /reuniones/:id/estado. */
 export interface ActualizarEstadoReunionInput {
-  estado: 'REALIZADA' | 'CANCELADA' | 'NO_ASISTIO'
+  estado: Exclude<EstadoReunion, 'PENDIENTE'>
+}
+
+/** Query params de GET /reuniones. */
+export interface ReunionFiltros {
+  estado?: EstadoReunion
 }
 
 export const ESTADOS_REUNION: { value: EstadoReunion; label: string }[] = [

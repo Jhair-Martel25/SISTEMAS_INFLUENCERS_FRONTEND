@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { consultaIAService } from "@/services/consultaIAService";
-import { plantillasService } from "@/services/plantillasService";
+import { consultaIAService } from "@/features/consultas-ia/services/consultas-ia.service";
+import { plantillasService } from "@/features/plantillas/services/plantillas.service";
+import { ApiError } from "@/lib/http";
 import type { ConsultaIAInput, ConsultaIAResultado, InfluencerSugerido } from "@/types/consultaIA";
 import type { Plantilla } from "@/types/plantilla";
 
@@ -71,13 +72,14 @@ export default function MotorIAPage() {
       setInfluencers(response.influencers || []);
       setMensajeExito("La búsqueda se realizó correctamente.");
       setTimeout(() => setMensajeExito(""), 3500);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error completo:", error);
-      console.error("Respuesta backend:", error.data);
+
+      const apiError = error instanceof ApiError ? error.data as { mensaje?: string } : null;
 
       setMensajeError(
-        error.data?.mensaje ||
-        error.message ||
+        apiError?.mensaje ||
+        (error instanceof Error ? error.message : "") ||
         "No fue posible generar la búsqueda mediante IA."
       );
     } finally {
@@ -222,20 +224,19 @@ export default function MotorIAPage() {
                   <div className="grid grid-cols-2 gap-4 mb-5">
                     <div>
                       <p className="text-sm text-gray-500">Seguidores</p>
-                      <p className="font-semibold">{influencer.seguidoresGemini.toLocaleString()}</p>
+                      <p className="font-semibold">{influencer.seguidores}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Likes</p>
-                      <p className="font-semibold">{influencer.likesGemini.toLocaleString()}</p>
+                      <p className="text-sm text-gray-500">Publicaciones</p>
+                      <p className="font-semibold">{influencer.cantidad_post}</p>
                     </div>
                   </div>
 
 
                   <div>
                     <p className="text-sm text-gray-500 mb-2">Perfil de Instagram</p>
-
-                    href={influencer.linkIg}
                     <a
+                      href={influencer.linkIg}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline break-all"

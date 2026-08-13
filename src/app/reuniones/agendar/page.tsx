@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import type { DisponibilidadCita } from '@/types/disponibilidad'
-import { disponibilidadService } from '@/services/disponibilidadService'
-import { reunionesService } from '@/services/horariosService'
+import { disponibilidadesService } from '@/features/disponibilidades/services/disponibilidades.service'
+import { reunionesService } from '@/features/reuniones/services/reuniones.service'
 
 function formatearBloque(iso: string) {
   const fecha = new Date(iso)
@@ -33,7 +33,7 @@ export default function AgendarReunionPage() {
       setCargandoBloques(true)
       setErrorCarga(null)
       try {
-        const data = await disponibilidadService.listarDisponibles()
+        const data = await disponibilidadesService.listarDisponibles()
         if (!cancelado) setBloques(data)
       } catch {
         if (!cancelado) setErrorCarga('No se pudo cargar la disponibilidad en este momento.')

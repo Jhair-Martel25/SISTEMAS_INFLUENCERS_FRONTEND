@@ -189,7 +189,7 @@ export default function RegistroInfluencerPage() {
       setStatusMessage("Influencer registrado correctamente.");
       setFormData(initialFormData);
       setErrors({});
-    } catch (error) {
+    } catch {
       setSubmitStatus("error");
       setStatusMessage("Ocurrió un error al registrar el influencer. Intenta nuevamente.");
     } finally {
