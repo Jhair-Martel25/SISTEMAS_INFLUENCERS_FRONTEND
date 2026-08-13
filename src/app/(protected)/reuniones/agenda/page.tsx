@@ -108,7 +108,7 @@ export default function DisponibilidadAgendaPage() {
           ) : (
             <p className="text-gray-400 text-sm">
               Aun no has agendado ninguna reunion desde este navegador.{' '}
-              <Link href="/reuniones/agendar" className="text-[#003D2D] hover:underline">Agendar una ahora</Link>
+              <Link href="/agendar" className="text-[#003D2D] hover:underline">Agendar una ahora</Link>
             </p>
           )}
         </div>
