@@ -1,15 +1,82 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Plus, CalendarPlus, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { usuariosService } from "@/services/usuariosService";
+import { horarioVoluntarioService } from "@/services/horarioVoluntarioService";
+import { ApiError } from "@/services/api";
+import type { Usuario } from "@/types/usuario";
+import type { Horario, DiaSemana } from "@/types/horario";
+
+const ABREVIATURA_DIA: Record<DiaSemana, string> = {
+    LUNES: "Lun",
+    MARTES: "Mar",
+    MIERCOLES: "Mié",
+    JUEVES: "Jue",
+    VIERNES: "Vie",
+    SABADO: "Sáb",
+    DOMINGO: "Dom",
+};
+
+const ORDEN_DIA: Record<DiaSemana, number> = {
+    LUNES: 1, MARTES: 2, MIERCOLES: 3, JUEVES: 4, VIERNES: 5, SABADO: 6, DOMINGO: 7,
+};
+
+function iniciales(nombre: string): string {
+    const partes = nombre.trim().split(/\s+/);
+    return ((partes[0]?.[0] ?? "") + (partes[1]?.[0] ?? "")).toUpperCase();
+}
 
 export default function GestionVoluntariosPage() {
     const router = useRouter();
+    const [voluntarios, setVoluntarios] = useState<Usuario[]>([]);
+    const [horariosPorVoluntario, setHorariosPorVoluntario] = useState<Record<string, Horario[]>>({});
+    const [cargando, setCargando] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function cargarDatos() {
+            setCargando(true);
+            setError(null);
+            try {
+                const [listaVoluntarios, listaHorarios] = await Promise.all([
+                    usuariosService.listarVoluntarios(),
+                    horarioVoluntarioService.listar(),
+                ]);
+
+                setVoluntarios(listaVoluntarios);
+
+                const agrupado: Record<string, Horario[]> = {};
+                for (const horario of listaHorarios) {
+                    if (!agrupado[horario.voluntarioId]) {
+                        agrupado[horario.voluntarioId] = [];
+                    }
+                    agrupado[horario.voluntarioId].push(horario);
+                }
+                for (const id in agrupado) {
+                    agrupado[id].sort((a, b) => ORDEN_DIA[a.diaSemana] - ORDEN_DIA[b.diaSemana]);
+                }
+                setHorariosPorVoluntario(agrupado);
+            } catch (err) {
+                console.error(err);
+                setError(
+                    err instanceof ApiError
+                        ? err.message
+                        : "No se pudieron cargar los voluntarios."
+                );
+            } finally {
+                setCargando(false);
+            }
+        }
+        void cargarDatos();
+    }, []);
+
     return (
         <main className="min-h-screen bg-gray-100 p-8">
             <div className="max-w-7xl mx-auto">
-               {/* Encabezado */}
+                {/* Encabezado */}
                 <Link
                     href="/dashboard"
                     className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#003D2D] transition-colors duration-150 mb-4"
@@ -23,14 +90,14 @@ export default function GestionVoluntariosPage() {
                             Gestión de Voluntarios
                         </h1>
                         <p className="text-gray-600 mt-2">
-                            Administra disponibilidad, asignaciones y rendimiento del equipo.
+                            Consulta los voluntarios registrados y su disponibilidad configurada.
                         </p>
                     </div>
                     <div className="flex gap-3">
-                         <button
+                        <button
                             onClick={() => router.push("/voluntarios/registro")}
                             className="bg-[#003D2D] text-white px-5 py-3 rounded-xl hover:bg-[#0B5E47] transition-colors duration-200 flex items-center gap-2"
-                         >
+                        >
                             <Plus size={18} />
                             Nuevo voluntario
                         </button>
@@ -42,187 +109,81 @@ export default function GestionVoluntariosPage() {
                             Agendar voluntario
                         </button>
                     </div>
-                    
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white rounded-2xl shadow-sm p-5">
-                        <p className="text-sm text-gray-500">Disponibles</p>
-                        <p className="text-2xl font-bold text-[#003D2D] mt-1">1</p>
+
+                {error && (
+                    <div className="mb-6 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+                        {error}
                     </div>
-                    <div className="bg-white rounded-2xl shadow-sm p-5">
-                        <p className="text-sm text-gray-500">Saturados</p>
-                        <p className="text-2xl font-bold text-[#003D2D] mt-1">1</p>
-                    </div>
-                    <div className="bg-white rounded-2xl shadow-sm p-5">
-                        <p className="text-sm text-gray-500">Inactivos</p>
-                        <p className="text-2xl font-bold text-[#003D2D] mt-1">1</p>
-                    </div>
-                    <div className="bg-white rounded-2xl shadow-sm p-5">
-                        <p className="text-sm text-gray-500">Rendimiento promedio</p>
-                        <p className="text-2xl font-bold text-[#003D2D] mt-1">76%</p>
-                    </div>
-                </div>
-                <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-                    <div className="grid grid-cols-3 gap-4">
-                        <select className="border rounded-xl p-3">
-                            <option>Estado</option>
-                            <option>Disponible</option>
-                            <option>Saturado</option>
-                            <option>Inactivo</option>
-                        </select>
-                        <select className="border rounded-xl p-3">
-                            <option>Especialidad</option>
-                            <option>Reforestación</option>
-                            <option>Educación</option>
-                            <option>Medio Ambiente</option>
-                        </select>
-                        <select className="border rounded-xl p-3">
-                            <option>Nivel</option>
-                            <option>Junior</option>
-                            <option>Intermedio</option>
-                            <option>Senior</option>
-                        </select>
-                    </div>
-                </div>
+                )}
+
                 <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                     <table className="w-full">
                         <thead className="bg-gray-50">
                             <tr>
                                 <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Voluntario</th>
-                                <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Especialidad</th>
                                 <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
-                                <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Disponibilidad</th>
-                                <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Influencers</th>
-                                <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Rendimiento</th>
+                                <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Disponibilidad (días y horario)</th>
                             </tr>
-                         </thead>
-          <tbody>
-                            <tr className="border-t hover:bg-gray-50 transition-colors duration-150">
-                                <td className="p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 rounded-full bg-[#003D2D] text-white flex items-center justify-center text-xs font-semibold shrink-0">
-                                            MR
-                                        </div>
-                                        <span className="text-gray-900">Mateo Rivera</span>
-                                    </div>
-                                </td>
-                                <td className="p-4 text-gray-700">
-                                    Reforestación
-                                </td>
-                                <td className="p-4">
-                                    <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                                        🟢 Disponible
-                                    </span>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                                            <div className="bg-[#20D18F] h-2 rounded-full" style={{ width: "85%" }}></div>
-                                        </div>
-                                        <span className="text-sm text-gray-600">85%</span>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-16 bg-gray-200 rounded-full h-2">
-                                            <div className="bg-[#003D2D] h-2 rounded-full" style={{ width: "60%" }}></div>
-                                        </div>
-                                        <span className="text-sm text-gray-600">12/20</span>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                                            <div className="bg-yellow-400 h-2 rounded-full" style={{ width: "88%" }}></div>
-                                        </div>
-                                        <span className="text-sm text-gray-600">88%</span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr className="border-t hover:bg-gray-50 transition-colors duration-150">
-                                <td className="p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 rounded-full bg-[#003D2D] text-white flex items-center justify-center text-xs font-semibold shrink-0">
-                                            ES
-                                        </div>
-                                        <span className="text-gray-900">Elena Salas</span>
-                                    </div>
-                                </td>
-                                <td className="p-4 text-gray-700">
-                                    Educación
-                                </td>
-                                <td className="p-4">
-                                    <span className="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
-                                        🔴 Saturado
-                                    </span>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                                            <div className="bg-[#20D18F] h-2 rounded-full" style={{ width: "10%" }}></div>
-                                        </div>
-                                        <span className="text-sm text-gray-600">10%</span>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-16 bg-gray-200 rounded-full h-2">
-                                            <div className="bg-[#003D2D] h-2 rounded-full" style={{ width: "100%" }}></div>
-                                        </div>
-                                        <span className="text-sm text-gray-600">28/28</span>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                                            <div className="bg-yellow-400 h-2 rounded-full" style={{ width: "100%" }}></div>
-                                        </div>
-                                        <span className="text-sm text-gray-600">100%</span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr className="border-t hover:bg-gray-50 transition-colors duration-150">
-                                <td className="p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 rounded-full bg-gray-400 text-white flex items-center justify-center text-xs font-semibold shrink-0">
-                                            CP
-                                        </div>
-                                        <span className="text-gray-900">Carlos Pardo</span>
-                                    </div>
-                                </td>
-                                <td className="p-4 text-gray-700">
-                                    Medio Ambiente
-                                </td>
-                                <td className="p-4">
-                                    <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">
-                                        ⚪ Inactivo
-                                    </span>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                                            <div className="bg-[#20D18F] h-2 rounded-full" style={{ width: "0%" }}></div>
-                                        </div>
-                                        <span className="text-sm text-gray-600">0%</span>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-16 bg-gray-200 rounded-full h-2">
-                                            <div className="bg-[#003D2D] h-2 rounded-full" style={{ width: "0%" }}></div>
-                                        </div>
-                                        <span className="text-sm text-gray-600">0/15</span>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                                            <div className="bg-yellow-400 h-2 rounded-full" style={{ width: "20%" }}></div>
-                                        </div>
-                                        <span className="text-sm text-gray-600">20%</span>
-                                    </div>
-                                </td>
-                            </tr>
+                        </thead>
+                        <tbody>
+                            {cargando ? (
+                                <tr>
+                                    <td colSpan={3} className="p-8 text-center text-gray-400">
+                                        Cargando voluntarios...
+                                    </td>
+                                </tr>
+                            ) : voluntarios.length === 0 ? (
+                                <tr>
+                                    <td colSpan={3} className="p-8 text-center text-gray-400">
+                                        No hay voluntarios registrados todavía.
+                                    </td>
+                                </tr>
+                            ) : (
+                                voluntarios.map((voluntario) => {
+                                    const horarios = horariosPorVoluntario[voluntario.id] ?? [];
+                                    return (
+                                        <tr key={voluntario.id} className="border-t hover:bg-gray-50 transition-colors duration-150">
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-full bg-[#003D2D] text-white flex items-center justify-center text-xs font-semibold shrink-0">
+                                                        {iniciales(voluntario.nombre)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-gray-900">{voluntario.nombre}</p>
+                                                        <p className="text-xs text-gray-500">{voluntario.email}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
+                                                    voluntario.estado === "ACTIVO"
+                                                        ? "bg-green-100 text-green-700"
+                                                        : "bg-gray-100 text-gray-600"
+                                                }`}>
+                                                    {voluntario.estado === "ACTIVO" ? "🟢 Activo" : "⚪ Inactivo"}
+                                                </span>
+                                            </td>
+                                            <td className="p-4">
+                                                {horarios.length === 0 ? (
+                                                    <span className="text-sm text-gray-400">Sin horario configurado</span>
+                                                ) : (
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {horarios.map((h) => (
+                                                            <span
+                                                                key={h.id}
+                                                                className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md whitespace-nowrap"
+                                                            >
+                                                                {ABREVIATURA_DIA[h.diaSemana]} {h.horaInicio}-{h.horaFin}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
                 </div>
