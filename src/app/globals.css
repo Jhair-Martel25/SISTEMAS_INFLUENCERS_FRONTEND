@@ -1,13 +1,6 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --color-verde-principal: #003D2D;
@@ -16,22 +9,4 @@
   --color-verde-claro: #20D18F;
   --color-gris-texto: #6B7280;
   --color-borde: #D1D5DB;
-}
-
-/*
-quitar esta aparte del codigo porque diseño está construido 100%
- para tema claro (fondos blancos/gris claro). Este bloque hace 
- que el texto se vuelva casi blanco cuando el sistema operativo
-  del usuario está en modo oscuro.
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}*/
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }

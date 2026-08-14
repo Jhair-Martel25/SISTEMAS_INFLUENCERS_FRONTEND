@@ -11,7 +11,6 @@ export function useAuth() {
   return useAuthStore(
     useShallow((state) => ({
       user: state.user,
-      token: state.backendToken,
       backendToken: state.backendToken,
       refreshToken: state.refreshToken,
       isAuthenticated: state.isAuthenticated,

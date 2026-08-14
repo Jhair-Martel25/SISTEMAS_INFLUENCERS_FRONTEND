@@ -35,9 +35,6 @@ export default function RootLayout({
           <AuthBootstrap />
           {children}
         </Providers>
-        {/* Toast */}
-        {/* Modal */}
-        {/* Loader */}
       </body>
     </html>
   );

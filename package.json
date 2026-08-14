@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "generate:types": "openapi-typescript src/types/generated/openapi.json -o src/types/generated/dto.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.4",
