@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { dashboardService } from "@/services/dashboardService";
+import { DashboardMetricas } from "@/types/dashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -8,6 +11,13 @@ import Link from "next/link";
 export default function DashboardPage() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
+
+  const [metricas, setMetricas] = useState<DashboardMetricas>({
+    totalInfluencers: 0,
+    influencersValidados: 0,
+    correosEnviados: 0,
+    reunionesAgendadas: 0,
+  });
 
   console.log({
     user,
@@ -29,6 +39,16 @@ export default function DashboardPage() {
       isLoading,
     });
   }, [user, isAuthenticated, isLoading]);
+
+  useEffect(() => {
+    dashboardService
+      .obtenerMetricas()
+      .then(setMetricas)
+      .catch(() => {
+        // Mientras el backend no esté listo, mantenemos valores por defecto
+        console.log("Métricas aún no disponibles");
+      });
+  }, []);
 
   if (isLoading || !isAuthenticated) {
     return (
@@ -101,6 +121,36 @@ export default function DashboardPage() {
           <p className="text-gray-500 mt-1">
             Panel de administración de Sembrando Perú
           </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <p className="text-sm text-gray-500">Influencers registrados</p>
+            <p className="text-3xl font-bold text-[#003D2D] mt-2">
+              {metricas.totalInfluencers}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <p className="text-sm text-gray-500">Influencers validados</p>
+            <p className="text-3xl font-bold text-[#0B5E47] mt-2">
+              {metricas.influencersValidados}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <p className="text-sm text-gray-500">Correos enviados</p>
+            <p className="text-3xl font-bold text-[#B7791F] mt-2">
+              {metricas.correosEnviados}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <p className="text-sm text-gray-500">Reuniones agendadas</p>
+            <p className="text-3xl font-bold text-[#1D4ED8] mt-2">
+              {metricas.reunionesAgendadas}
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
