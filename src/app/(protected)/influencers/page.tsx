@@ -206,7 +206,7 @@ export default function GestionInfluencersPage() {
             />
           </div>
           <Link
-            href="/influencers/registro"
+            href="/influencers/nuevo"
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
           >
             <Plus size={18} />

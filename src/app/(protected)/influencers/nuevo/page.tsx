@@ -202,7 +202,7 @@ export default function RegistroInfluencerPage() {
     setFormData(initialFormData);
     setErrors({});
     setSubmitStatus("idle");
-    router.push("/influencers/gestion");
+    router.push("/influencers");
   };
 
   return (

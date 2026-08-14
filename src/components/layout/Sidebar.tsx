@@ -2,49 +2,16 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  BarChart3,
-  FileText,
-  Home,
-  Mail,
-  Send,
-  Sparkles,
-  UserPlus,
-  Users,
-  Video,
-  type LucideIcon,
-} from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
-
-interface NavItem {
-  href: string
-  label: string
-  icon: LucideIcon
-}
-
-const NAV_ADMIN: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/influencers/gestion', label: 'Influencers', icon: Users },
-  { href: '/influencers/motor-ia', label: 'Motor IA', icon: Sparkles },
-  { href: '/reuniones/gestion', label: 'Reuniones', icon: Video },
-  { href: '/usuarios', label: 'Usuarios', icon: UserPlus },
-  { href: '/plantillas', label: 'Plantillas', icon: FileText },
-  { href: '/email', label: 'Email', icon: Mail },
-  { href: '/reuniones/agenda', label: 'Agenda', icon: BarChart3 },
-]
-
-const NAV_VOLUNTARIO: NavItem[] = [
-  { href: '/influencers/gestion', label: 'Influencers', icon: Users },
-  { href: '/influencers/motor-ia', label: 'Motor IA', icon: Sparkles },
-  { href: '/reuniones/gestion', label: 'Reuniones', icon: Video },
-  { href: '/reuniones/agenda', label: 'Agenda', icon: BarChart3 },
-]
+import { Send } from 'lucide-react'
+import { usePermission } from '@/hooks/usePermission'
+import { NAVEGACION } from '@/config/navigation'
+import { ICONO_POR_RECURSO } from './navigation-icons'
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { isAdmin } = useAuth()
+  const { puede } = usePermission()
 
-  const items = isAdmin ? NAV_ADMIN : NAV_VOLUNTARIO
+  const items = NAVEGACION.filter((item) => puede(item.recurso))
 
   return (
     <aside className="w-64 shrink-0 border-r border-gray-200 bg-white flex flex-col">
@@ -56,7 +23,8 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {items.map(({ href, label, icon: Icon }) => {
+        {items.map(({ href, label, recurso }) => {
+          const Icon = ICONO_POR_RECURSO[recurso]
           const activo =
             pathname === href || pathname.startsWith(`${href}/`)
           return (

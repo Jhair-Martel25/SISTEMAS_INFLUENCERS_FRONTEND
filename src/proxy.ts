@@ -1,25 +1,26 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicRoutes = ["/login"];
-const protectedRoutes = ["/dashboard", "/influencers"];
+/** Rutas públicas (no requieren sesión). Todo lo demás está protegido. */
+const publicRoutes = ["/login", "/agendar"];
+
+function isPublicRoute(pathname: string): boolean {
+  return publicRoutes.some((route) => pathname.startsWith(route));
+}
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("sp_token")?.value;
 
-  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-
-  if (isProtectedRoute && !token) {
+  // Ruta interna sin token → manda al login (con redirect para volver luego).
+  if (!isPublicRoute(pathname) && !token) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isPublicRoute && token && pathname === "/login") {
+  // Ya logueado intentando ir al login → manda al dashboard.
+  if (pathname === "/login" && token) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { usePermission } from '@/hooks/usePermission'
+import { recursoDeRuta } from '@/config/navigation'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
@@ -13,13 +15,24 @@ export default function ProtectedLayout({
   children: React.ReactNode
 }) {
   const { isAuthenticated, isLoading } = useAuth()
+  const { isAdmin, puede, home } = usePermission()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push('/login')
+      return
     }
-  }, [isAuthenticated, isLoading, router])
+
+    // Guard por rol: si el usuario no puede ver la sección actual, redirigir a su home.
+    if (isAuthenticated) {
+      const recurso = recursoDeRuta(pathname)
+      if (recurso && !puede(recurso)) {
+        router.replace(home())
+      }
+    }
+  }, [isLoading, isAuthenticated, isAdmin, pathname, puede, home, router])
 
   if (isLoading || !isAuthenticated) {
     return (
