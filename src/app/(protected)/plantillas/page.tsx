@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { plantillasService } from "@/features/plantillas/services/plantillas.service";
 import type { Plantilla, CrearPlantillaInput, } from "@/types/plantilla";
-import PlantillaForm from "@/components/plantillas/PlantillaForm";
+import PlantillaForm from "@/features/plantillas/components/PlantillaForm";
 
 export default function GestionPlantillas() {
   const [plantillas, setPlantillas] = useState<Plantilla[]>([]);

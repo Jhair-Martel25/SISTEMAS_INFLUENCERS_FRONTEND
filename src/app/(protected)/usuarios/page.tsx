@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { useEffect, useState, useCallback } from "react";
 import { usuariosService } from "@/features/usuarios/services/usuarios.service";
-import UsuarioForm from "@/components/usuarios/UsuarioForm";
+import UsuarioForm from "@/features/usuarios/components/UsuarioForm";
 import type {
   Usuario,
   CrearUsuarioInput,
