@@ -7,21 +7,21 @@ export function Header() {
   const { user, logout } = useAuth()
 
   return (
-    <header className="h-16 shrink-0 border-b border-gray-200 bg-white flex items-center justify-between px-6">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-6">
       <div className="flex items-center gap-3">
-        <h1 className="text-lg font-semibold text-gray-900">
+        <h1 className="text-lg font-semibold text-foreground">
           Panel {user?.role === 'ADMIN' ? 'de Administración' : 'del Voluntario'}
         </h1>
       </div>
 
       <div className="flex items-center gap-4">
-        <span className="text-sm text-gray-500">{user?.nombre}</span>
-        <span className="text-[10px] uppercase tracking-wider bg-[#003D2D]/10 text-[#003D2D] px-3 py-1 rounded-full font-medium">
+        <span className="text-sm text-muted-foreground">{user?.nombre}</span>
+        <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-primary">
           {user?.role}
         </span>
         <button
           onClick={logout}
-          className="text-sm text-gray-500 hover:text-red-600 transition-colors flex items-center gap-1.5"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-destructive"
         >
           <LogOut size={16} />
           Salir

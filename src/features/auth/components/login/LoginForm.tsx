@@ -2,11 +2,12 @@
 
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import { ArrowRight, Loader2, Lock, Mail } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { homeSegunRol } from '@/config/roles'
 import { loginSchema } from '@/features/auth/schemas/login.schema'
 import { InputField } from '@/components/ui/InputField'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 
 interface FormErrors {
   email?: string
@@ -64,24 +65,8 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
       {apiError && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-red-500 mt-0.5 shrink-0"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="15" y1="9" x2="9" y2="15" />
-            <line x1="9" y1="9" x2="15" y2="15" />
-          </svg>
-          <p className="text-red-600 text-sm">{apiError}</p>
+        <div className="flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4">
+          <p className="text-sm text-destructive">{apiError}</p>
         </div>
       )}
 
@@ -93,22 +78,8 @@ export function LoginForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         error={errors.email}
-        icon={
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect width="20" height="16" x="2" y="4" rx="2" />
-            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-          </svg>
-        }
+        className="h-12"
+        icon={<Mail className="h-5 w-5" />}
       />
 
       <InputField
@@ -118,86 +89,43 @@ export function LoginForm() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         error={errors.password}
+        className="h-12"
         togglePassword
-        icon={
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-        }
+        icon={<Lock className="h-5 w-5" />}
       />
 
       <div className="pt-1">
-        <label className="flex items-center gap-2.5 cursor-pointer group w-fit">
-          <div className="relative">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-5 h-5 border-2 border-gray-300 rounded-md peer-checked:bg-[#003D2D] peer-checked:border-[#003D2D] transition-all duration-200 group-hover:border-[#003D2D]/50" />
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </div>
-          <span className="text-sm text-gray-600 group-hover:text-gray-800 transition-colors">
-            Recordarme
-          </span>
+        <label className="flex w-fit cursor-pointer items-center gap-2.5">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="h-5 w-5 rounded-md border-border text-primary accent-primary"
+          />
+          <span className="text-sm text-muted-foreground">Recordarme</span>
         </label>
       </div>
 
-      <Button
-        type="submit"
-        fullWidth
-        isLoading={isLoading}
-        iconRight={
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12h14" />
-            <path d="m12 5 7 7-7 7" />
-          </svg>
-        }
-      >
-        Ingresar
+      <Button type="submit" className="h-12 w-full" disabled={isLoading}>
+        {isLoading ? (
+          <>
+            <Loader2 className="animate-spin" />
+            Ingresando...
+          </>
+        ) : (
+          <>
+            Ingresar
+            <ArrowRight />
+          </>
+        )}
       </Button>
 
       <div className="relative my-8">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-200" />
+          <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-white px-4 text-[10px] tracking-[0.3em] text-gray-400 font-medium">
+          <span className="bg-background px-4 text-[10px] font-medium tracking-[0.3em] text-muted-foreground">
             SISTEMA AUTOMATIZADO
           </span>
         </div>
