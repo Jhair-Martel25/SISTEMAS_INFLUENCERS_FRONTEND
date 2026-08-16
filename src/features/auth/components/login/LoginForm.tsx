@@ -3,12 +3,23 @@
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { homeSegunRol } from '@/config/roles'
+import { loginSchema } from '@/features/auth/schemas/login.schema'
 import { InputField } from '@/components/ui/InputField'
 import { Button } from '@/components/ui/Button'
 
 interface FormErrors {
   email?: string
   password?: string
+}
+
+/** Devuelve la ruta interna a la que volver tras el login (si el proxy la indicó). */
+function getRedirectTarget(): string | null {
+  const redirect = new URLSearchParams(window.location.search).get('redirect')
+  if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+    return redirect
+  }
+  return null
 }
 
 export function LoginForm() {
@@ -21,40 +32,29 @@ export function LoginForm() {
   const [apiError, setApiError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  function validate(): boolean {
-    const newErrors: FormErrors = {}
-
-    if (!email.trim()) {
-      newErrors.email = 'El correo electrónico es requerido'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Ingresa un correo electrónico válido'
-    }
-
-    if (!password.trim()) {
-      newErrors.password = 'La contraseña es requerida'
-    } else if (password.length < 6) {
-      newErrors.password = 'La contraseña debe tener al menos 6 caracteres'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setApiError('')
 
-    if (!validate()) return
+    const result = loginSchema.safeParse({ email, password })
+    if (!result.success) {
+      const fieldErrors = result.error.flatten().fieldErrors
+      setErrors({
+        email: fieldErrors.email?.[0],
+        password: fieldErrors.password?.[0],
+      })
+      return
+    }
 
+    setErrors({})
     setIsLoading(true)
 
     try {
-      await login({ email, password, recordar: rememberMe })
-      console.log("Login correcto")
-      router.push("/dashboard")
+      const user = await login({ email, password, recordar: rememberMe })
+      router.push(getRedirectTarget() ?? homeSegunRol(user.role))
     } catch (err) {
       setApiError(
-        err instanceof Error ? err.message : 'Error al iniciar sesión'
+        err instanceof Error ? err.message : 'Error al iniciar sesión',
       )
     } finally {
       setIsLoading(false)
@@ -137,8 +137,8 @@ export function LoginForm() {
         }
       />
 
-      <div className="flex items-center justify-between pt-1">
-        <label className="flex items-center gap-2.5 cursor-pointer group">
+      <div className="pt-1">
+        <label className="flex items-center gap-2.5 cursor-pointer group w-fit">
           <div className="relative">
             <input
               type="checkbox"
@@ -166,13 +166,6 @@ export function LoginForm() {
             Recordarme
           </span>
         </label>
-
-        <a
-          href="#"
-          className="text-sm text-[#003D2D] hover:text-[#0B5E47] font-medium transition-colors"
-        >
-          ¿Olvidaste tu contraseña?
-        </a>
       </div>
 
       <Button

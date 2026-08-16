@@ -22,7 +22,7 @@ interface AuthState {
   isAuthenticated: boolean
   isAdmin: boolean
   isVoluntario: boolean
-  login: (credentials: LoginCredentials) => Promise<void>
+  login: (credentials: LoginCredentials) => Promise<User>
   logout: () => Promise<void>
   /** Hidrata el estado a partir de la sesión guardada (se llama al montar la app). */
   refreshSession: () => void
@@ -66,6 +66,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       refreshToken: data.refreshToken,
       isLoading: false,
     })
+    return data.usuario
   },
 
   logout: async () => {

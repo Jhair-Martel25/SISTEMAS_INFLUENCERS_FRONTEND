@@ -1,6 +1,6 @@
-import { LeftPanel } from "@/components/login/LeftPanel";
-import { LoginForm } from "@/components/login/LoginForm";
-import { LoginFooter } from "@/components/login/LoginFooter";
+import { LeftPanel } from "@/features/auth/components/login/LeftPanel";
+import { LoginForm } from "@/features/auth/components/login/LoginForm";
+import { LoginFooter } from "@/features/auth/components/login/LoginFooter";
 
 export default function LoginPage() {
   return (
