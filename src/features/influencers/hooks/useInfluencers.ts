@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { influencersService } from '../services/influencers.service'
-import { InfluencerListaSchema, InfluencerSchema } from './influencers.schema'
+import {
+  InfluencerListaSchema,
+  InfluencerSchema,
+} from '../schemas/influencers.schema'
 import type {
   ActualizarInfluencerInput,
   ContactarInfluencerInput,
