@@ -1,151 +1,194 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import type { Plantilla, CrearPlantillaInput } from "@/types/plantilla"
+import { useRouter } from "next/navigation"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
-interface Props {
-  plantilla: Plantilla | null;
-  onGuardar: (data: CrearPlantillaInput) => Promise<void>;
-  onCancelar: () => void;
+import { Button } from "@/components/ui/button"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+
+import type { Plantilla } from "@/types/plantilla"
+import {
+  useActualizarPlantilla,
+  useCrearPlantilla,
+} from "../hooks/usePlantillas"
+import {
+  plantillaFormSchema,
+  type PlantillaFormValues,
+} from "../schemas/plantilla-form.schema"
+
+function valoresIniciales(plantilla?: Plantilla | null): PlantillaFormValues {
+  return {
+    nombre: plantilla?.nombre ?? "",
+    descripcion: plantilla?.descripcion ?? "",
+    asunto: plantilla?.asunto ?? "",
+    cuerpo: plantilla?.cuerpo ?? "",
+  }
 }
 
-export default function PlantillaForm({
+interface PlantillaFormProps {
+  plantilla?: Plantilla | null
+  onSuccess?: () => void
+  onCancel?: () => void
+}
+
+export function PlantillaForm({
   plantilla,
-  onGuardar,
-  onCancelar,
-}: Props) {
-  const [nombre, setNombre] = useState(plantilla?.nombre ?? "");
-  const [asunto, setAsunto] = useState(plantilla?.asunto ?? "");
-  const [cuerpo, setCuerpo] = useState(plantilla?.cuerpo ?? "");
-  const [guardando, setGuardando] = useState(false);
-  const [errores, setErrores] = useState({
-    nombre: "",
-    asunto: "",
-    cuerpo: "",
-  });
+  onSuccess,
+  onCancel,
+}: PlantillaFormProps) {
+  const router = useRouter()
+  const crear = useCrearPlantilla()
+  const actualizar = useActualizarPlantilla()
+  const esEdicion = Boolean(plantilla)
+  const pendiente = crear.isPending || actualizar.isPending
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setErrores({
-      nombre: "",
-      asunto: "",
-      cuerpo: "",
-    });
+  const form = useForm<PlantillaFormValues>({
+    resolver: zodResolver(plantillaFormSchema),
+    defaultValues: valoresIniciales(plantilla),
+  })
 
-    const nuevosErrores = {
-      nombre: "",
-      asunto: "",
-      cuerpo: "",
-    };
-
-    if (!nombre.trim()) {
-      nuevosErrores.nombre = "El nombre es obligatorio.";
-    }
-    if (!asunto.trim()) {
-      nuevosErrores.asunto = "El asunto es obligatorio.";
-    }
-    if (!cuerpo.trim()) {
-      nuevosErrores.cuerpo = "El contenido es obligatorio.";
+  function handleSubmit(values: PlantillaFormValues) {
+    const payload = {
+      nombre: values.nombre,
+      descripcion: values.descripcion.trim() || undefined,
+      asunto: values.asunto,
+      cuerpo: values.cuerpo,
     }
 
-    if (
-      nuevosErrores.nombre ||
-      nuevosErrores.asunto ||
-      nuevosErrores.cuerpo
-    ) {
-      setErrores(nuevosErrores);
-      return;
+    if (esEdicion && plantilla) {
+      actualizar.mutate(
+        { id: plantilla.id, input: payload },
+        {
+          onSuccess: () => {
+            toast.success("Plantilla actualizada correctamente.")
+            onSuccess?.()
+          },
+          onError: (error) => {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "No se pudo actualizar la plantilla.",
+            )
+          },
+        },
+      )
+      return
     }
 
-    setGuardando(true);
-    try {
-      await onGuardar({ nombre, asunto, cuerpo });
-    } finally {
-      setGuardando(false);
-    }
+    crear.mutate(payload, {
+      onSuccess: () => {
+        toast.success("Plantilla creada correctamente.")
+        onSuccess?.()
+      },
+      onError: (error) => {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "No se pudo crear la plantilla.",
+        )
+      },
+    })
   }
+
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white rounded-xl shadow-xl w-full max-w-xl p-6 space-y-5"
-    >
-      <h2 className="text-2xl font-bold text-[#003D2D]">
-        {plantilla ? "Editar plantilla" : "Nueva plantilla"}
-      </h2>
-
-      <div>
-        <label className="block mb-2 font-medium">Nombre</label>
-        <input
-          required
-          value={nombre}
-          onChange={(e) => {
-            setNombre(e.target.value);
-            if (errores.nombre) {
-              setErrores((prev) => ({ ...prev, nombre: "" }));
-            }
-          }}
-          className="w-full border rounded-lg p-3"
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className="space-y-4"
+        noValidate
+      >
+        <FormField
+          control={form.control}
+          name="nombre"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nombre</FormLabel>
+              <FormControl>
+                <Input placeholder="Moda Verano" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errores.nombre && (
-          <p className="mt-1 text-sm text-red-600">{errores.nombre}</p>
-        )}
-      </div>
 
-      <div>
-        <label className="block mb-2 font-medium">Asunto</label>
-        <input
-          value={asunto}
-          onChange={(e) => {
-            setAsunto(e.target.value);
-            if (errores.asunto) {
-              setErrores((prev) => ({ ...prev, asunto: "" }));
-            }
-          }}
-          className="w-full border rounded-lg p-3"
+        <FormField
+          control={form.control}
+          name="descripcion"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Descripción</FormLabel>
+              <FormControl>
+                <Input placeholder="Campaña de verano" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errores.asunto && (
-          <p className="mt-1 text-sm text-red-600">{errores.asunto}</p>
-        )}
-      </div>
 
-      <div>
-        <label className="block mb-2 font-medium">Contenido</label>
-        <textarea
-          required
-          rows={6}
-          value={cuerpo}
-          onChange={(e) => {
-            setCuerpo(e.target.value);
-            if (errores.cuerpo) {
-              setErrores((prev) => ({ ...prev, cuerpo: "" }));
-            }
-          }}
-          className="w-full border rounded-lg p-3"
+        <FormField
+          control={form.control}
+          name="asunto"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Asunto</FormLabel>
+              <FormControl>
+                <Input placeholder="Propuesta de colaboración" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errores.cuerpo && (
-          <p className="mt-1 text-sm text-red-600">{errores.cuerpo}</p>
-        )}
-      </div>
 
-      <div className="flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={onCancelar}
-          className="px-4 py-2 rounded-lg border"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={guardando}
-          className={`px-4 py-2 rounded-lg text-white transition ${guardando
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-[#003D2D] hover:bg-[#00553f]"
-            }`}
-        >
-          {guardando ? "Guardando..." : "Guardar"}
-        </button>
-      </div>
-    </form>
-  );
+        <FormField
+          control={form.control}
+          name="cuerpo"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Contenido</FormLabel>
+              <FormControl>
+                <Textarea
+                  rows={6}
+                  placeholder="Hola {{nombre_influencer}}..."
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>
+                Puedes usar los placeholders: {"{{nombre_influencer}}, "}
+                {"{{nombre_voluntario}}"} y {"{{link_agendamiento}}"}.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pendiente}
+            onClick={onCancel ?? (() => router.back())}
+          >
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={pendiente}>
+            {pendiente && <Loader2 className="animate-spin" size={16} />}
+            {esEdicion ? "Guardar cambios" : "Guardar"}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  )
 }

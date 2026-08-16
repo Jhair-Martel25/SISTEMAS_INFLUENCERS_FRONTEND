@@ -1,230 +1,205 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import type {
-  Usuario,
-  CrearUsuarioInput,
-  ActualizarUsuarioInput,
-} from "@/types/usuario";
+import { useRouter } from "next/navigation"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
-interface Props {
-  usuario: Usuario | null;
-  onGuardar: (
-    data: CrearUsuarioInput | ActualizarUsuarioInput
-  ) => Promise<void>;
-  onCancelar: () => void;
+import { Button } from "@/components/ui/button"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+import type { Usuario } from "@/types/usuario"
+import {
+  useActualizarUsuario,
+  useCrearUsuario,
+} from "../hooks/useUsuarios"
+import {
+  usuarioFormSchema,
+  type UsuarioFormValues,
+} from "../schemas/usuario-form.schema"
+
+const ROLES: { valor: string; etiqueta: string }[] = [
+  { valor: "1", etiqueta: "Administrador" },
+  { valor: "2", etiqueta: "Voluntario" },
+]
+
+function valoresIniciales(usuario?: Usuario | null): UsuarioFormValues {
+  return {
+    nombre: usuario?.nombre ?? "",
+    email: usuario?.email ?? "",
+    roleId: usuario ? String(usuario.roleId) : "2",
+  }
 }
 
-export default function UsuarioForm({
+interface UsuarioFormProps {
+  usuario?: Usuario | null
+  onSuccess?: () => void
+  onCancel?: () => void
+}
+
+export function UsuarioForm({
   usuario,
-  onGuardar,
-  onCancelar,
-}: Props) {
-  const [email, setEmail] = useState(usuario?.email ?? "");
-  const [nombre, setNombre] = useState(usuario?.nombre ?? "");
-  const [roleId, setRoleId] = useState(usuario?.roleId ?? 2);
-  const [guardando, setGuardando] = useState(false);
+  onSuccess,
+  onCancel,
+}: UsuarioFormProps) {
+  const router = useRouter()
+  const crear = useCrearUsuario()
+  const actualizar = useActualizarUsuario()
+  const esEdicion = Boolean(usuario)
+  const pendiente = crear.isPending || actualizar.isPending
 
-  const [errores, setErrores] = useState({
-    email: "",
-    nombre: "",
-    roleId: "",
-  });
+  const form = useForm<UsuarioFormValues>({
+    resolver: zodResolver(usuarioFormSchema),
+    defaultValues: valoresIniciales(usuario),
+  })
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    const nuevosErrores = {
-      email: "",
-      nombre: "",
-      roleId: "",
-    };
-
-    const emailLimpio = email.trim();
-    const nombreLimpio = nombre.trim();
-
-    if (!emailLimpio) {
-      nuevosErrores.email = "El correo es obligatorio.";
-    } else if (!/^[^\s@]+@sembrandoperu\.org$/.test(emailLimpio)) {
-      nuevosErrores.email =
-        "Ingresa un correo válido de @sembrandoperu.org.";
+  function handleSubmit(values: UsuarioFormValues) {
+    const payload = {
+      nombre: values.nombre,
+      email: values.email,
+      roleId: Number(values.roleId),
     }
 
-    if (!nombreLimpio) {
-      nuevosErrores.nombre = "El nombre es obligatorio.";
+    if (esEdicion && usuario) {
+      actualizar.mutate(
+        { id: usuario.id, input: payload },
+        {
+          onSuccess: () => {
+            toast.success("Usuario actualizado correctamente.")
+            onSuccess?.()
+          },
+          onError: (error) => {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "No se pudo actualizar el usuario.",
+            )
+          },
+        },
+      )
+      return
     }
 
-    if (!roleId) {
-      nuevosErrores.roleId = "Debes seleccionar un rol.";
-    }
-
-    if (
-      nuevosErrores.email ||
-      nuevosErrores.nombre ||
-      nuevosErrores.roleId
-    ) {
-      setErrores(nuevosErrores);
-      return;
-    }
-
-    setGuardando(true);
-
-    try {
-      await onGuardar({
-        email: emailLimpio,
-        nombre: nombreLimpio,
-        roleId,
-      });
-    } finally {
-      setGuardando(false);
-    }
+    crear.mutate(payload, {
+      onSuccess: () => {
+        toast.success("Usuario creado correctamente.")
+        onSuccess?.()
+      },
+      onError: (error) => {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "No se pudo crear el usuario.",
+        )
+      },
+    })
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white rounded-xl shadow-xl w-full max-w-xl p-6 space-y-5"
-    >
-      <h2 className="text-2xl font-bold text-[#003D2D]">
-        {usuario ? "Editar usuario" : "Nuevo usuario"}
-      </h2>
-
-      <div>
-        <label className="block mb-2 font-medium">
-          Nombre completo
-        </label>
-
-        <input
-          type="text"
-          value={nombre}
-          onChange={(e) => {
-            setNombre(e.target.value);
-
-            if (errores.nombre) {
-              setErrores((prev) => ({
-                ...prev,
-                nombre: "",
-              }));
-            }
-          }}
-          className={`w-full border rounded-lg p-3 outline-none transition ${
-            errores.nombre
-              ? "border-red-500"
-              : "border-gray-300 focus:border-[#003D2D]"
-          }`}
-          placeholder="Ej. Carlos Pérez"
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className="space-y-4"
+        noValidate
+      >
+        <FormField
+          control={form.control}
+          name="nombre"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nombre completo</FormLabel>
+              <FormControl>
+                <Input placeholder="Carlos Pérez" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
 
-        {errores.nombre && (
-          <p className="mt-1 text-sm text-red-600">
-            {errores.nombre}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className="block mb-2 font-medium">
-          Correo electrónico
-        </label>
-
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-
-            if (errores.email) {
-              setErrores((prev) => ({
-                ...prev,
-                email: "",
-              }));
-            }
-          }}
-          className={`w-full border rounded-lg p-3 outline-none transition ${
-            errores.email
-              ? "border-red-500"
-              : "border-gray-300 focus:border-[#003D2D]"
-          }`}
-          placeholder="usuario@sembrandoperu.org"
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Correo electrónico</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="usuario@sembrandoperu.org"
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>
+                Solo se permiten correos @sembrandoperu.org.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
         />
 
-        {errores.email && (
-          <p className="mt-1 text-sm text-red-600">
-            {errores.email}
-          </p>
-        )}
+        <FormField
+          control={form.control}
+          name="roleId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Rol</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecciona un rol" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {ROLES.map((rol) => (
+                    <SelectItem key={rol.valor} value={rol.valor}>
+                      {rol.etiqueta}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-        {!usuario && (
-          <p className="mt-1 text-xs text-gray-500">
-            El usuario debe utilizar un correo @sembrandoperu.org.
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className="block mb-2 font-medium">
-          Rol
-        </label>
-
-        <select
-          value={roleId}
-          onChange={(e) => {
-            setRoleId(Number(e.target.value));
-
-            if (errores.roleId) {
-              setErrores((prev) => ({
-                ...prev,
-                roleId: "",
-              }));
-            }
-          }}
-          className={`w-full border rounded-lg p-3 outline-none transition ${
-            errores.roleId
-              ? "border-red-500"
-              : "border-gray-300 focus:border-[#003D2D]"
-          }`}
-        >
-          <option value={2}>Voluntario</option>
-          <option value={1}>Administrador</option>
-        </select>
-
-        {errores.roleId && (
-          <p className="mt-1 text-sm text-red-600">
-            {errores.roleId}
-          </p>
-        )}
-      </div>
-
-      {!usuario && (
-        <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
-          <p className="text-sm text-gray-600">
+        {!esEdicion && (
+          <p className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
             Se asignará una contraseña temporal al nuevo usuario.
           </p>
+        )}
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pendiente}
+            onClick={onCancel ?? (() => router.back())}
+          >
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={pendiente}>
+            {pendiente && <Loader2 className="animate-spin" size={16} />}
+            {esEdicion ? "Guardar cambios" : "Guardar"}
+          </Button>
         </div>
-      )}
-
-      <div className="flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={onCancelar}
-          disabled={guardando}
-          className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition disabled:opacity-50"
-        >
-          Cancelar
-        </button>
-
-        <button
-          type="submit"
-          disabled={guardando}
-          className={`px-4 py-2 rounded-lg text-white transition ${
-            guardando
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-[#003D2D] hover:bg-[#00553f]"
-          }`}
-        >
-          {guardando ? "Guardando..." : "Guardar"}
-        </button>
-      </div>
-    </form>
-  );
+      </form>
+    </Form>
+  )
 }
