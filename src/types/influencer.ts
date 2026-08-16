@@ -15,11 +15,6 @@ export interface InfluencerResumenUsuario {
   nombre: string
 }
 
-export interface InfluencerConsultaIaResumen {
-  id: string
-  voluntarioId: string
-}
-
 /** Influencer completo (respuesta del backend). */
 export interface Influencer {
   id: string
@@ -36,8 +31,6 @@ export interface Influencer {
   estadoContacto: EstadoContacto
   createdAt?: string
   updatedAt?: string
-  /** Origen: consulta IA que lo generó (incluye voluntario). */
-  consultaIa?: InfluencerConsultaIaResumen | null
   /** Quién lo validó/actualizó por última vez. */
   validadoPor?: InfluencerResumenUsuario | null
 }

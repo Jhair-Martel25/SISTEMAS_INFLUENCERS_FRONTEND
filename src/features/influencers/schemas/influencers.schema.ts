@@ -21,11 +21,6 @@ export const InfluencerResumenUsuarioSchema = z.object({
   nombre: z.string(),
 })
 
-export const InfluencerConsultaIaResumenSchema = z.object({
-  id: z.string(),
-  voluntarioId: z.string(),
-})
-
 export const InfluencerSchema = z.object({
   id: z.string(),
   nombre: z.string(),
@@ -41,7 +36,6 @@ export const InfluencerSchema = z.object({
   estadoContacto: EstadoContactoEnum,
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
-  consultaIa: InfluencerConsultaIaResumenSchema.nullable().optional(),
   validadoPor: InfluencerResumenUsuarioSchema.nullable().optional(),
 })
 

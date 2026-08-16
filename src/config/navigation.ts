@@ -33,12 +33,6 @@ export const NAVEGACION: ItemNavegacion[] = [
     desc: 'Administra y valida influencers',
   },
   {
-    recurso: 'consultas-ia',
-    href: '/consultas-ia',
-    label: 'Motor IA',
-    desc: 'Búsqueda inteligente de talento',
-  },
-  {
     recurso: 'reuniones',
     href: '/reuniones/gestion',
     label: 'Reuniones',

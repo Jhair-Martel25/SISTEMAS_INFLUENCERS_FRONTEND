@@ -36,12 +36,6 @@ export const ESTADO_USUARIO = {
   INACTIVO: 'INACTIVO',
 } as const
 
-export const ESTADO_CONSULTA_IA = {
-  PROCESANDO: 'PROCESANDO',
-  COMPLETADO: 'COMPLETADO',
-  ERROR: 'ERROR',
-} as const
-
 export const DIA_SEMANA = {
   LUNES: 'LUNES',
   MARTES: 'MARTES',
@@ -69,7 +63,6 @@ export type EstadoValidacion = keyof typeof ESTADO_VALIDACION
 export type EstadoContacto = keyof typeof ESTADO_CONTACTO
 export type EstadoReunion = keyof typeof ESTADO_REUNION
 export type EstadoUsuario = keyof typeof ESTADO_USUARIO
-export type EstadoConsultaIA = keyof typeof ESTADO_CONSULTA_IA
 export type DiaSemana = keyof typeof DIA_SEMANA
 export type Tematica = keyof typeof TEMATICA
 

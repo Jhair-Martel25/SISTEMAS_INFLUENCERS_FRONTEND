@@ -3,7 +3,6 @@ import {
   FileText,
   Home,
   Mail,
-  Sparkles,
   UserPlus,
   Users,
   Video,
@@ -20,7 +19,6 @@ import type { Recurso } from '@/config/roles'
 export const ICONO_POR_RECURSO: Record<Recurso, LucideIcon> = {
   dashboard: Home,
   influencers: Users,
-  'consultas-ia': Sparkles,
   reuniones: Video,
   agenda: BarChart3,
   usuarios: UserPlus,
