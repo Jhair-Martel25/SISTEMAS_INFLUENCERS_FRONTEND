@@ -6,6 +6,8 @@ import { InputField } from "@/components/ui/InputField";
 import { horarioVoluntarioService } from "@/services/horarioVoluntarioService";
 import { ApiError } from "@/services/api";
 import type { DiaSemana } from "@/types/horario";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 const DIAS: { corto: string; valor: DiaSemana }[] = [
     { corto: "Lun", valor: "LUNES" },
@@ -135,7 +137,14 @@ export default function RegistroVoluntarioPage() {
     return (
         <main className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-100 to-green-50 py-10 px-6">
             <div className="max-w-6xl mx-auto">
-                {/* Encabezado */}
+               {/* Encabezado */}
+                <Link
+                    href="/dashboard"
+                    className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#003D2D] transition-colors duration-150 mb-4"
+                >
+                    <ArrowLeft size={16} />
+                    Volver al Dashboard
+                </Link>
                 <div className="flex justify-between items-start mb-8">
                     <div>
                         <p className="text-sm text-gray-500">

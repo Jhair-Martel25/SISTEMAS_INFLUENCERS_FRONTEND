@@ -1,7 +1,8 @@
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { enviarEmail } from "@/services/emailService";
 
 export default function EmailPage() {
@@ -53,7 +54,14 @@ export default function EmailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8">
+     <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8">
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#003D2D] transition-colors duration-150 mb-4"
+        >
+          <ArrowLeft size={16} />
+          Volver al Dashboard
+        </Link>
         <h1 className="text-3xl font-bold text-green-700 mb-2">
           Enviar Email
         </h1>
