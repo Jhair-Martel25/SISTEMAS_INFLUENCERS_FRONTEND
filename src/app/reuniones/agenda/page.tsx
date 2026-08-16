@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Calendar, Users, Hourglass } from 'lucide-react'
+import { ArrowLeft, Calendar, Users, Hourglass } from 'lucide-react'
 import type { DisponibilidadCita } from '@/types/disponibilidad'
 import { disponibilidadService } from '@/services/disponibilidadService'
 import { reunionesService } from '@/services/horariosService'
@@ -33,7 +33,11 @@ export default function DisponibilidadAgendaPage() {
 
       if (!cancelado) {
         if (bloquesRes.status === 'fulfilled') {
-          setBloques(bloquesRes.value)
+          const ahora = Date.now()
+          const bloquesFuturos = bloquesRes.value
+            .filter((b) => new Date(b.fechaHora).getTime() > ahora)
+            .sort((a, b) => new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime())
+          setBloques(bloquesFuturos)
         } else {
           console.error('Error cargando bloques disponibles:', bloquesRes.reason)
         }
@@ -41,8 +45,6 @@ export default function DisponibilidadAgendaPage() {
         if (reunionesRes.status === 'fulfilled') {
           setReunionesPendientes(reunionesRes.value.length)
         } else {
-          // La lista de reuniones requiere login (ADMIN/VOLUNTARIO).
-          // Como esta página es pública, es normal que falle si nadie inició sesión.
           setReunionesPendientes(null)
         }
 
@@ -73,6 +75,10 @@ export default function DisponibilidadAgendaPage() {
   return (
     <main className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-6xl mx-auto">
+
+        <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#003D2D] transition-colors mb-6">
+          <ArrowLeft size={16} /> Volver al Dashboard
+        </Link>
 
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-[#003D2D]">Disponibilidad y Agenda</h1>

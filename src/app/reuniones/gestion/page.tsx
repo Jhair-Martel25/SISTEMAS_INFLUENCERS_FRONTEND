@@ -62,7 +62,6 @@ function formatearFechaHora(iso: string) {
 export default function GestionReunionesPage() {
   const [reuniones, setReuniones] = useState<Reunion[]>(MOCK_REUNIONES)
   const [cargando, setCargando] = useState(true)
-  const [usandoMock, setUsandoMock] = useState(true)
   const [filtro, setFiltro] = useState<EstadoReunion | 'TODAS'>('TODAS')
 
   useEffect(() => {
@@ -73,12 +72,10 @@ export default function GestionReunionesPage() {
         const data = await reunionesService.listar(filtro === 'TODAS' ? undefined : { estado: filtro })
         if (!cancelado) {
           setReuniones(data)
-          setUsandoMock(false)
         }
       } catch {
         if (!cancelado) {
           setReuniones(filtro === 'TODAS' ? MOCK_REUNIONES : MOCK_REUNIONES.filter((r) => r.estado === filtro))
-          setUsandoMock(true)
         }
       } finally {
         if (!cancelado) setCargando(false)
@@ -101,11 +98,6 @@ export default function GestionReunionesPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-[#003D2D]">Gestion de Reuniones</h1>
           <p className="text-gray-500 mt-2">Central de coordinacion y seguimiento de reuniones entre influencers y voluntarios.</p>
-          {usandoMock ? (
-            <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-1.5 mt-3 inline-block">
-              Mostrando datos de ejemplo (maqueta) - se conectara a la API real.
-            </p>
-          ) : null}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">

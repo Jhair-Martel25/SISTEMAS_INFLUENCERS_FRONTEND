@@ -34,7 +34,14 @@ export default function AgendarReunionPage() {
       setErrorCarga(null)
       try {
         const data = await disponibilidadService.listarDisponibles()
-        if (!cancelado) setBloques(data)
+        // El backend no filtra por fecha, solo por "disponible": true, asi que
+        // aca ocultamos cualquier bloque cuya fecha/hora ya paso, para que el
+        // influencer nunca pueda elegir un horario vencido.
+        const ahora = Date.now()
+        const bloquesFuturos = data
+          .filter((b) => new Date(b.fechaHora).getTime() > ahora)
+          .sort((a, b) => new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime())
+        if (!cancelado) setBloques(bloquesFuturos)
       } catch {
         if (!cancelado) setErrorCarga('No se pudo cargar la disponibilidad en este momento.')
       } finally {
@@ -140,10 +147,25 @@ export default function AgendarReunionPage() {
             required
           >
             <option value="">Selecciona un horario</option>
-            {bloques.map((b) => (
-              <option key={b.id} value={b.id}>
-                {formatearBloque(b.fechaHora)}
-              </option>
+            {Object.entries(
+              bloques.reduce((grupos, b) => {
+                const dia = new Date(b.fechaHora).toLocaleDateString('es-PE', {
+                  weekday: 'long',
+                  day: '2-digit',
+                  month: 'short',
+                })
+                if (!grupos[dia]) grupos[dia] = []
+                grupos[dia].push(b)
+                return grupos
+              }, {} as Record<string, DisponibilidadCita[]>)
+            ).map(([dia, bloquesDelDia]) => (
+              <optgroup key={dia} label={dia}>
+                {bloquesDelDia.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {new Date(b.fechaHora).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         )}

@@ -73,7 +73,7 @@ export default function GestionarReunionPage({ params }: { params: Promise<{ id:
 
     try {
       const actualizada = await reunionesService.actualizarEstado(reunion.id, { estado: nuevoEstado })
-      setReunion(actualizada)
+      setReunion({ ...reunion, ...actualizada })
     } catch (err) {
       if (usandoMock) {
         setReunion({ ...reunion, estado: nuevoEstado })
@@ -122,12 +122,6 @@ export default function GestionarReunionPage({ params }: { params: Promise<{ id:
               {etiquetaEstadoReunion(reunion.estado)}
             </span>
           </div>
-
-          {usandoMock ? (
-            <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-1.5 mb-6 inline-block">
-              Mostrando datos de ejemplo (maqueta) - se conectara a la API real.
-            </p>
-          ) : null}
 
           <div className="grid grid-cols-2 gap-6 mb-8">
             <div>
