@@ -80,9 +80,17 @@ export default function DisponibilidadAgendaPage() {
           <ArrowLeft size={16} /> Volver al Dashboard
         </Link>
 
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-[#003D2D]">Disponibilidad y Agenda</h1>
-          <p className="text-gray-600 mt-2">Consulta la disponibilidad real de los voluntarios y organiza las reuniones.</p>
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-[#003D2D]">Disponibilidad y Agenda</h1>
+            <p className="text-gray-600 mt-2">Consulta la disponibilidad real de los voluntarios y organiza las reuniones.</p>
+          </div>
+          <Link
+            href="/reuniones/agendar"
+            className="bg-[#003D2D] text-white px-5 py-3 rounded-xl hover:bg-[#0B5E47] transition-colors duration-200 whitespace-nowrap"
+          >
+            Agendar reunión
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
