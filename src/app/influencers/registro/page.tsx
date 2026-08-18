@@ -2,20 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { influencersService } from "@/services/influencersService";
+import type {
+  CrearInfluencerInput,
+  EstadoValidacion,
+} from "@/types/influencer";
 
 interface FormData {
   nombre: string;
-  usuarioIG: string;
-  correo: string;
-  telefono: string;
-  pais: string;
-  ciudad: string;
+  usuarioIg: string;
+  linkIg: string;
+  email: string;
+  phone: string;
   seguidores: string;
-  engagement: string;
-  tematica: string;
-  linkPerfil: string;
-  estadoInicial: string;
-  voluntarioEncargado: string;
+  cantidad_post: string;
+  biografia: string;
+  mensajePersonalizado: string;
+  estadoValidacion: EstadoValidacion;
 }
 
 interface FormErrors {
@@ -24,34 +27,52 @@ interface FormErrors {
 
 const initialFormData: FormData = {
   nombre: "",
-  usuarioIG: "",
-  correo: "",
-  telefono: "",
-  pais: "",
-  ciudad: "",
+  usuarioIg: "",
+  linkIg: "",
+  email: "",
+  phone: "",
   seguidores: "",
-  engagement: "",
-  tematica: "",
-  linkPerfil: "",
-  estadoInicial: "Pendiente",
-  voluntarioEncargado: "",
+  cantidad_post: "",
+  biografia: "",
+  mensajePersonalizado: "",
+  estadoValidacion: "PENDIENTE",
 };
 
 export default function RegistroInfluencerPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
-  const [statusMessage, setStatusMessage] = useState("");
+
+  const [formData, setFormData] =
+    useState<FormData>(initialFormData);
+
+  const [errors, setErrors] =
+    useState<FormErrors>({});
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  const [submitStatus, setSubmitStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
+
+  const [statusMessage, setStatusMessage] =
+    useState("");
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement |
+      HTMLTextAreaElement |
+      HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Limpia el error de ese campo apenas el usuario vuelve a escribir
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Limpia el error de ese campo apenas
+    // el usuario vuelve a escribir
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -61,483 +82,577 @@ export default function RegistroInfluencerPage() {
     }
   };
 
-  const validate = (data: FormData): FormErrors => {
+  const validate = (
+    data: FormData
+  ): FormErrors => {
     const newErrors: FormErrors = {};
 
-    // Nombre completo (obligatorio)
+    // Nombre
     if (!data.nombre.trim()) {
-      newErrors.nombre = "El nombre completo es obligatorio.";
+      newErrors.nombre =
+        "El nombre completo es obligatorio.";
     }
 
-    // Usuario de IG (obligatorio, debe empezar con @)
-    if (!data.usuarioIG.trim()) {
-      newErrors.usuarioIG = "El usuario de Instagram es obligatorio.";
-    } else if (!/^@[a-zA-Z0-9._]{1,30}$/.test(data.usuarioIG.trim())) {
-      newErrors.usuarioIG = "Debe empezar con @ y contener solo letras, números, puntos o guiones bajos.";
+    // Usuario de Instagram
+    if (!data.usuarioIg.trim()) {
+      newErrors.usuarioIg =
+        "El usuario de Instagram es obligatorio.";
+    } else if (
+      !/^@?[a-zA-Z0-9._]{1,30}$/.test(
+        data.usuarioIg.trim()
+      )
+    ) {
+      newErrors.usuarioIg =
+        "Ingresa un usuario de Instagram válido.";
     }
 
-    // Correo (obligatorio, formato válido)
-    if (!data.correo.trim()) {
-      newErrors.correo = "El correo electrónico es obligatorio.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.correo.trim())) {
-      newErrors.correo = "Ingresa un correo electrónico válido.";
-    }
+    // Link de Instagram
+    if (!data.linkIg.trim()) {
+      newErrors.linkIg =
+        "El link de Instagram es obligatorio.";
+    } else {
+      try {
+        const url = new URL(
+          data.linkIg.trim()
+        );
 
-    // Teléfono (opcional, pero si se llena debe tener formato razonable)
-    if (data.telefono.trim() && !/^\+?[0-9\s-]{7,15}$/.test(data.telefono.trim())) {
-      newErrors.telefono = "Ingresa un teléfono válido (solo números, espacios o guiones).";
-    }
-
-    // País (obligatorio)
-    if (!data.pais.trim()) {
-      newErrors.pais = "El país es obligatorio.";
-    }
-
-    // Ciudad (obligatorio)
-    if (!data.ciudad.trim()) {
-      newErrors.ciudad = "La ciudad es obligatoria.";
-    }
-
-    // Seguidores (obligatorio, formato tipo 150k, 1.5k, 90000)
-    if (!data.seguidores.trim()) {
-      newErrors.seguidores = "El número de seguidores es obligatorio.";
-    } else if (!/^\d+(\.\d+)?[kKmM]?$/.test(data.seguidores.trim())) {
-      newErrors.seguidores = "Formato inválido. Usa números, ej. 150k, 1.5k o 90000.";
-    }
-
-    // Engagement (obligatorio, formato tipo 4.5%)
-    if (!data.engagement.trim()) {
-      newErrors.engagement = "El engagement es obligatorio.";
-    } else if (!/^\d+(\.\d+)?%$/.test(data.engagement.trim())) {
-      newErrors.engagement = "Formato inválido. Usa un porcentaje, ej. 4.5%.";
-    }
-
-    // Temática (obligatorio)
-    if (!data.tematica.trim()) {
-      newErrors.tematica = "La temática es obligatoria.";
-    }
-
-   
-    // Link del perfil (obligatorio, debe ser una URL válida con protocolo http/https)
-     if (!data.linkPerfil.trim()) {
-       newErrors.linkPerfil = "El link del perfil es obligatorio.";
-      } else {
-        try {
-       const url = new URL(data.linkPerfil.trim());
-       if (url.protocol !== "http:" && url.protocol !== "https:") {
-      newErrors.linkPerfil = "El link debe iniciar con http:// o https://";
+        if (
+          url.protocol !== "http:" &&
+          url.protocol !== "https:"
+        ) {
+          newErrors.linkIg =
+            "El link debe iniciar con http:// o https://";
+        }
+      } catch {
+        newErrors.linkIg =
+          "Ingresa una URL válida de Instagram.";
       }
-     } catch {
-    newErrors.linkPerfil = "Ingresa una URL válida (debe empezar con https://).";
-     }
-}
+    }
 
-    // Voluntario encargado (obligatorio)
-    if (!data.voluntarioEncargado.trim()) {
-      newErrors.voluntarioEncargado = "Debes asignar un voluntario encargado.";
+    // Correo electrónico
+    if (data.email.trim()) {
+      if (
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+          data.email.trim()
+        )
+      ) {
+        newErrors.email =
+          "Ingresa un correo electrónico válido.";
+      }
+    }
+
+    // Teléfono
+    if (
+      data.phone.trim() &&
+      !/^\+?[0-9\s-]{7,15}$/.test(
+        data.phone.trim()
+      )
+    ) {
+      newErrors.phone =
+        "Ingresa un teléfono válido (solo números, espacios o guiones).";
+    }
+
+    // Seguidores
+    if (data.seguidores.trim()) {
+      if (
+        !/^\d+(\.\d+)?[kKmM]?$/.test(
+          data.seguidores.trim()
+        )
+      ) {
+        newErrors.seguidores =
+          "Formato inválido. Usa números, ej. 150k, 1.5k o 90000.";
+      }
+    }
+
+    // Cantidad de publicaciones
+    if (data.cantidad_post.trim()) {
+      if (
+        !/^\d+$/.test(
+          data.cantidad_post.trim()
+        )
+      ) {
+        newErrors.cantidad_post =
+          "Ingresa únicamente un número entero.";
+      }
     }
 
     return newErrors;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (
+    e: React.FormEvent
+  ) => {
     e.preventDefault();
+
     setSubmitStatus("idle");
 
-    const validationErrors = validate(formData);
+    const validationErrors =
+      validate(formData);
+
     setErrors(validationErrors);
 
-    if (Object.keys(validationErrors).length > 0) {
+    if (
+      Object.keys(validationErrors).length > 0
+    ) {
       setSubmitStatus("error");
-      setStatusMessage("Revisa los campos marcados en rojo antes de continuar.");
-      setTimeout(() => setSubmitStatus("idle"), 4000);
+
+      setStatusMessage(
+        "Revisa los campos marcados en rojo antes de continuar."
+      );
+
+      setTimeout(() => {
+        setSubmitStatus("idle");
+      }, 4000);
+
       return;
     }
 
     setIsSubmitting(true);
 
-    // Estructura final lista para enviar al backend (aún sin conectar)
-    const payload = {
-      nombre: formData.nombre.trim(),
-      usuarioIG: formData.usuarioIG.trim(),
-      correo: formData.correo.trim(),
-      telefono: formData.telefono.trim() || null,
-      pais: formData.pais.trim(),
-      ciudad: formData.ciudad.trim(),
-      seguidores: formData.seguidores.trim(),
-      engagement: formData.engagement.trim(),
-      tematica: formData.tematica.trim(),
-      linkPerfil: formData.linkPerfil.trim(),
-      estadoInicial: formData.estadoInicial,
-      voluntarioEncargado: formData.voluntarioEncargado.trim(),
-    };
-
     try {
-      // Aquí iría la conexión real al backend, por ejemplo:
-      // const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/influencers`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(payload),
-      // });
-      // if (!res.ok) throw new Error("Error al registrar el influencer");
+      const payload: CrearInfluencerInput = {
+        nombre: formData.nombre.trim(),
 
-      // Por ahora, simulamos el envío con un delay
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      console.log("Payload listo para enviar al backend:", payload);
+        usuarioIg: formData.usuarioIg
+          .trim()
+          .replace(/^@/, ""),
+
+        linkIg: formData.linkIg.trim(),
+
+        email:
+          formData.email.trim() || undefined,
+
+        phone:
+          formData.phone.trim() || undefined,
+
+        seguidores:
+          formData.seguidores.trim() || undefined,
+
+        cantidad_post:
+          formData.cantidad_post.trim() ||
+          undefined,
+
+        biografia:
+          formData.biografia.trim() ||
+          undefined,
+
+        mensajePersonalizado:
+          formData.mensajePersonalizado.trim() ||
+          undefined,
+
+        estadoValidacion:
+          formData.estadoValidacion,
+      };
+
+      const influencer =
+        await influencersService.crear(
+          payload
+        );
+
+      console.log(
+        "Influencer registrado:",
+        influencer
+      );
 
       setSubmitStatus("success");
-      setStatusMessage("Influencer registrado correctamente.");
+
+      setStatusMessage(
+        "Influencer registrado correctamente."
+      );
+
       setFormData(initialFormData);
       setErrors({});
     } catch (error) {
+      console.error(
+        "Error al registrar influencer:",
+        error
+      );
+
       setSubmitStatus("error");
-      setStatusMessage("Ocurrió un error al registrar el influencer. Intenta nuevamente.");
+
+      if (error instanceof Error) {
+        setStatusMessage(error.message);
+      } else {
+        setStatusMessage(
+          "Ocurrió un error al registrar el influencer. Intenta nuevamente."
+        );
+      }
     } finally {
       setIsSubmitting(false);
-      setTimeout(() => setSubmitStatus("idle"), 4000);
+
+      setTimeout(() => {
+        setSubmitStatus("idle");
+      }, 4000);
     }
   };
 
-  const handleCancel = () => {
-    setFormData(initialFormData);
-    setErrors({});
-    setSubmitStatus("idle");
-    router.push("/influencers/gestion");
-  };
+const handleCancel = () => {
+  setFormData(initialFormData);
+  setErrors({});
+  setSubmitStatus("idle");
+  router.push("/influencers/gestion");
+};
 
-  return (
-    <main className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-8">
+return (
+  <main className="min-h-screen bg-gray-100 p-8">
+    <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-8">
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">
-            Registro de Influencer
-          </h1>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">
+          Registro de Influencer
+        </h1>
 
-          <p className="text-gray-600 mt-2">
-            Ingresa los datos de perfil para añadirlo al sistema.
-          </p>
+        <p className="text-gray-600 mt-2">
+          Ingresa los datos de perfil para añadirlo al sistema.
+        </p>
+      </div>
+
+      {/* Banner de éxito / error */}
+      {submitStatus === "success" && (
+        <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+          {statusMessage}
+        </div>
+      )}
+      {submitStatus === "error" && (
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          {statusMessage}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-8" noValidate>
+
+        {/* Bloque 1: Información Personal */}
+        <div>
+          <h2 className="text-lg font-semibold text-[#003D2D] mb-4 pb-2 border-b border-gray-100">
+            Información Personal
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Nombre */}
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                NOMBRE COMPLETO
+              </label>
+
+              <input
+                type="text"
+                name="nombre"
+                value={formData.nombre}
+                onChange={handleChange}
+                placeholder="Andrea Paz"
+                className={`w-full border rounded-lg p-3 ${errors.nombre
+                  ? "border-red-400"
+                  : "border-gray-300"
+                  }`}
+              />
+
+              {errors.nombre && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.nombre}
+                </p>
+              )}
+            </div>
+
+            {/* Usuario Instagram */}
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                USUARIO DE IG
+              </label>
+
+              <input
+                type="text"
+                name="usuarioIg"
+                value={formData.usuarioIg}
+                onChange={handleChange}
+                placeholder="@usuario"
+                className={`w-full border rounded-lg p-3 ${errors.usuarioIg
+                  ? "border-red-400"
+                  : "border-gray-300"
+                  }`}
+              />
+
+              {errors.usuarioIg && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.usuarioIg}
+                </p>
+              )}
+            </div>
+
+            {/* Correo */}
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                CORREO ELECTRÓNICO
+              </label>
+
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="correo@ejemplo.com"
+                className={`w-full border rounded-lg p-3 ${errors.email
+                  ? "border-red-400"
+                  : "border-gray-300"
+                  }`}
+              />
+
+              {errors.email && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.email}
+                </p>
+              )}
+            </div>
+
+            {/* Teléfono */}
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                TELÉFONO (OPCIONAL)
+              </label>
+
+              <input
+                type="text"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="+51..."
+                className={`w-full border rounded-lg p-3 ${errors.phone
+                  ? "border-red-400"
+                  : "border-gray-300"
+                  }`}
+              />
+
+              {errors.phone && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.phone}
+                </p>
+              )}
+            </div>
+
+          </div>
         </div>
 
-        {/* Banner de éxito / error */}
-        {submitStatus === "success" && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-            {statusMessage}
-          </div>
-        )}
-        {submitStatus === "error" && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {statusMessage}
-          </div>
-        )}
+        {/* Bloque 2: Redes Sociales */}
+        <div>
+          <h2 className="text-lg font-semibold text-[#003D2D] mb-4 pb-2 border-b border-gray-100">
+            Redes Sociales
+          </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-8" noValidate>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          {/* Bloque 1: Información Personal */}
-          <div>
-            <h2 className="text-lg font-semibold text-[#003D2D] mb-4 pb-2 border-b border-gray-100">
-              Información Personal
-            </h2>
+            {/* Seguidores */}
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                SEGUIDORES
+              </label>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">
-                  NOMBRE COMPLETO
-                </label>
-                <input
-                  type="text"
-                  name="nombre"
-                  value={formData.nombre}
-                  onChange={handleChange}
-                  placeholder="Andrea Paz"
-                  className={`w-full border rounded-lg p-3 ${
-                    errors.nombre ? "border-red-400" : "border-gray-300"
+              <input
+                type="text"
+                name="seguidores"
+                value={formData.seguidores}
+                onChange={handleChange}
+                placeholder="Ej. 150k"
+                className={`w-full border rounded-lg p-3 ${errors.seguidores
+                  ? "border-red-400"
+                  : "border-gray-300"
                   }`}
-                />
-                {errors.nombre && (
-                  <p className="text-xs text-red-500 mt-1">{errors.nombre}</p>
-                )}
-              </div>
+              />
 
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">
-                  USUARIO DE IG
-                </label>
-                <input
-                  type="text"
-                  name="usuarioIG"
-                  value={formData.usuarioIG}
-                  onChange={handleChange}
-                  placeholder="@usuario"
-                  className={`w-full border rounded-lg p-3 ${
-                    errors.usuarioIG ? "border-red-400" : "border-gray-300"
-                  }`}
-                />
-                {errors.usuarioIG && (
-                  <p className="text-xs text-red-500 mt-1">{errors.usuarioIG}</p>
-                )}
-              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Ingresa el número total de seguidores en la red principal.
+              </p>
 
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">
-                  CORREO ELECTRÓNICO
-                </label>
-                <input
-                  type="email"
-                  name="correo"
-                  value={formData.correo}
-                  onChange={handleChange}
-                  placeholder="correo@ejemplo.com"
-                  className={`w-full border rounded-lg p-3 ${
-                    errors.correo ? "border-red-400" : "border-gray-300"
-                  }`}
-                />
-                {errors.correo && (
-                  <p className="text-xs text-red-500 mt-1">{errors.correo}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">
-                  TELÉFONO (OPCIONAL)
-                </label>
-                <input
-                  type="text"
-                  name="telefono"
-                  value={formData.telefono}
-                  onChange={handleChange}
-                  placeholder="+51..."
-                  className={`w-full border rounded-lg p-3 ${
-                    errors.telefono ? "border-red-400" : "border-gray-300"
-                  }`}
-                />
-                {errors.telefono && (
-                  <p className="text-xs text-red-500 mt-1">{errors.telefono}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">
-                  PAÍS
-                </label>
-                <input
-                  type="text"
-                  name="pais"
-                  value={formData.pais}
-                  onChange={handleChange}
-                  placeholder="Perú"
-                  className={`w-full border rounded-lg p-3 ${
-                    errors.pais ? "border-red-400" : "border-gray-300"
-                  }`}
-                />
-                {errors.pais && (
-                  <p className="text-xs text-red-500 mt-1">{errors.pais}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">
-                  CIUDAD
-                </label>
-                <input
-                  type="text"
-                  name="ciudad"
-                  value={formData.ciudad}
-                  onChange={handleChange}
-                  placeholder="Lima"
-                  className={`w-full border rounded-lg p-3 ${
-                    errors.ciudad ? "border-red-400" : "border-gray-300"
-                  }`}
-                />
-                {errors.ciudad && (
-                  <p className="text-xs text-red-500 mt-1">{errors.ciudad}</p>
-                )}
-              </div>
-
-            </div>
-          </div>
-
-          {/* Bloque 2: Redes Sociales */}
-          <div>
-            <h2 className="text-lg font-semibold text-[#003D2D] mb-4 pb-2 border-b border-gray-100">
-              Redes Sociales
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">
-                  SEGUIDORES
-                </label>
-                <input
-                  type="text"
-                  name="seguidores"
-                  value={formData.seguidores}
-                  onChange={handleChange}
-                  placeholder="Ej. 150k"
-                  className={`w-full border rounded-lg p-3 ${
-                    errors.seguidores ? "border-red-400" : "border-gray-300"
-                  }`}
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Ingresa el número total de seguidores en la red principal.
+              {errors.seguidores && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.seguidores}
                 </p>
-                {errors.seguidores && (
-                  <p className="text-xs text-red-500 mt-1">{errors.seguidores}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">
-                  ENGAGEMENT
-                </label>
-                <input
-                  type="text"
-                  name="engagement"
-                  value={formData.engagement}
-                  onChange={handleChange}
-                  placeholder="Ej. 4.5%"
-                  className={`w-full border rounded-lg p-3 ${
-                    errors.engagement ? "border-red-400" : "border-gray-300"
-                  }`}
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Porcentaje promedio de interacción sobre el total de seguidores.
-                </p>
-                {errors.engagement && (
-                  <p className="text-xs text-red-500 mt-1">{errors.engagement}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">
-                  TEMÁTICA
-                </label>
-                <input
-                  type="text"
-                  name="tematica"
-                  value={formData.tematica}
-                  onChange={handleChange}
-                  placeholder="Ej. Ambiental, Social..."
-                  className={`w-full border rounded-lg p-3 ${
-                    errors.tematica ? "border-red-400" : "border-gray-300"
-                  }`}
-                />
-                {errors.tematica && (
-                  <p className="text-xs text-red-500 mt-1">{errors.tematica}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">
-                  LINK DEL PERFIL
-                </label>
-                <input
-                  type="url"
-                  name="linkPerfil"
-                  value={formData.linkPerfil}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                  className={`w-full border rounded-lg p-3 ${
-                    errors.linkPerfil ? "border-red-400" : "border-gray-300"
-                  }`}
-                />
-                {errors.linkPerfil && (
-                  <p className="text-xs text-red-500 mt-1">{errors.linkPerfil}</p>
-                )}
-              </div>
-
+              )}
             </div>
-          </div>
 
-          {/* Bloque 3: Gestión */}
-          <div>
-            <h2 className="text-lg font-semibold text-[#003D2D] mb-4 pb-2 border-b border-gray-100">
-              Gestión
-            </h2>
+            {/* Cantidad de publicaciones */}
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                CANTIDAD DE PUBLICACIONES
+              </label>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">
-                  ESTADO INICIAL
-                </label>
-
-                <select
-                  name="estadoInicial"
-                  value={formData.estadoInicial}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg p-3 bg-white"
-                >
-                  <option>Pendiente</option>
-                  <option>Validado</option>
-                  <option>Rechazado</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">
-                  VOLUNTARIO ENCARGADO DE LA VALIDACIÓN
-                </label>
-
-                <input
-                  type="text"
-                  name="voluntarioEncargado"
-                  list="lista-voluntarios"
-                  value={formData.voluntarioEncargado}
-                  onChange={handleChange}
-                  placeholder="Escriba el nombre del voluntario..."
-                  className={`w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${
-                    errors.voluntarioEncargado ? "border-red-400" : "border-gray-300"
+              <input
+                type="text"
+                name="cantidad_post"
+                value={formData.cantidad_post}
+                onChange={handleChange}
+                placeholder="Ej. 120"
+                className={`w-full border rounded-lg p-3 ${errors.cantidad_post
+                  ? "border-red-400"
+                  : "border-gray-300"
                   }`}
-                />
+              />
 
-                <datalist id="lista-voluntarios">
-                  <option value="Mateo Rivera" />
-                  <option value="Mateo García" />
-                  <option value="Mateo Pérez" />
-                  <option value="Elena Salas" />
-                  <option value="Carlos Pardo" />
-                  <option value="Luis Mendoza" />
-                  <option value="María Fernández" />
-                  <option value="Ana Torres" />
-                  <option value="José Ramírez" />
-                  <option value="Lucía Herrera" />
-                </datalist>
+              <p className="text-xs text-gray-400 mt-1">
+                Ingresa la cantidad total de publicaciones del perfil.
+              </p>
 
-                <p className="text-xs text-gray-400 mt-1">
-                  Escriba el nombre del voluntario. Mientras escribe, el sistema mostrará sugerencias disponibles.
+              {errors.cantidad_post && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.cantidad_post}
                 </p>
-                {errors.voluntarioEncargado && (
-                  <p className="text-xs text-red-500 mt-1">{errors.voluntarioEncargado}</p>
-                )}
-              </div>
-
+              )}
             </div>
+
+            {/* Link de Instagram */}
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                LINK DEL PERFIL DE INSTAGRAM
+              </label>
+
+              <input
+                type="url"
+                name="linkIg"
+                value={formData.linkIg}
+                onChange={handleChange}
+                placeholder="https://instagram.com/usuario"
+                className={`w-full border rounded-lg p-3 ${errors.linkIg
+                    ? "border-red-400"
+                    : "border-gray-300"
+                  }`}
+              />
+
+              <p className="text-xs text-gray-400 mt-1">
+                Ingresa el enlace completo del perfil de Instagram.
+              </p>
+
+              {errors.linkIg && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.linkIg}
+                </p>
+              )}
+            </div>
+
+            {/* Biografía */}
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                BIOGRAFÍA
+              </label>
+
+              <textarea
+                name="biografia"
+                value={formData.biografia}
+                onChange={handleChange}
+                placeholder="Biografía del influencer..."
+                rows={4}
+                className={`w-full border rounded-lg p-3 resize-none ${errors.biografia
+                    ? "border-red-400"
+                    : "border-gray-300"
+                  }`}
+              />
+
+              {errors.biografia && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.biografia}
+                </p>
+              )}
+            </div>
+
+            {/* Mensaje personalizado */}
+            <div className="md:col-span-2">
+              <label className="block mb-2 font-medium text-gray-700">
+                MENSAJE PERSONALIZADO
+              </label>
+
+              <textarea
+                name="mensajePersonalizado"
+                value={formData.mensajePersonalizado}
+                onChange={handleChange}
+                placeholder="Mensaje personalizado para el influencer..."
+                rows={4}
+                className={`w-full border rounded-lg p-3 resize-none ${errors.mensajePersonalizado
+                    ? "border-red-400"
+                    : "border-gray-300"
+                  }`}
+              />
+
+              <p className="text-xs text-gray-400 mt-1">
+                Mensaje que podrá utilizarse posteriormente para el
+                contacto con el influencer.
+              </p>
+
+              {errors.mensajePersonalizado && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.mensajePersonalizado}
+                </p>
+              )}
+            </div>
+
           </div>
+        </div>
 
-          <div className="flex justify-end gap-3 mt-8">
-            <button
-              type="button"
-              onClick={handleCancel}
-              disabled={isSubmitting}
-              className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-150 disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-150 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? "Guardando..." : "Guardar"}
-            </button>
+        {/* Bloque 3: Estado de validación */}
+        <div>
+          <h2 className="text-lg font-semibold text-[#003D2D] mb-4 pb-2 border-b border-gray-100">
+            Gestión
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Estado de validación */}
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                ESTADO DE VALIDACIÓN
+              </label>
+
+              <select
+                name="estadoValidacion"
+                value={formData.estadoValidacion}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg p-3 bg-white"
+              >
+                <option value="PENDIENTE">
+                  Pendiente
+                </option>
+
+                <option value="VALIDADO">
+                  Validado
+                </option>
+
+                <option value="RECHAZADO">
+                  Rechazado
+                </option>
+              </select>
+
+              <p className="text-xs text-gray-400 mt-1">
+                Selecciona el estado actual de validación del influencer.
+              </p>
+            </div>
+
           </div>
+        </div>
 
-        </form>
+        {/* Botones */}
+        <div className="flex justify-end gap-3 mt-8">
 
-      </div>
-    </main>
-  );
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={isSubmitting}
+            className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-150 disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-150 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting
+              ? "Guardando..."
+              : "Guardar"}
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+  </main>
+);
 }

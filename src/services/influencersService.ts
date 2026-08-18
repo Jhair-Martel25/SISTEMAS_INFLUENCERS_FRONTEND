@@ -5,9 +5,15 @@ import type {
   ActualizarInfluencerInput,
   InfluencerFiltros,
   InfluencersResponse,
+  EstadoContacto,
 } from '@/types/influencer'
 
 const BASE_PATH = '/influencers'
+
+interface InfluencerApiResponse {
+  mensaje: string
+  data: Influencer
+}
 
 export const influencersService = {
   async listar(
@@ -20,22 +26,47 @@ export const influencersService = {
   },
 
   async obtenerPorId(id: string): Promise<Influencer> {
-    return apiClient.get<Influencer>(`${BASE_PATH}/${id}`)
+    const response = await apiClient.get<InfluencerApiResponse>(
+      `${BASE_PATH}/${id}`
+    )
+
+    return response.data
   },
 
   async crear(input: CrearInfluencerInput): Promise<Influencer> {
-    return apiClient.post<Influencer>(BASE_PATH, input)
+    const response = await apiClient.post<InfluencerApiResponse>(
+      BASE_PATH,
+      input
+    )
+
+    return response.data
   },
 
-  async actualizar(id: string, input: ActualizarInfluencerInput): Promise<Influencer> {
-    return apiClient.put<Influencer>(`${BASE_PATH}/${id}`, input)
+  async actualizar(
+    id: string,
+    input: ActualizarInfluencerInput
+  ): Promise<Influencer> {
+    const response = await apiClient.patch<InfluencerApiResponse>(
+      `${BASE_PATH}/${id}/editar`,
+      input
+    )
+
+    return response.data
   },
 
-  async cambiarEstado(id: string, estado: Influencer['estado']): Promise<Influencer> {
-    return apiClient.patch<Influencer>(`${BASE_PATH}/${id}/estado`, { estado })
+  async cambiarEstado(
+    id: string,
+    estado: EstadoContacto
+  ): Promise<Influencer> {
+    const response = await apiClient.patch<InfluencerApiResponse>(
+      `${BASE_PATH}/${id}/contactar`,
+      { estadoContacto: estado }
+    )
+
+    return response.data
   },
 
   async eliminar(id: string): Promise<void> {
-    return apiClient.delete<void>(`${BASE_PATH}/${id}`)
+    await apiClient.delete(`${BASE_PATH}/${id}`)
   },
 }

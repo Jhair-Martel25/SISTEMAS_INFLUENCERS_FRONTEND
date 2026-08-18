@@ -1,69 +1,80 @@
-
 /**
  * Tipos: Influencer
  * ------------------
- * Define la forma de un influencer y sus valores posibles (estado, red
- * social), para que toda la app (formulario, tabla, servicio) use la
- * misma estructura de datos sin repetirla en cada archivo.
+ * Define la estructura de datos utilizada por el módulo de influencers.
+ * Estos tipos están alineados con el modelo Influencer del backend.
  */
-export type EstadoInfluencer = 'Pendiente' | 'Validado' | 'Rechazado'
-export type RedSocial = 'Instagram' | 'TikTok' | 'YouTube' | 'Facebook'
+
+export type EstadoValidacion =
+  | 'PENDIENTE'
+  | 'VALIDADO'
+  | 'RECHAZADO'
+
+export type EstadoContacto =
+  | 'SIN_CONTACTAR'
+  | 'CORREO_ENVIADO'
+  | 'FORMULARIO_LLENADO'
+  | 'REUNION_AGENDADA'
+  | 'RECHAZO_CONTACTO'
 
 export interface Influencer {
   id: string
-  nombreCompleto: string
-  usuarioIG: string
-  redSocial: RedSocial
-  scoreIA: number
-  correo: string
-  telefono?: string
-  pais: string
-  ciudad: string
-  seguidores: string
-  engagement: string
-  tematica: string
-  linkPerfil: string
-  estado: EstadoInfluencer
-  voluntarioEncargadoId?: string
+
+  nombre: string
+  usuarioIg: string
+  linkIg: string
+
+  email?: string
+  phone?: string
+
+  seguidores?: string
+  cantidad_post?: string
+  biografia?: string
+  mensajePersonalizado?: string
+
+  estadoValidacion: EstadoValidacion
+  estadoContacto: EstadoContacto
+
   createdAt?: string
-  updatedAt?: string
-}
 
-export interface CrearInfluencerInput {
-  nombreCompleto: string
-  usuarioIG: string
-  correo: string
-  telefono?: string
-  pais: string
-  ciudad: string
-  seguidores: string
-  engagement: string
-  tematica: string
-  linkPerfil: string
-  estado: EstadoInfluencer
-  voluntarioEncargadoId?: string
-}
-
-export type ActualizarInfluencerInput = Partial<CrearInfluencerInput>
-
-export interface InfluencerFiltros {
-  busqueda?: string
-  estado?: EstadoInfluencer
-  tematica?: string
-  page?: number
-  pageSize?: number
-}
-
-export interface InfluencersResponse {
-  mensaje: string
-  data: {
-    data: Influencer[]
-    meta: {
-      total: number
-      page: number
-      limit: number
-      totalPages: number
-    }
+  validadoPor?: {
+    id: string
+    nombre: string
   }
 }
 
+export interface CrearInfluencerInput {
+  nombre: string
+  usuarioIg: string
+  linkIg: string
+
+  email?: string
+  phone?: string
+
+  seguidores?: string
+  cantidad_post?: string
+  biografia?: string
+  mensajePersonalizado?: string
+
+  estadoValidacion?: EstadoValidacion
+}
+
+export type ActualizarInfluencerInput =
+  Partial<CrearInfluencerInput>
+
+export interface InfluencerFiltros {
+  page?: number
+  limit?: number
+  estadoValidacion?: EstadoValidacion
+  estadoContacto?: EstadoContacto
+  tematica?: string
+}
+
+export interface InfluencersResponse {
+  data: Influencer[]
+  meta: {
+    total: number
+    page: number
+    limit: number
+  }
+}
