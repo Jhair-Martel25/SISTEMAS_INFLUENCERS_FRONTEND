@@ -15,14 +15,21 @@ interface InfluencerApiResponse {
   data: Influencer
 }
 
+interface InfluencersApiResponse {
+  mensaje: string
+  data: InfluencersResponse
+}
+
 export const influencersService = {
   async listar(
     filtros?: InfluencerFiltros
   ): Promise<InfluencersResponse> {
-    return apiClient.get<InfluencersResponse>(
+    const response = await apiClient.get<InfluencersApiResponse>(
       BASE_PATH,
       { params: filtros }
     )
+
+    return response.data
   },
 
   async obtenerPorId(id: string): Promise<Influencer> {
