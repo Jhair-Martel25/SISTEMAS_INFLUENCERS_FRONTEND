@@ -43,12 +43,13 @@ export function formatearFechaUI(
 }
 
 /**
- * Convierte un Date a "YYYY-MM-DD HH:mm:ss" (hora Perú), que es el formato
- * que espera el backend al crear disponibilidades.
+ * Convierte un Date a "YYYY-MM-DD HH:mm:ss" en la zona indicada, que es el
+ * formato que espera el backend al crear disponibilidades. La zona por defecto
+ * es la del navegador (el voluntario suele operar en su zona local).
  */
-export function aFormatoAPI(date: Date): string {
+export function aFormatoAPI(date: Date, zona: string = zonaHorariaNavegador()): string {
   const partes = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: ZONA_HORARIA_DEFAULT,
+    timeZone: zona,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

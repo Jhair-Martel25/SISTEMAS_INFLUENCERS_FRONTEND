@@ -887,10 +887,24 @@ Flujo para el influencer (sin autenticación):
 
 ### 4.3 Fechas y zona horaria
 
-- Los bloques se guardan en UTC; la UI debe convertirlos a la zona local (o a `America/Lima`) para mostrarlos.
-- Al **enviar** una fecha de disponibilidad usa el formato `"YYYY-MM-DD HH:mm:ss"`.
-- Al **recibir** fechas de reunión/bloques recibes ISO 8601 (con `Z`); conviértelas con `Intl.DateTimeFormat` según la zona horaria que elijas mostrar.
-- En `POST /reuniones` envía `zonaHoraria` con la del navegador (`Intl.DateTimeFormat().resolvedOptions().timeZone`) para que el correo muestre la hora correcta.
+**Almacenamiento:** todas las fechas se guardan en UTC (columna `timestamptz`). El backend siempre devuelve fechas en ISO 8601 con `Z` (ej. `2026-07-15T13:00:00.000Z`).
+
+**Mostrar:** la conversión de visualización es 100% responsabilidad del frontend. Convierte a la zona del usuario actual con:
+```js
+const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; // zona del navegador
+new Intl.DateTimeFormat('es', { timeZone: tz }).format(fechaIsoConZ);
+```
+Usa la zona del que mira: el VOLUNTARIO en sus listas (`mis-bloques`, reuniones) y el INFLUENCER al ver bloques/reuniones.
+
+**Enviar fechas:** el backend interpreta el string como hora LOCAL de la zona indicada y lo convierte a UTC antes de guardar. Formato `"YYYY-MM-DD HH:mm:ss"`.
+
+- `POST /disponibilidades/generar` → body `{ zonaHoraria }` (zona del navegador del voluntario; si se omite, asume `America/Lima`).
+- `POST /disponibilidades` → body `{ fechaHora: "YYYY-MM-DD HH:mm:ss"` (hora local del voluntario)`, zonaHoraria }`. Si se omite `zonaHoraria`, asume `America/Lima`.
+- `GET /disponibilidades/disponibles` → `desde`/`hasta` en hora local + query `zonaHoraria` (fallback `America/Lima`).
+
+**Reuniones:**
+- `POST /reuniones` → `zonaHoraria` es **OBLIGATORIA** (zona del navegador del influencer). El correo de confirmación se formatea en esa zona.
+- La fecha de la reunión se toma del bloque (ya en UTC); el frontend la muestra convirtiendo con `Intl` a la zona del usuario.
 
 ### 4.4 Buenas prácticas
 

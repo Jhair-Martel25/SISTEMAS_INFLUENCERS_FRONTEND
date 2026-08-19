@@ -1,5 +1,6 @@
 import {
-  BarChart3,
+  CalendarCheck,
+  CalendarClock,
   FileText,
   Home,
   Mail,
@@ -19,8 +20,9 @@ import type { Recurso } from '@/config/roles'
 export const ICONO_POR_RECURSO: Record<Recurso, LucideIcon> = {
   dashboard: Home,
   influencers: Users,
+  horarios: CalendarClock,
+  disponibilidad: CalendarCheck,
   reuniones: Video,
-  agenda: BarChart3,
   usuarios: UserPlus,
   plantillas: FileText,
   email: Mail,

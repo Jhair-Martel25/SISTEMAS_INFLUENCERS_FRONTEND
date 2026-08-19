@@ -43,7 +43,8 @@ export interface Reunion {
 
 /** Body de POST /reuniones (público — lo usa el influencer). */
 export interface AgendarReunionInput {
-  email: string
+  /** ID del influencer que agenda (llega por el link del correo). */
+  influencerId: string
   disponibilidadCitaId: string
   duracionMinutos?: number
   zonaHoraria?: string

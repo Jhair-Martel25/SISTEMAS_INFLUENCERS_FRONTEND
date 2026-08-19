@@ -93,6 +93,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const refreshToken = getStoredRefreshToken()
 
     if (!user || !backendToken || !refreshToken) {
+      // Limpia también la cookie espejo `sp_token` si quedó obsoleta (p. ej.
+      // localStorage vacío). De lo contrario el middleware rebota /login → /dashboard
+      // en un bucle y la app se queda cargando para siempre.
+      clearStoredAuth()
       set({
         ...buildDerived(null, null),
         refreshToken: null,

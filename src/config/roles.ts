@@ -15,8 +15,9 @@ import type { Role } from '@/types/api'
 export const RECURSOS = {
   DASHBOARD: 'dashboard',
   INFLUENCERS: 'influencers',
+  HORARIOS: 'horarios',
+  DISPONIBILIDAD: 'disponibilidad',
   REUNIONES: 'reuniones',
-  AGENDA: 'agenda',
   USUARIOS: 'usuarios',
   PLANTILLAS: 'plantillas',
   EMAIL: 'email',
@@ -28,16 +29,17 @@ const PERMISOS_POR_ROL: Record<Role, Recurso[]> = {
   ADMIN: [
     RECURSOS.DASHBOARD,
     RECURSOS.INFLUENCERS,
+    RECURSOS.HORARIOS,
     RECURSOS.REUNIONES,
-    RECURSOS.AGENDA,
     RECURSOS.USUARIOS,
     RECURSOS.PLANTILLAS,
     RECURSOS.EMAIL,
   ],
   VOLUNTARIO: [
     RECURSOS.INFLUENCERS,
+    RECURSOS.HORARIOS,
+    RECURSOS.DISPONIBILIDAD,
     RECURSOS.REUNIONES,
-    RECURSOS.AGENDA,
     RECURSOS.PLANTILLAS,
   ],
 }

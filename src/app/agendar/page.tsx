@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import type { DisponibilidadCita } from '@/types/disponibilidad'
 import { disponibilidadesService } from '@/features/disponibilidades/services/disponibilidades.service'
 import { reunionesService } from '@/features/reuniones/services/reuniones.service'
@@ -13,12 +14,14 @@ function formatearBloque(iso: string) {
   return `${fechaTexto} - ${horaTexto}`
 }
 
-export default function AgendarReunionPage() {
+function AgendarReunionForm() {
+  const searchParams = useSearchParams()
+  const influencerId = searchParams.get('influencerId')
+
   const [bloques, setBloques] = useState<DisponibilidadCita[]>([])
   const [cargandoBloques, setCargandoBloques] = useState(true)
   const [errorCarga, setErrorCarga] = useState<string | null>(null)
 
-  const [email, setEmail] = useState('')
   const [disponibilidadCitaId, setDisponibilidadCitaId] = useState('')
   const [duracionMinutos, setDuracionMinutos] = useState(20)
 
@@ -27,14 +30,15 @@ export default function AgendarReunionPage() {
   const [exito, setExito] = useState<{ fechaHora: string; googleMeetLink: string | null } | null>(null)
 
   useEffect(() => {
+    if (!influencerId) return
     let cancelado = false
 
     async function cargarBloques() {
       setCargandoBloques(true)
       setErrorCarga(null)
       try {
-        const data = await disponibilidadesService.listarDisponibles()
-        if (!cancelado) setBloques(data)
+        const res = await disponibilidadesService.listarDisponibles()
+        if (!cancelado) setBloques(res.data)
       } catch {
         if (!cancelado) setErrorCarga('No se pudo cargar la disponibilidad en este momento.')
       } finally {
@@ -46,21 +50,21 @@ export default function AgendarReunionPage() {
     return () => {
       cancelado = true
     }
-  }, [])
+  }, [influencerId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
 
-    if (!email || !disponibilidadCitaId) {
-      setError('Completa tu correo y elige un bloque de disponibilidad.')
+    if (!influencerId || !disponibilidadCitaId) {
+      setError('Elige un bloque de disponibilidad para confirmar tu reunión.')
       return
     }
 
     setEnviando(true)
     try {
       const reunion = await reunionesService.agendar({
-        email,
+        influencerId,
         disponibilidadCitaId,
         duracionMinutos,
         zonaHoraria: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -103,23 +107,31 @@ export default function AgendarReunionPage() {
     )
   }
 
+  if (!influencerId) {
+    return (
+      <main className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold text-[#003D2D] mb-2">Enlace no válido</h1>
+          <p className="text-gray-500">
+            Para agendar tu reunión, abre el enlace que recibiste en el correo de invitación.
+          </p>
+          <div className="mt-4">
+            <Link href="/" className="text-sm text-[#003D2D] hover:underline">
+              Volver al inicio
+            </Link>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-md w-full">
         <h1 className="text-2xl font-bold text-[#003D2D] text-center mb-2">Agendar una Reunión</h1>
         <p className="text-gray-500 text-sm text-center mb-6">
-          Usa el correo con el que recibiste la invitación y elige un bloque disponible para confirmar tu reunión.
+          Elige un bloque disponible para confirmar tu reunión.
         </p>
-
-        <label className="block mb-1.5 text-sm font-medium text-gray-700">Correo electrónico</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="tu-correo-real@ejemplo.com"
-          className="w-full border rounded-lg p-3 mb-4"
-          required
-        />
 
         <label className="block mb-1.5 text-sm font-medium text-gray-700">Bloque de disponibilidad</label>
 
@@ -176,5 +188,13 @@ export default function AgendarReunionPage() {
         </div>
       </form>
     </main>
+  )
+}
+
+export default function AgendarReunionPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-100" />}>
+      <AgendarReunionForm />
+    </Suspense>
   )
 }

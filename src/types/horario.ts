@@ -12,7 +12,8 @@ export interface Horario {
   diaSemana: DiaSemana
   horaInicio: string
   horaFin: string
-  voluntarioId: string
+  /** Presente en GET /horarios (ADMIN); ausente en GET /horarios/mis-horarios. */
+  voluntarioId?: string
 }
 
 /** Body de POST /horarios. */
@@ -24,6 +25,12 @@ export interface CrearHorarioInput {
 
 /** Body de PATCH /horarios/:id (cuerpo parcial). */
 export type ActualizarHorarioInput = Partial<CrearHorarioInput>
+
+/** Query params de GET /horarios y GET /horarios/mis-horarios. */
+export interface HorarioFiltros {
+  page?: number
+  limit?: number
+}
 
 export const DIAS_SEMANA: { value: DiaSemana; corto: string }[] = [
   { value: 'LUNES', corto: 'Lun' },

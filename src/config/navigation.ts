@@ -33,16 +33,22 @@ export const NAVEGACION: ItemNavegacion[] = [
     desc: 'Administra y valida influencers',
   },
   {
+    recurso: 'horarios',
+    href: '/horarios',
+    label: 'Horarios',
+    desc: 'Configura tu horario semanal',
+  },
+  {
+    recurso: 'disponibilidad',
+    href: '/disponibilidades',
+    label: 'Disponibilidad',
+    desc: 'Gestiona tus bloques de disponibilidad',
+  },
+  {
     recurso: 'reuniones',
     href: '/reuniones/gestion',
     label: 'Reuniones',
     desc: 'Coordina y da seguimiento',
-  },
-  {
-    recurso: 'agenda',
-    href: '/reuniones/agenda',
-    label: 'Agenda',
-    desc: 'Disponibilidad y bloques',
   },
   {
     recurso: 'usuarios',

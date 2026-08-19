@@ -1,21 +1,29 @@
 import { apiClient } from '@/lib/http'
+import type { DataPaginated } from '@/types/api'
 import type {
   ActualizarHorarioInput,
   CrearHorarioInput,
   Horario,
+  HorarioFiltros,
 } from '@/types/horario'
 
 const BASE_PATH = '/horarios'
 
 export const horariosService = {
   /** ADMIN ve todos; VOLUNTARIO ve solo los suyos. */
-  async listar(): Promise<Horario[]> {
-    return apiClient.get<Horario[]>(BASE_PATH)
+  async listar(filtros?: HorarioFiltros): Promise<DataPaginated<Horario>> {
+    return apiClient.get<DataPaginated<Horario>>(BASE_PATH, {
+      params: filtros,
+    })
   },
 
   /** Solo los horarios del voluntario autenticado. */
-  async listarMisHorarios(): Promise<Horario[]> {
-    return apiClient.get<Horario[]>(`${BASE_PATH}/mis-horarios`)
+  async listarMisHorarios(
+    filtros?: HorarioFiltros,
+  ): Promise<DataPaginated<Horario>> {
+    return apiClient.get<DataPaginated<Horario>>(`${BASE_PATH}/mis-horarios`, {
+      params: filtros,
+    })
   },
 
   async crear(input: CrearHorarioInput): Promise<Horario> {

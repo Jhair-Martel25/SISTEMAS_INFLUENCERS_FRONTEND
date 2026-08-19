@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/http'
+import type { DataPaginated } from '@/types/api'
 import type {
   CrearDisponibilidadInput,
   DisponibilidadCita,
@@ -10,16 +11,26 @@ const BASE_PATH = '/disponibilidades'
 
 export const disponibilidadesService = {
   /** Bloques libres (PÚBLICO — no requiere token). */
-  async listarDisponibles(filtros?: DisponibilidadFiltros): Promise<DisponibilidadCita[]> {
-    return apiClient.get<DisponibilidadCita[]>(`${BASE_PATH}/disponibles`, {
-      params: filtros,
-      skipAuth: true,
-    })
+  async listarDisponibles(
+    filtros?: DisponibilidadFiltros,
+  ): Promise<DataPaginated<DisponibilidadCita>> {
+    return apiClient.get<DataPaginated<DisponibilidadCita>>(
+      `${BASE_PATH}/disponibles`,
+      {
+        params: filtros,
+        skipAuth: true,
+      },
+    )
   },
 
   /** Todos los bloques del usuario logueado. */
-  async listarMisBloques(): Promise<DisponibilidadCita[]> {
-    return apiClient.get<DisponibilidadCita[]>(`${BASE_PATH}/mis-bloques`)
+  async listarMisBloques(
+    filtros?: DisponibilidadFiltros,
+  ): Promise<DataPaginated<DisponibilidadCita>> {
+    return apiClient.get<DataPaginated<DisponibilidadCita>>(
+      `${BASE_PATH}/mis-bloques`,
+      { params: filtros },
+    )
   },
 
   /** Generar bloques de 60 min para hoy de la próxima semana según horario. */
