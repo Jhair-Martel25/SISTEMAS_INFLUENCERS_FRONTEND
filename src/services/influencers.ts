@@ -1,142 +1,81 @@
-
 /**
  * Servicio de Influencers
  * ------------------------
- * Se encarga de comunicarse con el backend para obtener la lista de
- * influencers: arma la URL con los filtros (estado, página, límite),
- * agrega el token de sesión, y traduce los errores HTTP en mensajes
- * claros para el resto de la app.
+ * Comunica el frontend con los endpoints reales del backend:
+ * GET /influencers y PATCH /influencers/:id/validar
  */
 
-import type { Influencer, EstadoInfluencer } from "@/types/influencer";
+import type {
+  Influencer,
+  InfluencerFiltros,
+  InfluencersResponse,
+  EstadoValidacion,
+} from "@/types/influencer";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-export const ESTADO_VALIDACION_MAP: Record<EstadoInfluencer, string> = {
-  Pendiente: "PENDIENTE",
-  Validado: "VALIDADO",
-  Rechazado: "RECHAZADO",
-};
-
-export interface FiltrosInfluencers {
-  busqueda?: string;
-  estado?: EstadoInfluencer | "";
-  page: number;
-  limit: number;
-}
-
-export interface RespuestaInfluencers {
+interface RespuestaListado {
   mensaje: string;
-  data: {
-    data: Influencer[];
-    meta: {
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    };
-  };
+  data: InfluencersResponse;
 }
 
-function adaptarInfluencer(item: any): Influencer {
+interface RespuestaInfluencer {
+  mensaje: string;
+  data: Influencer;
+}
+
+function headersConToken(): HeadersInit {
+  const token = typeof window !== "undefined" ? localStorage.getItem("sp_token") : null;
   return {
-    id: item.id,
-
-    nombreCompleto: item.nombre,
-    usuarioIG: item.usuarioIg,
-
-    correo: item.email ?? "",
-    telefono: item.phone ?? "",
-
-    pais: "",
-    ciudad: "",
-
-    seguidores: item.seguidores ?? "",
-    engagement: "",
-
-    tematica:
-      item.consultaIa?.plantilla?.nombre ??
-      "",
-
-    linkPerfil: item.linkIg,
-
-    estado:
-      item.estadoValidacion === "VALIDADO"
-        ? "Validado"
-        : item.estadoValidacion === "RECHAZADO"
-          ? "Rechazado"
-          : "Pendiente",
-
-    redSocial: "Instagram",
-
-    scoreIA: 0,
-
-    voluntarioEncargadoId:
-      item.validadoPor?.id,
-
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 
-export async function listarInfluencers(
-  filtros: FiltrosInfluencers
-): Promise<RespuestaInfluencers> {
-  const params = new URLSearchParams();
-  params.set("page", String(filtros.page));
-  params.set("limit", String(filtros.limit));
-
-  if (filtros.estado) {
-    params.set("estadoValidacion", ESTADO_VALIDACION_MAP[filtros.estado]);
-  }
-
-  const token = localStorage.getItem("sp_token");
-
-  const res = await fetch(`${API_URL}/influencers?${params.toString()}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-
+async function manejarRespuesta<T>(res: Response): Promise<T> {
   if (res.status === 401) {
     throw new Error("Sesión inválida o expirada. Vuelve a iniciar sesión.");
   }
   if (!res.ok) {
-    throw new Error("No se pudo obtener la lista de influencers.");
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.mensaje || "Ocurrió un error al comunicarse con el servidor.");
   }
-
-  const json = await res.json();
-
-  return {
-    mensaje: json.mensaje,
-    data: {
-      data: json.data.data.map(adaptarInfluencer),
-      meta: json.data.meta,
-    },
-  };
+  return res.json();
 }
 
-export async function actualizarEstadoInfluencer(
-  id: string,
-  estado: EstadoInfluencer
-) {
-  const token = localStorage.getItem("sp_token");
+export async function listarInfluencers(
+  filtros: InfluencerFiltros
+): Promise<InfluencersResponse> {
+  const params = new URLSearchParams();
+  if (filtros.page) params.set("page", String(filtros.page));
+  if (filtros.limit) params.set("limit", String(filtros.limit));
+  if (filtros.estadoValidacion) params.set("estadoValidacion", filtros.estadoValidacion);
+  if (filtros.estadoContacto) params.set("estadoContacto", filtros.estadoContacto);
 
-  const res = await fetch(`${API_URL}/influencers/${id}/editar`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify({
-      estadoValidacion: ESTADO_VALIDACION_MAP[estado],
-    }),
+  const res = await fetch(`${API_URL}/influencers?${params.toString()}`, {
+    headers: headersConToken(),
   });
 
-  if (!res.ok) {
-    throw new Error("No se pudo actualizar el estado.");
-  }
+  const json = await manejarRespuesta<RespuestaListado>(res);
+  return json.data;
+}
 
-  return res.json();
+export interface ValidarInfluencerInput {
+  seguidoresReales: number;
+  likesReales: number;
+  estadoValidacion?: EstadoValidacion;
+}
+
+export async function validarInfluencer(
+  id: string,
+  input: ValidarInfluencerInput
+): Promise<Influencer> {
+  const res = await fetch(`${API_URL}/influencers/${id}/validar`, {
+    method: "PATCH",
+    headers: headersConToken(),
+    body: JSON.stringify(input),
+  });
+
+  const json = await manejarRespuesta<RespuestaInfluencer>(res);
+  return json.data;
 }

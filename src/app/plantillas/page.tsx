@@ -6,6 +6,10 @@ import { plantillasService } from "@/services/plantillasService";
 import type { Plantilla, CrearPlantillaInput, } from "@/types/plantilla";
 import PlantillaForm from "@/components/plantillas/PlantillaForm";
 
+
+function textoPlano(html: string): string {
+  return html.replace(/<[^>]*>/g, "").trim();
+}
 export default function GestionPlantillas() {
   const [plantillas, setPlantillas] = useState<Plantilla[]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,7 +174,7 @@ export default function GestionPlantillas() {
                   <tr key={plantilla.id} className="border-b hover:bg-gray-50">
                     <td className="px-4 py-3">{plantilla.nombre}</td>
                     <td className="px-4 py-3">{plantilla.asunto || "-"}</td>
-                    <td className="px-4 py-3 max-w-sm truncate">{plantilla.contenido}</td>
+                   <td className="px-4 py-3 max-w-sm truncate">{textoPlano(plantilla.contenido)}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-center gap-2">
                         <button

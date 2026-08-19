@@ -15,7 +15,7 @@ export async function enviarEmail(
 ): Promise<EnviarEmailResponse> {
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("token")
+      ? localStorage.getItem("sp_token")
       : null;
 
   const response = await fetch(`${API_URL}/email/enviar`, {

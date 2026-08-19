@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usuariosService } from "@/services/usuariosService";
 import UsuarioForm from "@/components/usuarios/UsuarioForm";
+import RutaProtegida from "@/components/auth/RutaProtegida";
 import type {
   Usuario,
   CrearUsuarioInput,
@@ -159,7 +160,8 @@ export default function GestionUsuarios() {
 
   const totalPaginas = Math.ceil(total / limite);
 
-  return (
+   return (
+    <RutaProtegida rolesPermitidos={["ADMIN"]}>
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-6 py-10">
         {/* Encabezado */}
@@ -423,5 +425,6 @@ export default function GestionUsuarios() {
         )}
       </div>
     </main>
+    </RutaProtegida>
   );
 }

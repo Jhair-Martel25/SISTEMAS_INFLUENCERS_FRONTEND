@@ -1,9 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { enviarEmail } from "@/services/emailService";
+import { listarInfluencers } from "@/services/influencers";
+import { plantillasService } from "@/services/plantillasService";
+import type { Influencer } from "@/types/influencer";
+import type { Plantilla } from "@/types/plantilla";
 
 export default function EmailPage() {
   const router = useRouter();
@@ -12,18 +16,31 @@ export default function EmailPage() {
   const [plantillaId, setPlantillaId] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  // Datos simulados mientras el backend expone los endpoints
-  const influencers = [
-    { id: "1", nombre: "Cristian Salazar" },
-    { id: "2", nombre: "Yamile Nicole" },
-    { id: "3", nombre: "Pedro Rojas" },
-  ];
+  const [influencers, setInfluencers] = useState<Influencer[]>([]);
+  const [plantillas, setPlantillas] = useState<Plantilla[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [errorCarga, setErrorCarga] = useState("");
 
-  const plantillas = [
-    { id: "1", nombre: "Invitación a reunión" },
-    { id: "2", nombre: "Seguimiento de contacto" },
-    { id: "3", nombre: "Confirmación de reunión" },
-  ];
+  useEffect(() => {
+    async function cargarDatos() {
+      setCargando(true);
+      setErrorCarga("");
+      try {
+        const [respuestaInfluencers, listaPlantillas] = await Promise.all([
+          listarInfluencers({ page: 1, limit: 100 }),
+          plantillasService.listar(),
+        ]);
+        setInfluencers(respuestaInfluencers.data);
+        setPlantillas(listaPlantillas);
+      } catch (error) {
+        console.error(error);
+        setErrorCarga("No se pudieron cargar los influencers o las plantillas.");
+      } finally {
+        setCargando(false);
+      }
+    }
+    void cargarDatos();
+  }, []);
 
   const handleEnviar = async () => {
     if (!influencerId || !plantillaId) {
@@ -41,12 +58,14 @@ export default function EmailPage() {
 
       if (resultado.exitoso) {
         alert(`Correo enviado correctamente a ${resultado.email}`);
+        setInfluencerId("");
+        setPlantillaId("");
       } else {
         alert(resultado.error || "No se pudo enviar el correo.");
       }
     } catch (error) {
       console.error(error);
-      alert("Ocurrió un error al enviar el correo.");
+      alert(error instanceof Error ? error.message : "Ocurrió un error al enviar el correo.");
     } finally {
       setEnviando(false);
     }
@@ -54,7 +73,7 @@ export default function EmailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-     <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8">
+      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8">
         <Link
           href="/dashboard"
           className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#003D2D] transition-colors duration-150 mb-4"
@@ -70,6 +89,12 @@ export default function EmailPage() {
           Solo los administradores pueden enviar correos a los influencers.
         </p>
 
+        {errorCarga && (
+          <div className="mb-6 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+            {errorCarga}
+          </div>
+        )}
+
         <div className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -78,12 +103,15 @@ export default function EmailPage() {
             <select
               value={influencerId}
               onChange={(e) => setInfluencerId(e.target.value)}
+              disabled={cargando}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-600"
             >
-              <option value="">Selecciona un influencer</option>
+              <option value="">
+                {cargando ? "Cargando influencers..." : "Selecciona un influencer"}
+              </option>
               {influencers.map((inf) => (
                 <option key={inf.id} value={inf.id}>
-                  {inf.nombre}
+                  {inf.nombre} (@{inf.usuarioIg})
                 </option>
               ))}
             </select>
@@ -96,9 +124,12 @@ export default function EmailPage() {
             <select
               value={plantillaId}
               onChange={(e) => setPlantillaId(e.target.value)}
+              disabled={cargando}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-600"
             >
-              <option value="">Selecciona una plantilla</option>
+              <option value="">
+                {cargando ? "Cargando plantillas..." : "Selecciona una plantilla"}
+              </option>
               {plantillas.map((pla) => (
                 <option key={pla.id} value={pla.id}>
                   {pla.nombre}
@@ -120,7 +151,7 @@ export default function EmailPage() {
           <button
             type="button"
             onClick={handleEnviar}
-            disabled={enviando}
+            disabled={enviando || cargando}
             className="px-5 py-3 rounded-lg bg-green-700 text-white hover:bg-green-800 transition disabled:opacity-60"
           >
             {enviando ? "Enviando..." : "Enviar Email"}

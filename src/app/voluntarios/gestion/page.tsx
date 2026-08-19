@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usuariosService } from "@/services/usuariosService";
 import { horarioVoluntarioService } from "@/services/horarioVoluntarioService";
+import RutaProtegida from "@/components/auth/RutaProtegida";
 import { ApiError } from "@/services/api";
 import type { Usuario } from "@/types/usuario";
 import type { Horario, DiaSemana } from "@/types/horario";
@@ -73,7 +74,8 @@ export default function GestionVoluntariosPage() {
         void cargarDatos();
     }, []);
 
-    return (
+        return (
+        <RutaProtegida rolesPermitidos={["ADMIN"]}>
         <main className="min-h-screen bg-gray-100 p-8">
             <div className="max-w-7xl mx-auto">
                 {/* Encabezado */}
@@ -189,5 +191,6 @@ export default function GestionVoluntariosPage() {
                 </div>
             </div>
         </main>
+        </RutaProtegida>
     );
 }

@@ -11,6 +11,7 @@ import Link from "next/link";
 export default function DashboardPage() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
+  const esAdmin = user?.role === "ADMIN";
 
   const [metricas, setMetricas] = useState<DashboardMetricas>({
     totalInfluencers: 0,
@@ -243,68 +244,72 @@ export default function DashboardPage() {
               Añade nuevos voluntarios al sistema
             </p>
           </Link>
-          <Link
-            href="/voluntarios/gestion"
-            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 block cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-xl bg-[#0B5E47]/10 flex items-center justify-center mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#0B5E47"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <polyline points="17 11 19 13 23 9" />
-              </svg>
-            </div>
+          {esAdmin && (
+            <Link
+              href="/voluntarios/gestion"
+              className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 block cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[#0B5E47]/10 flex items-center justify-center mb-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#0B5E47"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <polyline points="17 11 19 13 23 9" />
+                </svg>
+              </div>
 
-            <h3 className="font-semibold text-gray-900">
-              Gestión de Voluntarios
-            </h3>
+              <h3 className="font-semibold text-gray-900">
+                Gestión de Voluntarios
+              </h3>
 
-            <p className="text-sm text-gray-500 mt-1">
-              Consulta y administra los voluntarios registrados
-            </p>
-          </Link>
+              <p className="text-sm text-gray-500 mt-1">
+                Consulta y administra los voluntarios registrados
+              </p>
+            </Link>
+          )}
 
-          <Link
-            href="/usuarios"
-            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 block cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-xl bg-[#003D2D]/10 flex items-center justify-center mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#003D2D"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-            </div>
+          {esAdmin && (
+            <Link
+              href="/usuarios"
+              className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 block cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[#003D2D]/10 flex items-center justify-center mb-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#003D2D"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
 
-            <h3 className="font-semibold text-gray-900">
-              Gestión de Usuarios
-            </h3>
+              <h3 className="font-semibold text-gray-900">
+                Gestión de Usuarios
+              </h3>
 
-            <p className="text-sm text-gray-500 mt-1">
-              Administra usuarios y sus roles
-            </p>
-          </Link>
+              <p className="text-sm text-gray-500 mt-1">
+                Administra usuarios y sus roles
+              </p>
+            </Link>
+          )}
 
           <Link
             href="/plantillas"
