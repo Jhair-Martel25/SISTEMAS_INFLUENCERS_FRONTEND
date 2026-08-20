@@ -6,6 +6,12 @@
  * Lista influencers reales del backend, con filtro por estado de
  * validación, paginación, vista de detalle y validación con métricas
  * reales (requeridas por el backend: seguidoresReales, likesReales).
+ *
+ * Nota: no existe un endpoint de edición libre en el backend
+ * (PATCH /influencers/:id/editar no existe). El único endpoint de
+ * escritura disponible es PATCH /influencers/:id/validar, que exige
+ * seguidoresReales y likesReales obligatorios. Por eso el modal de
+ * edición fue reemplazado por un modal de validación con esos campos.
  */
 
 import { Plus, Eye, BadgeCheck, Search, X, ArrowLeft } from 'lucide-react'
@@ -17,8 +23,10 @@ import { listarInfluencers, validarInfluencer, type ValidarInfluencerInput } fro
 const LIMITE = 5
 
 function iniciales(nombre: string) {
+  if (!nombre) return '?'
   return nombre
-    .split(' ')
+    .trim()
+    .split(/\s+/)
     .map((palabra) => palabra[0])
     .slice(0, 2)
     .join('')
@@ -119,6 +127,9 @@ export default function GestionInfluencersPage() {
       setInfluencers((prev) =>
         prev.map((inf) => (inf.id === actualizado.id ? actualizado : inf))
       )
+      if (viendoInfluencer?.id === actualizado.id) {
+        setViendoInfluencer(actualizado)
+      }
       setValidandoInfluencer(null)
     } catch (err) {
       alert(err instanceof Error ? err.message : 'No se pudo validar el influencer.')
@@ -210,6 +221,7 @@ export default function GestionInfluencersPage() {
                 <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Influencer</th>
                 <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Correo</th>
                 <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Seguidores</th>
+                <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Publicaciones</th>
                 <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Validación</th>
                 <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Contacto</th>
                 <th className="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
@@ -218,13 +230,13 @@ export default function GestionInfluencersPage() {
             <tbody>
               {cargando && (
                 <tr>
-                  <td colSpan={6} className="p-6 text-center text-gray-400">Cargando influencers...</td>
+                  <td colSpan={7} className="p-6 text-center text-gray-400">Cargando influencers...</td>
                 </tr>
               )}
 
               {!cargando && influencersMostrados.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-6 text-center text-gray-500">
+                  <td colSpan={7} className="p-6 text-center text-gray-500">
                     No se encontraron influencers con esos filtros.
                   </td>
                 </tr>
@@ -245,6 +257,7 @@ export default function GestionInfluencersPage() {
                   </td>
                   <td className="p-3 text-gray-700">{inf.email || '—'}</td>
                   <td className="p-3 text-gray-700">{inf.seguidores || '—'}</td>
+                  <td className="p-3 text-gray-700">{inf.cantidad_post || '—'}</td>
                   <td className="p-3">
                     <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${estiloValidacion(inf.estadoValidacion)}`}>
                       {etiquetaValidacion(inf.estadoValidacion)}
@@ -310,7 +323,7 @@ export default function GestionInfluencersPage() {
 
       {viendoInfluencer && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 relative">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setViendoInfluencer(null)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
@@ -331,7 +344,7 @@ export default function GestionInfluencersPage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-500">Correo</p>
-                <p className="font-medium">{viendoInfluencer.email || '—'}</p>
+                <p className="font-medium break-all">{viendoInfluencer.email || '—'}</p>
               </div>
               <div>
                 <p className="text-gray-500">Teléfono</p>
@@ -342,21 +355,32 @@ export default function GestionInfluencersPage() {
                 <p className="font-medium">{viendoInfluencer.seguidores || '—'}</p>
               </div>
               <div>
-                <p className="text-gray-500">Posts</p>
+                <p className="text-gray-500">Publicaciones</p>
                 <p className="font-medium">{viendoInfluencer.cantidad_post || '—'}</p>
               </div>
+
+              <div className="col-span-2">
+                <p className="text-gray-500">Biografía</p>
+                <p className="font-medium whitespace-pre-wrap">{viendoInfluencer.biografia || '—'}</p>
+              </div>
+
+              <div className="col-span-2">
+                <p className="text-gray-500">Mensaje personalizado</p>
+                <p className="font-medium whitespace-pre-wrap">{viendoInfluencer.mensajePersonalizado || '—'}</p>
+              </div>
+
               <div className="col-span-2">
                 <p className="text-gray-500">Link de Instagram</p>
-                <a href={viendoInfluencer.linkIg} target="_blank" rel="noopener noreferrer" className="font-medium text-[#003D2D] underline break-all">
+                <a
+                  href={viendoInfluencer.linkIg}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-[#003D2D] underline break-all"
+                >
                   {viendoInfluencer.linkIg}
                 </a>
               </div>
-              {viendoInfluencer.biografia && (
-                <div className="col-span-2">
-                  <p className="text-gray-500">Biografía</p>
-                  <p className="font-medium">{viendoInfluencer.biografia}</p>
-                </div>
-              )}
+
               <div>
                 <p className="text-gray-500">Validación</p>
                 <span className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-medium ${estiloValidacion(viendoInfluencer.estadoValidacion)}`}>
@@ -373,6 +397,16 @@ export default function GestionInfluencersPage() {
                   <p className="font-medium">{viendoInfluencer.validadoPor.nombre}</p>
                 </div>
               )}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setValidandoInfluencer(viendoInfluencer)}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+              >
+                <BadgeCheck size={16} />
+                Validar este influencer
+              </button>
             </div>
           </div>
         </div>
