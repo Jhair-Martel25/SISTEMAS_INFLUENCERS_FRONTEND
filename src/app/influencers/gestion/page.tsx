@@ -4,21 +4,18 @@
  * Vista: Gestión de Influencers
  * ------------------------------
  * Lista influencers reales del backend, con filtro por estado de
- * validación, paginación, vista de detalle y validación con métricas
- * reales (requeridas por el backend: seguidoresReales, likesReales).
+ * validación, paginación, vista de detalle y edición de campos.
  *
- * Nota: no existe un endpoint de edición libre en el backend
- * (PATCH /influencers/:id/editar no existe). El único endpoint de
- * escritura disponible es PATCH /influencers/:id/validar, que exige
- * seguidoresReales y likesReales obligatorios. Por eso el modal de
- * edición fue reemplazado por un modal de validación con esos campos.
+ * Endpoints usados:
+ *   GET   /influencers
+ *   PATCH /influencers/:id/editar
  */
 
-import { Plus, Eye, BadgeCheck, Search, X, ArrowLeft } from 'lucide-react'
+import { Plus, Eye, Pencil, Search, X, ArrowLeft } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import type { Influencer, EstadoValidacion, EstadoContacto } from '@/types/influencer'
-import { listarInfluencers, validarInfluencer, type ValidarInfluencerInput } from '@/services/influencers'
+import type { Influencer, EstadoValidacion, EstadoContacto, ActualizarInfluencerInput } from '@/types/influencer'
+import { influencersService } from '@/services/influencersService'
 
 const LIMITE = 5
 
@@ -67,7 +64,8 @@ export default function GestionInfluencersPage() {
   const [pagina, setPagina] = useState(1)
 
   const [viendoInfluencer, setViendoInfluencer] = useState<Influencer | null>(null)
-  const [validandoInfluencer, setValidandoInfluencer] = useState<Influencer | null>(null)
+  const [editandoInfluencer, setEditandoInfluencer] = useState<Influencer | null>(null)
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false)
 
   useEffect(() => {
     let cancelado = false
@@ -76,7 +74,7 @@ export default function GestionInfluencersPage() {
       setCargando(true)
       setError(null)
       try {
-        const respuesta = await listarInfluencers({
+        const respuesta = await influencersService.listar({
           page: pagina,
           limit: LIMITE,
           estadoValidacion: estadoFiltro || undefined,
@@ -120,19 +118,27 @@ export default function GestionInfluencersPage() {
   const totalValidados = influencers.filter((i) => i.estadoValidacion === 'VALIDADO').length
   const totalRechazados = influencers.filter((i) => i.estadoValidacion === 'RECHAZADO').length
 
-  async function handleValidar(input: ValidarInfluencerInput) {
-    if (!validandoInfluencer) return
+  async function cambiarEstadoRapido(id: string, nuevoEstado: EstadoValidacion) {
     try {
-      const actualizado = await validarInfluencer(validandoInfluencer.id, input)
-      setInfluencers((prev) =>
-        prev.map((inf) => (inf.id === actualizado.id ? actualizado : inf))
-      )
-      if (viendoInfluencer?.id === actualizado.id) {
-        setViendoInfluencer(actualizado)
-      }
-      setValidandoInfluencer(null)
+      const actualizado = await influencersService.editar(id, { estadoValidacion: nuevoEstado })
+      setInfluencers((prev) => prev.map((inf) => (inf.id === id ? actualizado : inf)))
+      if (viendoInfluencer?.id === id) setViendoInfluencer(actualizado)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'No se pudo validar el influencer.')
+      alert(err instanceof Error ? err.message : 'No se pudo actualizar el estado.')
+    }
+  }
+
+  async function guardarEdicion(id: string, datos: ActualizarInfluencerInput) {
+    try {
+      setGuardandoEdicion(true)
+      const actualizado = await influencersService.editar(id, datos)
+      setInfluencers((prev) => prev.map((inf) => (inf.id === id ? actualizado : inf)))
+      setViendoInfluencer(actualizado)
+      setEditandoInfluencer(null)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'No se pudo actualizar el influencer.')
+    } finally {
+      setGuardandoEdicion(false)
     }
   }
 
@@ -259,9 +265,15 @@ export default function GestionInfluencersPage() {
                   <td className="p-3 text-gray-700">{inf.seguidores || '—'}</td>
                   <td className="p-3 text-gray-700">{inf.cantidad_post || '—'}</td>
                   <td className="p-3">
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${estiloValidacion(inf.estadoValidacion)}`}>
-                      {etiquetaValidacion(inf.estadoValidacion)}
-                    </span>
+                    <select
+                      value={inf.estadoValidacion}
+                      onChange={(e) => cambiarEstadoRapido(inf.id, e.target.value as EstadoValidacion)}
+                      className={`border-0 cursor-pointer rounded-full px-3 py-1 text-sm font-medium ${estiloValidacion(inf.estadoValidacion)}`}
+                    >
+                      <option value="PENDIENTE">🟡 Pendiente</option>
+                      <option value="VALIDADO">🟢 Validado</option>
+                      <option value="RECHAZADO">🔴 Rechazado</option>
+                    </select>
                   </td>
                   <td className="p-3 text-sm text-gray-600">{etiquetaContacto(inf.estadoContacto)}</td>
                   <td className="p-3">
@@ -274,11 +286,11 @@ export default function GestionInfluencersPage() {
                         <Eye size={16} />
                       </button>
                       <button
-                        onClick={() => setValidandoInfluencer(inf)}
+                        onClick={() => setEditandoInfluencer(inf)}
                         className="hover:text-[#003D2D] transition-colors"
-                        title="Validar"
+                        title="Editar"
                       >
-                        <BadgeCheck size={16} />
+                        <Pencil size={16} />
                       </button>
                     </div>
                   </td>
@@ -358,17 +370,14 @@ export default function GestionInfluencersPage() {
                 <p className="text-gray-500">Publicaciones</p>
                 <p className="font-medium">{viendoInfluencer.cantidad_post || '—'}</p>
               </div>
-
               <div className="col-span-2">
                 <p className="text-gray-500">Biografía</p>
                 <p className="font-medium whitespace-pre-wrap">{viendoInfluencer.biografia || '—'}</p>
               </div>
-
               <div className="col-span-2">
                 <p className="text-gray-500">Mensaje personalizado</p>
                 <p className="font-medium whitespace-pre-wrap">{viendoInfluencer.mensajePersonalizado || '—'}</p>
               </div>
-
               <div className="col-span-2">
                 <p className="text-gray-500">Link de Instagram</p>
                 <a
@@ -380,7 +389,6 @@ export default function GestionInfluencersPage() {
                   {viendoInfluencer.linkIg}
                 </a>
               </div>
-
               <div>
                 <p className="text-gray-500">Validación</p>
                 <span className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-medium ${estiloValidacion(viendoInfluencer.estadoValidacion)}`}>
@@ -401,103 +409,184 @@ export default function GestionInfluencersPage() {
 
             <div className="mt-6 flex justify-end">
               <button
-                onClick={() => setValidandoInfluencer(viendoInfluencer)}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                onClick={() => setEditandoInfluencer(viendoInfluencer)}
+                className="bg-[#003D2D] text-white px-4 py-2 rounded-lg hover:bg-[#00553f] transition-colors flex items-center gap-2"
               >
-                <BadgeCheck size={16} />
-                Validar este influencer
+                <Pencil size={16} />
+                Editar
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {validandoInfluencer && (
-        <ModalValidarInfluencer
-          influencer={validandoInfluencer}
-          onCancelar={() => setValidandoInfluencer(null)}
-          onGuardar={handleValidar}
+      {editandoInfluencer && (
+        <ModalEditarInfluencer
+          influencer={editandoInfluencer}
+          guardando={guardandoEdicion}
+          onCancelar={() => setEditandoInfluencer(null)}
+          onGuardar={guardarEdicion}
         />
       )}
     </main>
   )
 }
 
-function ModalValidarInfluencer({
+function ModalEditarInfluencer({
   influencer,
+  guardando,
   onCancelar,
   onGuardar,
 }: {
   influencer: Influencer
+  guardando: boolean
   onCancelar: () => void
-  onGuardar: (input: ValidarInfluencerInput) => void | Promise<void>
+  onGuardar: (id: string, datos: ActualizarInfluencerInput) => Promise<void>
 }) {
-  const [seguidoresReales, setSeguidoresReales] = useState('')
-  const [likesReales, setLikesReales] = useState('')
-  const [estadoValidacion, setEstadoValidacion] = useState<EstadoValidacion>('VALIDADO')
-  const [enviando, setEnviando] = useState(false)
+  const [form, setForm] = useState<ActualizarInfluencerInput>({
+    nombre: influencer.nombre,
+    usuarioIg: influencer.usuarioIg,
+    linkIg: influencer.linkIg,
+    email: influencer.email || '',
+    phone: influencer.phone || '',
+    seguidores: influencer.seguidores || '',
+    cantidad_post: influencer.cantidad_post || '',
+    biografia: influencer.biografia || '',
+    mensajePersonalizado: influencer.mensajePersonalizado || '',
+    estadoValidacion: influencer.estadoValidacion,
+  })
+
+  function actualizarCampo<K extends keyof ActualizarInfluencerInput>(
+    campo: K,
+    valor: ActualizarInfluencerInput[K]
+  ) {
+    setForm((prev) => ({ ...prev, [campo]: valor }))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setEnviando(true)
-    try {
-      await onGuardar({
-        seguidoresReales: Number(seguidoresReales),
-        likesReales: Number(likesReales),
-        estadoValidacion,
-      })
-    } finally {
-      setEnviando(false)
-    }
+    await onGuardar(influencer.id, form)
   }
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onCancelar}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+          disabled={guardando}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 disabled:opacity-40"
         >
           <X size={20} />
         </button>
 
-        <h2 className="text-xl font-bold mb-1">Validar influencer</h2>
-        <p className="text-sm text-gray-500 mb-6">{influencer.nombre} (@{influencer.usuarioIg})</p>
+        <h2 className="text-xl font-bold mb-6">Editar influencer</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm text-gray-600">Seguidores reales</label>
+            <label className="text-sm text-gray-600">Nombre completo</label>
             <input
-              type="number"
-              min={0}
-              value={seguidoresReales}
-              onChange={(e) => setSeguidoresReales(e.target.value)}
+              type="text"
+              value={form.nombre || ''}
+              onChange={(e) => actualizarCampo('nombre', e.target.value)}
+              className="border rounded-lg p-2.5 w-full mt-1"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm text-gray-600">Usuario de Instagram</label>
+              <input
+                type="text"
+                value={form.usuarioIg || ''}
+                onChange={(e) => actualizarCampo('usuarioIg', e.target.value)}
+                className="border rounded-lg p-2.5 w-full mt-1"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Correo</label>
+              <input
+                type="email"
+                value={form.email || ''}
+                onChange={(e) => actualizarCampo('email', e.target.value)}
+                className="border rounded-lg p-2.5 w-full mt-1"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm text-gray-600">Teléfono</label>
+              <input
+                type="tel"
+                value={form.phone || ''}
+                onChange={(e) => actualizarCampo('phone', e.target.value)}
+                className="border rounded-lg p-2.5 w-full mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Seguidores</label>
+              <input
+                type="text"
+                value={form.seguidores || ''}
+                onChange={(e) => actualizarCampo('seguidores', e.target.value)}
+                className="border rounded-lg p-2.5 w-full mt-1"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-600">Publicaciones</label>
+            <input
+              type="text"
+              value={form.cantidad_post || ''}
+              onChange={(e) => actualizarCampo('cantidad_post', e.target.value)}
+              className="border rounded-lg p-2.5 w-full mt-1"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-600">Biografía</label>
+            <textarea
+              value={form.biografia || ''}
+              onChange={(e) => actualizarCampo('biografia', e.target.value)}
+              rows={3}
+              className="border rounded-lg p-2.5 w-full mt-1 resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-600">Mensaje personalizado</label>
+            <textarea
+              value={form.mensajePersonalizado || ''}
+              onChange={(e) => actualizarCampo('mensajePersonalizado', e.target.value)}
+              rows={3}
+              className="border rounded-lg p-2.5 w-full mt-1 resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-600">Link de Instagram</label>
+            <input
+              type="url"
+              value={form.linkIg || ''}
+              onChange={(e) => actualizarCampo('linkIg', e.target.value)}
               className="border rounded-lg p-2.5 w-full mt-1"
               required
             />
           </div>
 
           <div>
-            <label className="text-sm text-gray-600">Likes reales (promedio)</label>
-            <input
-              type="number"
-              min={0}
-              value={likesReales}
-              onChange={(e) => setLikesReales(e.target.value)}
-              className="border rounded-lg p-2.5 w-full mt-1"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="text-sm text-gray-600">Resultado de la validación</label>
+            <label className="text-sm text-gray-600">Estado de validación</label>
             <select
-              value={estadoValidacion}
-              onChange={(e) => setEstadoValidacion(e.target.value as EstadoValidacion)}
+              value={form.estadoValidacion || 'PENDIENTE'}
+              onChange={(e) => actualizarCampo('estadoValidacion', e.target.value as EstadoValidacion)}
               className="border rounded-lg p-2.5 w-full mt-1"
             >
-              <option value="VALIDADO">🟢 Validado</option>
-              <option value="RECHAZADO">🔴 Rechazado</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="VALIDADO">Validado</option>
+              <option value="RECHAZADO">Rechazado</option>
             </select>
           </div>
 
@@ -505,17 +594,17 @@ function ModalValidarInfluencer({
             <button
               type="button"
               onClick={onCancelar}
-              disabled={enviando}
+              disabled={guardando}
               className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={enviando}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
+              disabled={guardando}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {enviando ? 'Guardando...' : 'Guardar validación'}
+              {guardando ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>
         </form>
