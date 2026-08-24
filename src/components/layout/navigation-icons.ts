@@ -4,6 +4,7 @@ import {
   FileText,
   Home,
   Mail,
+  UserCog,
   UserPlus,
   Users,
   Video,
@@ -26,4 +27,5 @@ export const ICONO_POR_RECURSO: Record<Recurso, LucideIcon> = {
   usuarios: UserPlus,
   plantillas: FileText,
   email: Mail,
+  perfil: UserCog,
 }

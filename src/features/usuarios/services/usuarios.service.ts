@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/http'
 import type { DataPaginated } from '@/types/api'
 import type {
+  ActualizarPerfilInput,
   ActualizarUsuarioInput,
   CrearUsuarioInput,
   Usuario,
@@ -32,5 +33,15 @@ export const usuariosService = {
   /** Baja lógica → estado = INACTIVO. */
   async desactivar(id: string): Promise<Usuario> {
     return apiClient.patch<Usuario>(`${BASE_PATH}/${id}/desactivar`)
+  },
+
+  /** Perfil del usuario autenticado (autoservicio, cualquier rol). */
+  async obtenerPerfil(): Promise<Usuario> {
+    return apiClient.get<Usuario>(`${BASE_PATH}/perfil`)
+  },
+
+  /** Actualiza correo, contraseña y/o foto del propio usuario logueado. */
+  async actualizarPerfil(input: ActualizarPerfilInput): Promise<Usuario> {
+    return apiClient.patch<Usuario>(`${BASE_PATH}/perfil`, input)
   },
 }

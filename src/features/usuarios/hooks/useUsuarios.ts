@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { usuariosService } from '../services/usuarios.service'
 import { UsuarioListaSchema } from '../schemas/usuarios.schema'
 import type {
+  ActualizarPerfilInput,
   ActualizarUsuarioInput,
   CrearUsuarioInput,
   Usuario,
@@ -63,6 +64,26 @@ export function useDesactivarUsuario() {
     mutationFn: (id: string) => usuariosService.desactivar(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] })
+    },
+  })
+}
+
+/** Perfil del usuario autenticado (autoservicio, cualquier rol). */
+export function usePerfil() {
+  return useQuery({
+    queryKey: ['usuarios', 'perfil'],
+    queryFn: () => usuariosService.obtenerPerfil(),
+  })
+}
+
+/** Actualizar el perfil propio (correo, contraseña y/o foto). */
+export function useActualizarPerfil() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ActualizarPerfilInput) =>
+      usuariosService.actualizarPerfil(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['usuarios', 'perfil'] })
     },
   })
 }

@@ -68,6 +68,12 @@ export const NAVEGACION: ItemNavegacion[] = [
     label: 'Email',
     desc: 'Envía correos a influencers',
   },
+  {
+    recurso: 'perfil',
+    href: '/perfil',
+    label: 'Perfil',
+    desc: 'Actualiza tu correo, contraseña y foto',
+  },
 ]
 
 /**
