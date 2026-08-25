@@ -20,7 +20,6 @@ export const UsuarioSchema = z.object({
   estado: EstadoUsuarioEnum,
   roleId: z.number(),
   createdAt: z.string().optional(),
-  foto: z.string().nullable().optional(),
 })
 
 export const UsuarioListaSchema = z.object({

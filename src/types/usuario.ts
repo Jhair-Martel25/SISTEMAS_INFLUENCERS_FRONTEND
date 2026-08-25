@@ -14,8 +14,6 @@ export interface Usuario {
   estado: EstadoUsuario
   roleId: number
   createdAt?: string
-  /** Foto de perfil (data URL base64 o URL pública). Ausente/null si no tiene. */
-  foto?: string | null
 }
 
 /** Body de POST /usuarios. */
@@ -41,14 +39,19 @@ export interface UsuarioFiltros {
 }
 
 /**
- * Body de PATCH /usuarios/perfil (autoservicio: el propio usuario logueado).
- * A diferencia de `ActualizarUsuarioInput`, no permite cambiar nombre ni rol.
+ * Body de PATCH /usuarios/datos-personales (autoservicio: cualquier usuario
+ * logueado, sea ADMIN o VOLUNTARIO). Se puede enviar solo `email`, solo la
+ * terna de contraseña, o ambos a la vez. No permite cambiar nombre ni rol.
  */
 export interface ActualizarPerfilInput {
   email?: string
   /** Obligatoria si se envía `passwordNueva`. */
   passwordActual?: string
   passwordNueva?: string
-  /** Data URL (base64) de la nueva foto de perfil. */
-  foto?: string
+  confirmarPasswordNueva?: string
+}
+
+/** Respuesta de PATCH /usuarios/datos-personales. */
+export interface ActualizarPerfilResponse {
+  mensaje: string
 }

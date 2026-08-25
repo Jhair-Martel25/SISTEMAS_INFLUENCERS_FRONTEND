@@ -35,7 +35,7 @@ const PERMISOS_POR_ROL: Record<Role, Recurso[]> = {
     RECURSOS.USUARIOS,
     RECURSOS.PLANTILLAS,
     RECURSOS.EMAIL,
-    RECURSOS.PERFIL,
+    RECURSOS.PERFIL, // ← ADMIN puede modificar su correo y contraseña
   ],
   VOLUNTARIO: [
     RECURSOS.INFLUENCERS,
@@ -43,7 +43,7 @@ const PERMISOS_POR_ROL: Record<Role, Recurso[]> = {
     RECURSOS.DISPONIBILIDAD,
     RECURSOS.REUNIONES,
     RECURSOS.PLANTILLAS,
-    RECURSOS.PERFIL,
+    RECURSOS.PERFIL, // ← VOLUNTARIO puede modificar su correo y contraseña
   ],
 }
 

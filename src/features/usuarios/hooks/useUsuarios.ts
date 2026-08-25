@@ -11,14 +11,14 @@ import type {
 import type { DataPaginated } from '@/types/api'
 
 /**
- * Hooks de la feature `usuarios` (solo ADMIN).
+ * Hooks de la feature `usuarios`.
  *
  * Envuelven los services con TanStack Query. Los queryFn validan la respuesta
  * con Zod antes de cachearla. Las mutaciones invalidan la clave del dominio
  * para que la lista se refresque automáticamente.
  */
 
-/** Lista de usuarios (paginada) con filtros. */
+/** Lista de usuarios (paginada) con filtros. Solo ADMIN. */
 export function useUsuarios(filtros?: UsuarioFiltros) {
   return useQuery({
     queryKey: ['usuarios', filtros ?? {}],
@@ -29,7 +29,7 @@ export function useUsuarios(filtros?: UsuarioFiltros) {
   })
 }
 
-/** Crear un usuario (la contraseña temporal la asigna el backend). */
+/** Crear un usuario (la contraseña temporal la asigna el backend). Solo ADMIN. */
 export function useCrearUsuario() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -40,7 +40,7 @@ export function useCrearUsuario() {
   })
 }
 
-/** Actualizar un usuario (PATCH /:id, cuerpo parcial). */
+/** Actualizar un usuario (PATCH /:id, cuerpo parcial). Solo ADMIN. */
 export function useActualizarUsuario() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -57,7 +57,7 @@ export function useActualizarUsuario() {
   })
 }
 
-/** Desactivar un usuario (baja lógica → INACTIVO). */
+/** Desactivar un usuario (baja lógica → INACTIVO). Solo ADMIN. */
 export function useDesactivarUsuario() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -68,22 +68,14 @@ export function useDesactivarUsuario() {
   })
 }
 
-/** Perfil del usuario autenticado (autoservicio, cualquier rol). */
-export function usePerfil() {
-  return useQuery({
-    queryKey: ['usuarios', 'perfil'],
-    queryFn: () => usuariosService.obtenerPerfil(),
-  })
-}
-
-/** Actualizar el perfil propio (correo, contraseña y/o foto). */
+/** Actualizar el perfil propio (correo y/o contraseña). ADMIN y VOLUNTARIO. */
 export function useActualizarPerfil() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: ActualizarPerfilInput) =>
       usuariosService.actualizarPerfil(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['usuarios', 'perfil'] })
+      queryClient.invalidateQueries({ queryKey: ['usuarios'] })
     },
   })
 }

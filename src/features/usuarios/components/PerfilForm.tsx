@@ -1,18 +1,11 @@
 "use client"
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type ComponentProps,
-} from "react"
+import { useEffect, useState, type ComponentProps } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { Camera, Eye, EyeOff, Loader2, ZoomIn } from "lucide-react"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -21,13 +14,6 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import {
   Form,
   FormControl,
@@ -40,25 +26,14 @@ import {
 import { Input } from "@/components/ui/input"
 import { PageHeader } from "@/components/shared/page-header"
 import { cn } from "@/lib/utils"
+import { useAuthStore } from "@/store/auth-store"
 
 import type { ActualizarPerfilInput } from "@/types/usuario"
-import { usePerfil, useActualizarPerfil } from "../hooks/useUsuarios"
+import { useActualizarPerfil } from "../hooks/useUsuarios"
 import {
   perfilFormSchema,
   type PerfilFormValues,
 } from "../schemas/perfil-form.schema"
-
-const TAMANO_MAXIMO_FOTO = 2 * 1024 * 1024 // 2MB
-
-function iniciales(nombre?: string): string {
-  if (!nombre) return "?"
-  return nombre
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((parte) => parte[0]?.toUpperCase())
-    .join("")
-}
 
 /**
  * Input de contraseña con botón para mostrar/ocultar (icono de ojo).
@@ -94,11 +69,14 @@ function PasswordInput({
   )
 }
 
+/**
+ * Formulario "Mi perfil" (autoservicio): disponible tanto para ADMIN como
+ * para VOLUNTARIO — el acceso lo controla `RECURSOS.PERFIL` en
+ * `config/roles.ts`, presente en los permisos de ambos roles.
+ */
 export function PerfilForm() {
-  const { data: perfil, isLoading } = usePerfil()
+  const { user, isLoading: cargandoUsuario, logout } = useAuthStore()
   const actualizar = useActualizarPerfil()
-  const inputFotoRef = useRef<HTMLInputElement>(null)
-  const [previewFoto, setPreviewFoto] = useState<string | null>(null)
 
   const form = useForm<PerfilFormValues>({
     resolver: zodResolver(perfilFormSchema),
@@ -106,72 +84,56 @@ export function PerfilForm() {
       email: "",
       passwordActual: "",
       passwordNueva: "",
-      confirmarPassword: "",
-      foto: undefined,
+      confirmarPasswordNueva: "",
     },
   })
 
-  // Precarga el formulario cuando llega el perfil desde el backend.
+  // Precarga el correo actual cuando la sesión termina de hidratarse.
   useEffect(() => {
-    if (!perfil) return
+    if (!user) return
     form.reset({
-      email: perfil.email,
+      email: user.email,
       passwordActual: "",
       passwordNueva: "",
-      confirmarPassword: "",
-      foto: undefined,
+      confirmarPasswordNueva: "",
     })
-    setPreviewFoto(perfil.foto ?? null)
-  }, [perfil, form])
-
-  function handleSeleccionarFoto(event: ChangeEvent<HTMLInputElement>) {
-    const archivo = event.target.files?.[0]
-    event.target.value = ""
-    if (!archivo) return
-
-    if (!archivo.type.startsWith("image/")) {
-      toast.error("Selecciona un archivo de imagen válido.")
-      return
-    }
-    if (archivo.size > TAMANO_MAXIMO_FOTO) {
-      toast.error("La imagen no debe superar los 2 MB.")
-      return
-    }
-
-    const lector = new FileReader()
-    lector.onload = () => {
-      const resultado = lector.result as string
-      setPreviewFoto(resultado)
-      form.setValue("foto", resultado, { shouldDirty: true })
-    }
-    lector.readAsDataURL(archivo)
-  }
+  }, [user, form])
 
   function handleSubmit(values: PerfilFormValues) {
     const payload: ActualizarPerfilInput = {}
 
-    if (perfil && values.email !== perfil.email) {
+    if (user && values.email !== user.email) {
       payload.email = values.email
     }
     if (values.passwordNueva) {
       payload.passwordActual = values.passwordActual
       payload.passwordNueva = values.passwordNueva
-    }
-    if (values.foto) {
-      payload.foto = values.foto
+      payload.confirmarPasswordNueva = values.confirmarPasswordNueva
     }
 
     if (Object.keys(payload).length === 0) {
-      toast.info("No hay cambios que guardar.")
+      toast.info("No hay cambios para aplicar.")
       return
     }
 
     actualizar.mutate(payload, {
-      onSuccess: () => {
-        toast.success("Perfil actualizado correctamente.")
-        form.setValue("passwordActual", "")
-        form.setValue("passwordNueva", "")
-        form.setValue("confirmarPassword", "")
+      onSuccess: async (respuesta) => {
+        if (payload.passwordNueva) {
+          toast.success(
+            respuesta.mensaje ?? "Contraseña actualizada correctamente.",
+          )
+          // Al cambiar la contraseña hay que volver a iniciar sesión:
+          // se cierra la sesión local (localStorage + cookie sp_token)
+          // y se redirige al login.
+          await logout()
+          window.location.assign("/login")
+          return
+        }
+
+        toast.success(
+          respuesta.mensaje ?? "Correo actualizado correctamente.",
+        )
+        // Solo cambió el correo: se mantiene la sesión actual (sin redirigir).
       },
       onError: (error) => {
         toast.error(
@@ -187,11 +149,11 @@ export function PerfilForm() {
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <PageHeader
         title="Mi perfil"
-        description="Actualiza tu correo electrónico, tu contraseña y tu foto de perfil."
+        description="Actualiza tu correo electrónico y tu contraseña."
         backHref="/dashboard"
       />
 
-      {isLoading ? (
+      {cargandoUsuario ? (
         <div className="flex justify-center py-16">
           <Loader2 className="animate-spin text-muted-foreground" size={28} />
         </div>
@@ -200,7 +162,9 @@ export function PerfilForm() {
           <CardHeader>
             <CardTitle>Datos de la cuenta</CardTitle>
             <CardDescription>
-              Estos datos son visibles solo para ti.
+              Estos datos son visibles solo para ti. Si cambias tu
+              contraseña, se cerrará tu sesión y deberás volver a iniciar
+              sesión.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -210,74 +174,6 @@ export function PerfilForm() {
                 className="space-y-6"
                 noValidate
               >
-                <div className="flex items-center gap-4">
-                  <Avatar className="size-16">
-                    <AvatarImage
-                      src={previewFoto ?? undefined}
-                      alt="Foto de perfil"
-                    />
-                    <AvatarFallback>{iniciales(perfil?.nombre)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col gap-1">
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => inputFotoRef.current?.click()}
-                      >
-                        <Camera size={14} />
-                        Cambiar foto
-                      </Button>
-
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button type="button" variant="outline" size="sm">
-                            <ZoomIn size={14} />
-                            Ver foto actual
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
-                          <DialogHeader>
-                            <DialogTitle>Foto de perfil</DialogTitle>
-                          </DialogHeader>
-                          <div className="flex justify-center py-2">
-                            {previewFoto ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={previewFoto}
-                                alt="Foto de perfil"
-                                className="max-h-[60vh] w-auto rounded-lg object-contain"
-                              />
-                            ) : (
-                              <div className="flex flex-col items-center gap-3 py-8">
-                                <Avatar className="size-24">
-                                  <AvatarFallback className="text-lg">
-                                    {iniciales(perfil?.nombre)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <p className="text-sm text-muted-foreground">
-                                  Todavía no has subido una foto de perfil.
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Opcional. JPG o PNG, máximo 2 MB.
-                    </p>
-                    <input
-                      ref={inputFotoRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleSeleccionarFoto}
-                    />
-                  </div>
-                </div>
-
                 <FormField
                   control={form.control}
                   name="email"
@@ -345,7 +241,7 @@ export function PerfilForm() {
 
                   <FormField
                     control={form.control}
-                    name="confirmarPassword"
+                    name="confirmarPasswordNueva"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Confirmar contraseña nueva</FormLabel>

@@ -1,12 +1,14 @@
 import { z } from 'zod'
 
 /**
- * Schema de validación del formulario "Mi perfil" (autoservicio).
+ * Schema de validación del formulario "Mi perfil" (autoservicio, disponible
+ * para ADMIN y VOLUNTARIO).
  *
  * La contraseña nueva es opcional: si el usuario deja los tres campos de
  * contraseña vacíos, no se cambia nada. Si escribe una contraseña nueva, se
  * exige la actual (para confirmar identidad) y que coincida con la
- * confirmación.
+ * confirmación. Los nombres de los campos de contraseña coinciden con el
+ * contrato real del backend (PATCH /usuarios/datos-personales).
  */
 export const perfilFormSchema = z
   .object({
@@ -21,9 +23,7 @@ export const perfilFormSchema = z
       ),
     passwordActual: z.string().optional().or(z.literal('')),
     passwordNueva: z.string().optional().or(z.literal('')),
-    confirmarPassword: z.string().optional().or(z.literal('')),
-    /** Data URL (base64) de la foto seleccionada; undefined si no se cambió. */
-    foto: z.string().optional(),
+    confirmarPasswordNueva: z.string().optional().or(z.literal('')),
   })
   .superRefine((valores, ctx) => {
     if (!valores.passwordNueva) return
@@ -44,11 +44,11 @@ export const perfilFormSchema = z
       })
     }
 
-    if (valores.confirmarPassword !== valores.passwordNueva) {
+    if (valores.confirmarPasswordNueva !== valores.passwordNueva) {
       ctx.addIssue({
         code: 'custom',
         message: 'Las contraseñas no coinciden',
-        path: ['confirmarPassword'],
+        path: ['confirmarPasswordNueva'],
       })
     }
   })
