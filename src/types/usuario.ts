@@ -37,3 +37,21 @@ export interface UsuarioFiltros {
   estado?: EstadoUsuario
   roleId?: number
 }
+
+/**
+ * Body de PATCH /usuarios/datos-personales (autoservicio: cualquier usuario
+ * logueado, sea ADMIN o VOLUNTARIO). Se puede enviar solo `email`, solo la
+ * terna de contraseña, o ambos a la vez. No permite cambiar nombre ni rol.
+ */
+export interface ActualizarPerfilInput {
+  email?: string
+  /** Obligatoria si se envía `passwordNueva`. */
+  passwordActual?: string
+  passwordNueva?: string
+  confirmarPasswordNueva?: string
+}
+
+/** Respuesta de PATCH /usuarios/datos-personales. */
+export interface ActualizarPerfilResponse {
+  mensaje: string
+}
