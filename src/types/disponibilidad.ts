@@ -1,43 +1,51 @@
-export type DiaSemana =
-  | 'LUNES' | 'MARTES' | 'MIERCOLES' | 'JUEVES' | 'VIERNES' | 'SABADO' | 'DOMINGO'
+/**
+ * Disponibilidades
+ * ----------------
+ * Bloques reales de cita de 60 min (o 20 min puntuales). Ver §3.7 y §4.3.
+ *
+ * Notas de fechas (CONTEXTO §4.3):
+ *  - ENTRADA (crear): "YYYY-MM-DD HH:mm:ss" (hora local del voluntario) + `zonaHoraria`.
+ *  - SALIDA  (listar): ISO 8601 con Z (UTC) → convertir a la zona del que mira.
+ */
 
-export const DIAS_SEMANA: { value: DiaSemana; corto: string }[] = [
-  { value: 'LUNES', corto: 'Lun' },
-  { value: 'MARTES', corto: 'Mar' },
-  { value: 'MIERCOLES', corto: 'Mié' },
-  { value: 'JUEVES', corto: 'Jue' },
-  { value: 'VIERNES', corto: 'Vie' },
-  { value: 'SABADO', corto: 'Sáb' },
-  { value: 'DOMINGO', corto: 'Dom' },
-]
-
-export interface Horario {
+export interface VoluntarioDisponibilidad {
   id: string
-  diaSemana: DiaSemana
-  horaInicio: string
-  horaFin: string
-  voluntarioId: string
+  nombre: string
 }
-
-export interface CrearHorarioInput {
-  diaSemana: DiaSemana
-  horaInicio: string
-  horaFin: string
-}
-
-export type ActualizarHorarioInput = Partial<CrearHorarioInput>
 
 export interface DisponibilidadCita {
   id: string
   fechaHora: string
-  disponible: boolean
-  voluntarioId: string
+  /** Presente en mis-bloques; ausente en /disponibles (público). */
+  disponible?: boolean
+  /** Presente en GET /horarios (ADMIN); ausente en mis-bloques/disponibles. */
+  voluntarioId?: string
   voluntarioNombre?: string
+  /** Solo presente en GET /disponibilidades/disponibles (público). */
+  voluntario?: VoluntarioDisponibilidad
 }
 
+/** Body de POST /disponibilidades (bloque manual). */
+export interface CrearDisponibilidadInput {
+  fechaHora: string
+  disponible?: boolean
+  /** Zona del navegador del voluntario (el backend convierte a UTC). */
+  zonaHoraria?: string
+}
+
+/** Body de POST /disponibilidades/generar. */
+export interface GenerarDisponibilidadInput {
+  zonaHoraria?: string
+}
+
+/** Query params de GET /disponibilidades/disponibles y /mis-bloques. */
 export interface DisponibilidadFiltros {
   voluntarioId?: string
   disponible?: boolean
   desde?: string
   hasta?: string
+  /** Zona del navegador (el backend interpreta desde/hasta en esa zona). */
+  zonaHoraria?: string
+  page?: number
+  limit?: number
 }

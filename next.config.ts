@@ -1,15 +1,7 @@
-/**import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here 
-};
-
-export default nextConfig;*/
-
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ['192.168.56.1', 'localhost:3000'],
+  allowedDevOrigins: ['192.168.56.1', 'localhost:5174'],
   turbopack: {
     root: __dirname,
   },

@@ -1,80 +1,79 @@
+import type { EstadoContacto, EstadoValidacion } from './api'
+
 /**
- * Tipos: Influencer
- * ------------------
- * Define la estructura de datos utilizada por el módulo de influencers.
- * Estos tipos están alineados con el modelo Influencer del backend.
+ * Influencers
+ * -----------
+ * Entidad tal como la devuelve el backend (GET /influencers, POST, etc.).
+ * Ver CONTEXTO_FRONTEND.md §3.5.
+ *
+ * Nota: `seguidores` y `cantidad_post` son STRING (no número) por decisión
+ * del backend. No convertirlos a number al tipar.
  */
 
-export type EstadoValidacion =
-  | 'PENDIENTE'
-  | 'VALIDADO'
-  | 'RECHAZADO'
+export interface InfluencerResumenUsuario {
+  id: string
+  nombre: string
+}
 
-export type EstadoContacto =
-  | 'SIN_CONTACTAR'
-  | 'CORREO_ENVIADO'
-  | 'FORMULARIO_LLENADO'
-  | 'REUNION_AGENDADA'
-  | 'RECHAZO_CONTACTO'
-
+/** Influencer completo (respuesta del backend). */
 export interface Influencer {
   id: string
-
   nombre: string
   usuarioIg: string
   linkIg: string
-
-  email?: string
-  phone?: string
-
-  seguidores?: string
-  cantidad_post?: string
-  biografia?: string
-  mensajePersonalizado?: string
-
+  email?: string | null
+  phone?: string | null
+  seguidores?: string | null
+  cantidad_post?: string | null
+  biografia?: string | null
+  mensajePersonalizado?: string | null
   estadoValidacion: EstadoValidacion
   estadoContacto: EstadoContacto
-
   createdAt?: string
-
-  validadoPor?: {
-    id: string
-    nombre: string
-  }
+  updatedAt?: string
+  /** Quién lo validó/actualizó por última vez. */
+  validadoPor?: InfluencerResumenUsuario | null
 }
 
+/** Body de POST /influencers (creación manual, sin Apify). */
 export interface CrearInfluencerInput {
   nombre: string
   usuarioIg: string
   linkIg: string
-
   email?: string
   phone?: string
-
   seguidores?: string
   cantidad_post?: string
   biografia?: string
   mensajePersonalizado?: string
-
   estadoValidacion?: EstadoValidacion
 }
 
-export type ActualizarInfluencerInput =
-  Partial<CrearInfluencerInput>
+/** Body de PATCH /influencers/:id/editar (cuerpo parcial). */
+export interface ActualizarInfluencerInput {
+  nombre?: string
+  usuarioIg?: string
+  linkIg?: string
+  email?: string
+  phone?: string
+  seguidores?: string
+  cantidad_post?: string
+  biografia?: string
+  mensajePersonalizado?: string
+  estadoValidacion?: EstadoValidacion
+  estadoContacto?: EstadoContacto
+}
 
+/** Body de PATCH /influencers/:id/contactar (solo ADMIN). */
+export interface ContactarInfluencerInput {
+  estadoContacto: EstadoContacto
+}
+
+/** Query params de GET /influencers. */
 export interface InfluencerFiltros {
-  page?: number
-  limit?: number
   estadoValidacion?: EstadoValidacion
   estadoContacto?: EstadoContacto
   tematica?: string
-}
-
-export interface InfluencersResponse {
-  data: Influencer[]
-  meta: {
-    total: number
-    page: number
-    limit: number
-  }
+  page?: number
+  limit?: number
 }
