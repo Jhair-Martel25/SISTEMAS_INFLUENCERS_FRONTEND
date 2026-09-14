@@ -8,6 +8,7 @@ import type {
   ActualizarInfluencerInput,
   ContactarInfluencerInput,
   CrearInfluencerInput,
+  GenerarInfluencersInput,
   Influencer,
   InfluencerFiltros,
 } from '@/types/influencer'
@@ -49,6 +50,17 @@ export function useCrearInfluencer() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: CrearInfluencerInput) => influencersService.crear(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['influencers'] })
+    },
+  })
+}
+
+/** Generar influencers con IA (POST /influencers/generar, ya quedan creados). */
+export function useGenerarInfluencers() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: GenerarInfluencersInput) => influencersService.generarConIA(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['influencers'] })
     },

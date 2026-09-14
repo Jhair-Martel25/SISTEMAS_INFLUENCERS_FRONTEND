@@ -4,14 +4,16 @@ import type {
   ActualizarInfluencerInput,
   ContactarInfluencerInput,
   CrearInfluencerInput,
+  GenerarInfluencersInput,
   Influencer,
   InfluencerFiltros,
+  InfluencerGenerado,
 } from '@/types/influencer'
 
 const BASE_PATH = '/influencers'
 
 export const influencersService = {
-  /** Listar influencers con filtros y paginación. */
+  /** Listar influencers con filtros y paginaciÃƒÂ³n. */
   async listar(filtros?: InfluencerFiltros): Promise<DataPaginated<Influencer>> {
     return apiClient.get<DataPaginated<Influencer>>(BASE_PATH, {
       params: filtros,
@@ -27,7 +29,16 @@ export const influencersService = {
     return apiClient.post<Influencer>(BASE_PATH, input)
   },
 
-  /** Acción de validación: editar métricas y estado (PATCH /:id/editar). */
+  /** Generar influencers automaticamente con IA (POST /influencers/generar). Ya quedan creados en el backend. */
+  async generarConIA(input: GenerarInfluencersInput): Promise<InfluencerGenerado[]> {
+    return apiClient.post<InfluencerGenerado[]>(`/influencers/generar`, {
+      tema: input.tema,
+      rangoSeguidores: input.rangoSeguidores,
+      cantidad: input.cantidad,
+    })
+  },
+
+  /** AcciÃƒÂ³n de validaciÃƒÂ³n: editar mÃƒÂ©tricas y estado (PATCH /:id/editar). */
   async editar(id: string, input: ActualizarInfluencerInput): Promise<Influencer> {
     return apiClient.patch<Influencer>(`${BASE_PATH}/${id}/editar`, input)
   },

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Eye, Pencil, Plus, Trash2 } from "lucide-react"
+import { Eye, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -187,12 +187,20 @@ export function InfluencerList() {
         description="Administra, consulta y valida los influencers registrados en el sistema."
         backHref="/dashboard"
         actions={
-          <Button asChild>
-            <Link href="/influencers/nuevo">
-              <Plus size={16} />
-              Nuevo Influencer
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/influencers/importar">
+                <Sparkles size={16} />
+                Generar con IA
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/influencers/nuevo">
+                <Plus size={16} />
+                Nuevo Influencer
+              </Link>
+            </Button>
+          </div>
         }
       />
 

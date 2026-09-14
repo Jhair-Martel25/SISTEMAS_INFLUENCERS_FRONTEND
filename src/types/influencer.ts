@@ -4,9 +4,9 @@ import type { EstadoContacto, EstadoValidacion } from './api'
  * Influencers
  * -----------
  * Entidad tal como la devuelve el backend (GET /influencers, POST, etc.).
- * Ver CONTEXTO_FRONTEND.md §3.5.
+ * Ver CONTEXTO_FRONTEND.md Ã‚Â§3.5.
  *
- * Nota: `seguidores` y `cantidad_post` son STRING (no número) por decisión
+ * Nota: `seguidores` y `cantidad_post` son STRING (no nÃƒÂºmero) por decisiÃƒÂ³n
  * del backend. No convertirlos a number al tipar.
  */
 
@@ -31,11 +31,11 @@ export interface Influencer {
   estadoContacto: EstadoContacto
   createdAt?: string
   updatedAt?: string
-  /** Quién lo validó/actualizó por última vez. */
+  /** QuiÃƒÂ©n lo validÃƒÂ³/actualizÃƒÂ³ por ÃƒÂºltima vez. */
   validadoPor?: InfluencerResumenUsuario | null
 }
 
-/** Body de POST /influencers (creación manual, sin Apify). */
+/** Body de POST /influencers (creaciÃƒÂ³n manual, sin Apify). */
 export interface CrearInfluencerInput {
   nombre: string
   usuarioIg: string
@@ -76,4 +76,29 @@ export interface InfluencerFiltros {
   tematica?: string
   page?: number
   limit?: number
+}
+
+/** Body de POST /influencers/generar (generacion automatica con IA). */
+export interface GenerarInfluencersInput {
+  tema: string
+  rangoSeguidores: string
+  cantidad: number
+}
+
+/**
+ * Item de la respuesta de POST /influencers/generar. Ya queda guardado en
+ * el backend. No trae `id`: se usa `UsuarioIg` (el usuario de Instagram, que
+ * es unico) como key en las tablas.
+ */
+export interface InfluencerGenerado {
+  Nombre: string
+  UsuarioIg: string
+  LinkIg: string
+  Email: string
+  biografia: string
+  mensaje_personalizado: string
+  cantidad_post: number
+  seguidores: number
+  emailVerificado: boolean
+  igVerificado: boolean
 }

@@ -1,5 +1,4 @@
-"use client"
-
+﻿"use client"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -181,7 +180,7 @@ export function InfluencerForm({
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Correo electrónico</FormLabel>
+                <FormLabel>Correo electrÃ³nico</FormLabel>
                 <FormControl>
                   <Input
                     type="email"
@@ -198,7 +197,7 @@ export function InfluencerForm({
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Teléfono</FormLabel>
+                <FormLabel>TelÃ©fono</FormLabel>
                 <FormControl>
                   <Input placeholder="+51..." {...field} />
                 </FormControl>
@@ -242,7 +241,7 @@ export function InfluencerForm({
           name="biografia"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Biografía</FormLabel>
+              <FormLabel>BiografÃ­a</FormLabel>
               <FormControl>
                 <Textarea rows={3} {...field} />
               </FormControl>
@@ -270,7 +269,7 @@ export function InfluencerForm({
           name="estadoValidacion"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Estado de validación</FormLabel>
+              <FormLabel>Estado de validaciÃ³n</FormLabel>
               <Select value={field.value} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="w-full">
