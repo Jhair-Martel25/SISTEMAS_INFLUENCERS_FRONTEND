@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Eye, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
+import { Eye, Pencil, Plus, Search, Sparkles, Trash2, Upload, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
@@ -38,15 +39,22 @@ import {
   type EstadoContacto,
   type EstadoValidacion,
 } from "@/types/api"
+import { TIPO_CATEGORIA } from "@/types/categoria"
 import type { Influencer } from "@/types/influencer"
 import { etiquetaEstado } from "@/lib/utils/format"
+import { useCategorias } from "../../categorias/hooks/useCategorias"
 import {
   useEliminarInfluencer,
   useInfluencers,
 } from "../hooks/useInfluencers"
 import { InfluencerForm } from "./InfluencerForm"
+import { ImportarInfluencersModal } from "./ImportarInfluencersModal"
 
 const LIMITE = 10
+// Cuando hay un termino de busqueda activo, se piden mas registros al backend
+// para que el filtro (que hoy es solo del lado del cliente, porque la API
+// todavia no soporta busqueda por texto) tenga mas contra que buscar.
+const LIMITE_CON_BUSQUEDA = 100
 const TODOS = "todos"
 
 function iniciales(nombre: string) {
@@ -66,20 +74,42 @@ export function InfluencerList() {
     EstadoValidacion | ""
   >("")
   const [estadoContacto, setEstadoContacto] = useState<EstadoContacto | "">("")
+  const [tematica, setTematica] = useState("")
+  const [busqueda, setBusqueda] = useState("")
 
   const [viendo, setViendo] = useState<Influencer | null>(null)
   const [editando, setEditando] = useState<Influencer | null>(null)
   const [eliminando, setEliminando] = useState<Influencer | null>(null)
+  const [importando, setImportando] = useState(false)
+
+  const { data: categorias } = useCategorias(TIPO_CATEGORIA.TEMATICA)
+  const tematicas = [...(categorias?.TEMATICA ?? [])].sort(
+    (a, b) => a.orden - b.orden,
+  )
+
+  const busquedaActiva = busqueda.trim().length > 0
 
   const { data, isLoading, isError, error } = useInfluencers({
-    page,
-    limit: LIMITE,
+    page: busquedaActiva ? 1 : page,
+    limit: busquedaActiva ? LIMITE_CON_BUSQUEDA : LIMITE,
     estadoValidacion: estadoValidacion || undefined,
     estadoContacto: estadoContacto || undefined,
+    tematica: tematica || undefined,
   })
   const eliminar = useEliminarInfluencer()
 
-  const influencers = data?.data ?? []
+  const influencersCargados = data?.data ?? []
+
+  const influencers = useMemo(() => {
+    if (!busquedaActiva) return influencersCargados
+    const termino = busqueda.trim().toLowerCase()
+    return influencersCargados.filter(
+      (influencer) =>
+        influencer.nombre.toLowerCase().includes(termino) ||
+        influencer.usuarioIg.toLowerCase().includes(termino),
+    )
+  }, [influencersCargados, busqueda, busquedaActiva])
+
   const totalPages = Math.max(1, Math.ceil((data?.meta.total ?? 0) / LIMITE))
 
   const errorMessage = isError
@@ -109,8 +139,7 @@ export function InfluencerList() {
       id: "instagram",
       header: "Instagram",
       cell: (influencer) => (
-        <a
-          href={influencer.linkIg}
+        <a href={influencer.linkIg}
           target="_blank"
           rel="noopener noreferrer"
           className="text-muted-foreground transition-colors hover:text-primary"
@@ -122,16 +151,16 @@ export function InfluencerList() {
     {
       id: "seguidores",
       header: "Seguidores",
-      cell: (influencer) => influencer.seguidores ?? "—",
+      cell: (influencer) => influencer.seguidores ?? "-",
     },
     {
       id: "publicaciones",
       header: "Publicaciones",
-      cell: (influencer) => influencer.cantidad_post ?? "—",
+      cell: (influencer) => influencer.cantidad_post ?? "-",
     },
     {
       id: "validacion",
-      header: "Validación",
+      header: "Validacion",
       cell: (influencer) => (
         <EstadoBadge estado={influencer.estadoValidacion} tipo="validacion" />
       ),
@@ -183,11 +212,15 @@ export function InfluencerList() {
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <PageHeader
-        title="Gestión de Influencers"
+        title="Gestion de Influencers"
         description="Administra, consulta y valida los influencers registrados en el sistema."
         backHref="/dashboard"
         actions={
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setImportando(true)}>
+              <Upload size={16} />
+              Importar influencers
+            </Button>
             <Button variant="outline" asChild>
               <Link href="/influencers/importar">
                 <Sparkles size={16} />
@@ -205,6 +238,29 @@ export function InfluencerList() {
       />
 
       <DataTableToolbar>
+        <div className="relative w-full sm:max-w-xs">
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por nombre o usuario..."
+            className="pl-9 pr-9"
+          />
+          {busqueda && (
+            <button
+              type="button"
+              aria-label="Limpiar busqueda"
+              onClick={() => setBusqueda("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Select
             value={estadoValidacion || TODOS}
@@ -216,7 +272,7 @@ export function InfluencerList() {
             }}
           >
             <SelectTrigger className="w-full sm:w-44">
-              <SelectValue placeholder="Validación" />
+              <SelectValue placeholder="Validacion" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={TODOS}>Todos los estados</SelectItem>
@@ -249,8 +305,37 @@ export function InfluencerList() {
               ))}
             </SelectContent>
           </Select>
+
+          <Select
+            value={tematica || TODOS}
+            onValueChange={(valor) => {
+              setTematica(valor === TODOS ? "" : valor)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-44">
+              <SelectValue placeholder="Tematica" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TODOS}>Todas las tematicas</SelectItem>
+              {tematicas.map((t) => (
+                <SelectItem key={t.valor} value={t.valor}>
+                  {t.etiqueta}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </DataTableToolbar>
+
+      {busquedaActiva && (
+        <p className="-mt-2 text-xs text-muted-foreground">
+          Buscando "{busqueda.trim()}" entre los {influencersCargados.length}{" "}
+          registros mas recientes que coinciden con los filtros ({influencers.length}{" "}
+          {influencers.length === 1 ? "resultado" : "resultados"}). La busqueda
+          por texto todavia no cubre todo el listado del sistema.
+        </p>
+      )}
 
       <DataTable
         columnas={columnas}
@@ -258,13 +343,20 @@ export function InfluencerList() {
         getRowId={(influencer) => influencer.id}
         isLoading={isLoading}
         errorMessage={errorMessage}
+        emptyMessage={
+          busquedaActiva
+            ? "No hay resultados para esa busqueda en los registros cargados."
+            : "No hay resultados para los filtros seleccionados."
+        }
       />
 
-      <DataTablePagination
-        page={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
-      />
+      {!busquedaActiva && (
+        <DataTablePagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+      )}
 
       <Dialog open={Boolean(viendo)} onOpenChange={(open) => !open && setViendo(null)}>
         <DialogContent className="sm:max-w-lg">
@@ -276,24 +368,23 @@ export function InfluencerList() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Correo</p>
-                <p className="font-medium">{viendo.email || "—"}</p>
+                <p className="font-medium">{viendo.email || "-"}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Teléfono</p>
-                <p className="font-medium">{viendo.phone || "—"}</p>
+                <p className="text-muted-foreground">Telefono</p>
+                <p className="font-medium">{viendo.phone || "-"}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Seguidores</p>
-                <p className="font-medium">{viendo.seguidores || "—"}</p>
+                <p className="font-medium">{viendo.seguidores || "-"}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Publicaciones</p>
-                <p className="font-medium">{viendo.cantidad_post || "—"}</p>
+                <p className="font-medium">{viendo.cantidad_post || "-"}</p>
               </div>
               <div className="col-span-2">
                 <p className="text-muted-foreground">Link de perfil</p>
-                <a
-                  href={viendo.linkIg}
+                <a href={viendo.linkIg}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-medium text-primary underline break-all"
@@ -303,7 +394,7 @@ export function InfluencerList() {
               </div>
               {viendo.biografia && (
                 <div className="col-span-2">
-                  <p className="text-muted-foreground">Biografía</p>
+                  <p className="text-muted-foreground">Biografia</p>
                   <p className="font-medium">{viendo.biografia}</p>
                 </div>
               )}
@@ -314,7 +405,7 @@ export function InfluencerList() {
                 </div>
               )}
               <div>
-                <p className="text-muted-foreground">Validación</p>
+                <p className="text-muted-foreground">Validacion</p>
                 <EstadoBadge
                   estado={viendo.estadoValidacion}
                   tipo="validacion"
@@ -353,7 +444,7 @@ export function InfluencerList() {
         title="Eliminar influencer"
         description={
           eliminando
-            ? `¿Seguro que deseas eliminar a ${eliminando.nombre}? Esta acción no se puede deshacer.`
+            ? `Seguro que deseas eliminar a ${eliminando.nombre}? Esta accion no se puede deshacer.`
             : undefined
         }
         confirmLabel="Eliminar"
@@ -376,6 +467,8 @@ export function InfluencerList() {
           })
         }}
       />
+
+      <ImportarInfluencersModal open={importando} onOpenChange={setImportando} />
     </div>
   )
 }

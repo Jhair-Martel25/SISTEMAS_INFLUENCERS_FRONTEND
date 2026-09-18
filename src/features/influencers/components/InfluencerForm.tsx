@@ -1,4 +1,5 @@
-﻿"use client"
+"use client"
+
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -35,6 +36,9 @@ import {
   influencerFormSchema,
   type InfluencerFormValues,
 } from "../schemas/influencer-form.schema"
+
+const BIOGRAFIA_MAX = 500
+const MENSAJE_MAX = 1000
 
 function valoresIniciales(influencer?: Influencer | null): InfluencerFormValues {
   return {
@@ -74,6 +78,9 @@ export function InfluencerForm({
     resolver: zodResolver(influencerFormSchema),
     defaultValues: valoresIniciales(influencer),
   })
+
+  const biografiaValor = form.watch("biografia") ?? ""
+  const mensajeValor = form.watch("mensajePersonalizado") ?? ""
 
   function handleSubmit(values: InfluencerFormValues) {
     const payload = {
@@ -136,7 +143,9 @@ export function InfluencerForm({
           name="nombre"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nombre completo</FormLabel>
+              <FormLabel>
+                Nombre completo <span className="text-destructive">*</span>
+              </FormLabel>
               <FormControl>
                 <Input placeholder="Andrea Paz" {...field} />
               </FormControl>
@@ -151,10 +160,16 @@ export function InfluencerForm({
             name="usuarioIg"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Usuario de Instagram</FormLabel>
+                <FormLabel>
+                  Usuario de Instagram{" "}
+                  <span className="text-destructive">*</span>
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="andreapaz" {...field} />
                 </FormControl>
+                <p className="text-xs text-muted-foreground">
+                  Sin el @. Solo letras, numeros, puntos y guiones bajos.
+                </p>
                 <FormMessage />
               </FormItem>
             )}
@@ -164,7 +179,9 @@ export function InfluencerForm({
             name="linkIg"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Link del perfil</FormLabel>
+                <FormLabel>
+                  Link del perfil <span className="text-destructive">*</span>
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="https://instagram.com/..." {...field} />
                 </FormControl>
@@ -180,7 +197,7 @@ export function InfluencerForm({
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Correo electrÃ³nico</FormLabel>
+                <FormLabel>Correo electronico</FormLabel>
                 <FormControl>
                   <Input
                     type="email"
@@ -197,9 +214,9 @@ export function InfluencerForm({
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>TelÃ©fono</FormLabel>
+                <FormLabel>Telefono</FormLabel>
                 <FormControl>
-                  <Input placeholder="+51..." {...field} />
+                  <Input placeholder="+51 999 999 999" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -241,7 +258,18 @@ export function InfluencerForm({
           name="biografia"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>BiografÃ­a</FormLabel>
+              <div className="flex items-baseline justify-between">
+                <FormLabel>Biografia</FormLabel>
+                <span
+                  className={`text-xs ${
+                    biografiaValor.length > BIOGRAFIA_MAX
+                      ? "text-destructive"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {biografiaValor.length}/{BIOGRAFIA_MAX}
+                </span>
+              </div>
               <FormControl>
                 <Textarea rows={3} {...field} />
               </FormControl>
@@ -255,7 +283,18 @@ export function InfluencerForm({
           name="mensajePersonalizado"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Mensaje personalizado</FormLabel>
+              <div className="flex items-baseline justify-between">
+                <FormLabel>Mensaje personalizado</FormLabel>
+                <span
+                  className={`text-xs ${
+                    mensajeValor.length > MENSAJE_MAX
+                      ? "text-destructive"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {mensajeValor.length}/{MENSAJE_MAX}
+                </span>
+              </div>
               <FormControl>
                 <Textarea rows={3} {...field} />
               </FormControl>
@@ -269,7 +308,7 @@ export function InfluencerForm({
           name="estadoValidacion"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Estado de validaciÃ³n</FormLabel>
+              <FormLabel>Estado de validacion</FormLabel>
               <Select value={field.value} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="w-full">
