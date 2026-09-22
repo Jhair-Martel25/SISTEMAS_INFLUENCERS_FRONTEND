@@ -2,6 +2,8 @@ import { apiClient } from '@/lib/http'
 import type { DataPaginated } from '@/types/api'
 import type {
   ActualizarInfluencerInput,
+  CaptarInfluencersInput,
+  CaptarInfluencersResponse,
   ContactarInfluencerInput,
   CrearInfluencerInput,
   GenerarInfluencersInput,
@@ -38,7 +40,17 @@ export const influencersService = {
     })
   },
 
-  /** AcciÃƒÂ³n de validaciÃƒÂ³n: editar mÃƒÂ©tricas y estado (PATCH /:id/editar). */
+  /** Captar influencers mediante Google Search + Apify (POST /influencers/captar). */
+  async captarInfluencers(
+    input: CaptarInfluencersInput,
+  ): Promise<CaptarInfluencersResponse> {
+    return apiClient.post<CaptarInfluencersResponse>(
+      `${BASE_PATH}/captar`,
+      input,
+    )
+  },
+
+  /** Acción de validación: editar métricas y estado (PATCH /:id/editar). */
   async editar(id: string, input: ActualizarInfluencerInput): Promise<Influencer> {
     return apiClient.patch<Influencer>(`${BASE_PATH}/${id}/editar`, input)
   },

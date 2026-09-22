@@ -6,6 +6,7 @@ import {
 } from '../schemas/influencers.schema'
 import type {
   ActualizarInfluencerInput,
+  CaptarInfluencersInput,
   ContactarInfluencerInput,
   CrearInfluencerInput,
   GenerarInfluencersInput,
@@ -61,6 +62,19 @@ export function useGenerarInfluencers() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: GenerarInfluencersInput) => influencersService.generarConIA(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['influencers'] })
+    },
+  })
+}
+
+/** Captar influencers mediante Google Search + Apify (POST /influencers/captar). */
+export function useCaptarInfluencers() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: CaptarInfluencersInput) =>
+      influencersService.captarInfluencers(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['influencers'] })
     },

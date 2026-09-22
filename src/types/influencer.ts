@@ -102,3 +102,22 @@ export interface InfluencerGenerado {
   emailVerificado: boolean
   igVerificado: boolean
 }
+
+export type RedSocial = 'INSTAGRAM' | 'TIKTOK' | 'FACEBOOK'
+
+export interface CaptarInfluencersInput {
+  prompt: string
+  redesSociales?: RedSocial[]
+  maxItems?: number
+  consultaId?: string
+  incluirFiltroContacto?: boolean
+}
+
+export interface CaptarInfluencersResponse {
+  totalResultados: number
+  validos: number
+  nuevos: number
+  actualizados: number
+  conEmail: number
+  porRed: Record<string, number>
+}
