@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Eye, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
+import { Eye, Pencil, Plus, Search, Sparkles, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -194,6 +194,14 @@ export function InfluencerList() {
                 Generar con IA
               </Link>
             </Button>
+
+            <Button variant="outline" asChild>
+              <Link href="/influencers/captar">
+                <Search size={16} />
+                Captar influencers
+              </Link>
+            </Button>
+
             <Button asChild>
               <Link href="/influencers/nuevo">
                 <Plus size={16} />
