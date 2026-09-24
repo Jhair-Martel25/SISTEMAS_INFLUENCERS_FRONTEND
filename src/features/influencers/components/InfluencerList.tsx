@@ -98,7 +98,7 @@ export function InfluencerList() {
   })
   const eliminar = useEliminarInfluencer()
 
-  const influencersCargados = data?.data ?? []
+  const influencersCargados = useMemo(() => data?.data ?? [], [data])
 
   const influencers = useMemo(() => {
     if (!busquedaActiva) return influencersCargados
@@ -117,6 +117,16 @@ export function InfluencerList() {
       ? error.message
       : "No se pudieron cargar los influencers."
     : null
+
+  const hayFiltrosActivos = Boolean(estadoValidacion || estadoContacto || tematica)
+  const sinInfluencersEnElSistema =
+    !busquedaActiva && !hayFiltrosActivos && (data?.meta.total ?? 0) === 0
+
+  const mensajeVacio = busquedaActiva
+    ? "No hay resultados para esa busqueda en los registros cargados."
+    : sinInfluencersEnElSistema
+      ? "Todavia no hay influencers registrados en el sistema."
+      : "No hay resultados para los filtros seleccionados."
 
   const columnas: Columna<Influencer>[] = [
     {
@@ -330,7 +340,7 @@ export function InfluencerList() {
 
       {busquedaActiva && (
         <p className="-mt-2 text-xs text-muted-foreground">
-          Buscando "{busqueda.trim()}" entre los {influencersCargados.length}{" "}
+          Buscando &quot;{busqueda.trim()}&quot; entre los {influencersCargados.length}{" "}
           registros mas recientes que coinciden con los filtros ({influencers.length}{" "}
           {influencers.length === 1 ? "resultado" : "resultados"}). La busqueda
           por texto todavia no cubre todo el listado del sistema.
@@ -343,11 +353,7 @@ export function InfluencerList() {
         getRowId={(influencer) => influencer.id}
         isLoading={isLoading}
         errorMessage={errorMessage}
-        emptyMessage={
-          busquedaActiva
-            ? "No hay resultados para esa busqueda en los registros cargados."
-            : "No hay resultados para los filtros seleccionados."
-        }
+        emptyMessage={mensajeVacio}
       />
 
       {!busquedaActiva && (
@@ -456,6 +462,11 @@ export function InfluencerList() {
             onSuccess: () => {
               toast.success("Influencer eliminado correctamente.")
               setEliminando(null)
+              // Si era el unico registro de esta pagina (y no es la primera),
+              // retrocedemos para no quedar viendo una pagina vacia.
+              if (!busquedaActiva && influencers.length === 1 && page > 1) {
+                setPage((p) => p - 1)
+              }
             },
             onError: (error) => {
               toast.error(

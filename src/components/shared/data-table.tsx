@@ -41,7 +41,7 @@ export function DataTable<T>({
   filasSkeleton = 5,
 }: DataTableProps<T>) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
+    <div className="overflow-x-auto rounded-xl border border-border bg-card">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
