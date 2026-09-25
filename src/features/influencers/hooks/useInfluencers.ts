@@ -6,6 +6,7 @@ import {
 } from '../schemas/influencers.schema'
 import type {
   ActualizarInfluencerInput,
+  CaptarInfluencersInput,
   ContactarInfluencerInput,
   CrearInfluencerInput,
   GenerarInfluencersInput,
@@ -61,6 +62,18 @@ export function useGenerarInfluencers() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: GenerarInfluencersInput) => influencersService.generarConIA(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['influencers'] })
+    },
+  })
+}
+
+/** Captar influencers (POST /influencers/captar, importacion masiva). */
+export function useCaptarInfluencers() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CaptarInfluencersInput) =>
+      influencersService.captarInfluencers(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['influencers'] })
     },

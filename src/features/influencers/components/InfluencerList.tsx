@@ -49,6 +49,7 @@ import {
 } from "../hooks/useInfluencers"
 import { InfluencerForm } from "./InfluencerForm"
 import { ImportarInfluencersModal } from "./ImportarInfluencersModal"
+import { ImportacionMasivaModal } from "./ImportacionMasivaModal"
 
 const LIMITE = 10
 // Cuando hay un termino de busqueda activo, se piden mas registros al backend
@@ -81,6 +82,7 @@ export function InfluencerList() {
   const [editando, setEditando] = useState<Influencer | null>(null)
   const [eliminando, setEliminando] = useState<Influencer | null>(null)
   const [importando, setImportando] = useState(false)
+  const [importacionMasiva, setImportacionMasiva] = useState(false)
 
   const { data: categorias } = useCategorias(TIPO_CATEGORIA.TEMATICA)
   const tematicas = [...(categorias?.TEMATICA ?? [])].sort(
@@ -236,6 +238,10 @@ export function InfluencerList() {
                 <Sparkles size={16} />
                 Generar con IA
               </Link>
+            </Button>
+            <Button variant="outline" onClick={() => setImportacionMasiva(true)}>
+              <Search size={16} />
+              Importacion masiva
             </Button>
             <Button asChild>
               <Link href="/influencers/nuevo">
@@ -480,6 +486,7 @@ export function InfluencerList() {
       />
 
       <ImportarInfluencersModal open={importando} onOpenChange={setImportando} />
+      <ImportacionMasivaModal open={importacionMasiva} onOpenChange={setImportacionMasiva} />
     </div>
   )
 }

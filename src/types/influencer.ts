@@ -102,3 +102,26 @@ export interface InfluencerGenerado {
   emailVerificado: boolean
   igVerificado: boolean
 }
+
+/** Redes soportadas por POST /influencers/captar. */
+export type RedSocial = 'INSTAGRAM' | 'TIKTOK' | 'FACEBOOK'
+
+/** Body de POST /influencers/captar (Google Search + Apify). */
+export interface CaptarInfluencersInput {
+  prompt: string
+  redesSociales?: RedSocial[]
+  maxItems?: number
+  minSeguidores?: number
+  maxSeguidores?: number
+  consultaId?: string
+}
+
+/** Respuesta de POST /influencers/captar. */
+export interface CaptarInfluencersResponse {
+  totalResultados: number
+  validos: number
+  nuevos: number
+  actualizados: number
+  conEmail: number
+  porRed: Record<string, number>
+}
