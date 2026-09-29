@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
@@ -233,12 +233,12 @@ export function InfluencerList() {
               <Upload size={16} />
               Importar influencers
             </Button>
-            <Button variant="outline" asChild>
-              <Link href="/influencers/importar">
-                <Sparkles size={16} />
-                Generar con IA
-              </Link>
+            {/* Boton "Importar influencers" (CSV/Excel) oculto temporalmente.
+            <Button variant="outline" onClick={() => setImportando(true)}>
+              <Upload size={16} />
+              Importar influencers
             </Button>
+            */}
             <Button variant="outline" onClick={() => setImportacionMasiva(true)}>
               <Search size={16} />
               Importacion masiva

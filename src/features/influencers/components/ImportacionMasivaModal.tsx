@@ -49,6 +49,15 @@ const EJEMPLOS_PROMPT = [
   "moda sostenible lima",
   "fitness y vida sana perú",
   "gastronomía peruana",
+  "viajes y turismo perú",
+  "maquillaje y belleza lima",
+  "emprendimiento en perú",
+  "tecnología y gadgets",
+  "maternidad y crianza",
+  "mascotas lima",
+  "música urbana perú",
+  "educación financiera",
+  "medio ambiente y reciclaje",
 ]
 
 // Atajos de rango de seguidores (solo rellenan los campos).
