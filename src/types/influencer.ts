@@ -109,6 +109,8 @@ export interface CaptarInfluencersInput {
   prompt: string
   redesSociales?: RedSocial[]
   maxItems?: number
+  minSeguidores?: number
+  maxSeguidores?: number
   consultaId?: string
   incluirFiltroContacto?: boolean
 }
@@ -116,7 +118,7 @@ export interface CaptarInfluencersInput {
 export interface CaptarInfluencersResponse {
   totalResultados: number
   validos: number
-  nuevos: number
+  insertados: number
   actualizados: number
   conEmail: number
   porRed: Record<string, number>

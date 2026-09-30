@@ -68,10 +68,9 @@ export function useGenerarInfluencers() {
   })
 }
 
-/** Captar influencers mediante Google Search + Apify (POST /influencers/captar). */
+/** Captar influencers (POST /influencers/captar, importacion masiva). */
 export function useCaptarInfluencers() {
   const queryClient = useQueryClient()
-
   return useMutation({
     mutationFn: (input: CaptarInfluencersInput) =>
       influencersService.captarInfluencers(input),

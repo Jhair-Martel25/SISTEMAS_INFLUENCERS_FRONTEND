@@ -42,18 +42,18 @@ export const influencersService = {
 
   /** Captar influencers mediante Google Search + Apify (POST /influencers/captar). */
   async captarInfluencers(
-    input: CaptarInfluencersInput,
-  ): Promise<CaptarInfluencersResponse> {
-    return apiClient.post<CaptarInfluencersResponse>(
-      `${BASE_PATH}/captar`,
-      input,
-    )
-  },
+  input: CaptarInfluencersInput,
+): Promise<CaptarInfluencersResponse> {
+  return apiClient.post<CaptarInfluencersResponse>(
+    `${BASE_PATH}/captar`,
+    input,
+  )
+},
 
-  /** Acción de validación: editar métricas y estado (PATCH /:id/editar). */
-  async editar(id: string, input: ActualizarInfluencerInput): Promise<Influencer> {
-    return apiClient.patch<Influencer>(`${BASE_PATH}/${id}/editar`, input)
-  },
+/** Acción de validación: editar métricas y estado (PATCH /:id/editar). */
+async editar(id: string, input: ActualizarInfluencerInput): Promise<Influencer> {
+  return apiClient.patch<Influencer>(`${BASE_PATH}/${id}/editar`, input)
+},
 
   /** Cambiar estado de contacto manualmente (solo ADMIN). */
   async contactar(id: string, input: ContactarInfluencerInput): Promise<Influencer> {

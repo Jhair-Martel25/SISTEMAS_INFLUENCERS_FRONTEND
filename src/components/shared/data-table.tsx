@@ -41,7 +41,7 @@ export function DataTable<T>({
   filasSkeleton = 5,
 }: DataTableProps<T>) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
+    <div className="overflow-x-auto rounded-xl border border-border bg-card">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
@@ -162,7 +162,7 @@ export function DataTablePagination({
   return (
     <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
       <p className="text-sm text-muted-foreground">
-        Página {page} de {totalPages}
+        Pagina {page} de {totalPages}
       </p>
       <div className="flex items-center gap-1">
         <Button
@@ -181,7 +181,7 @@ export function DataTablePagination({
               key={`e-${i}`}
               className="px-2 text-sm text-muted-foreground"
             >
-              …
+              ...
             </span>
           ) : (
             <Button
