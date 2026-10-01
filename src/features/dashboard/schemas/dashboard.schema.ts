@@ -34,7 +34,8 @@ export const ChartDataSchema = z.object({
 export const DashboardChartsSchema = z.object({
   embudo: ChartDataSchema,
   topVoluntarios: ChartDataSchema,
-  usoPlantillas: ChartDataSchema,
+  // Opcional: la version actual del backend ya no envia este grafico.
+  usoPlantillas: ChartDataSchema.optional(),
 })
 
 export const DashboardDataSchema = z.object({

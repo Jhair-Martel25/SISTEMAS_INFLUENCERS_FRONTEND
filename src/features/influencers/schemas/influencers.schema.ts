@@ -26,6 +26,7 @@ export const InfluencerSchema = z.object({
   nombre: z.string(),
   usuarioIg: z.string(),
   linkIg: z.string(),
+  redSocial: z.string().nullable().optional(),
   email: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
   seguidores: z.string().nullable().optional(),

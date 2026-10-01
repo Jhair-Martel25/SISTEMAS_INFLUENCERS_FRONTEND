@@ -21,6 +21,8 @@ export interface Influencer {
   nombre: string
   usuarioIg: string
   linkIg: string
+  /** Red social de origen (INSTAGRAM, TIKTOK, FACEBOOK...). */
+  redSocial?: string | null
   email?: string | null
   phone?: string | null
   seguidores?: string | null

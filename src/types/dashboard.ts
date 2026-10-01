@@ -33,7 +33,8 @@ export interface ChartData {
 export interface DashboardCharts {
   embudo: ChartData
   topVoluntarios: ChartData
-  usoPlantillas: ChartData
+  /** Puede no venir (el backend en Render ya no lo envía). */
+  usoPlantillas?: ChartData
 }
 
 export interface DashboardData {

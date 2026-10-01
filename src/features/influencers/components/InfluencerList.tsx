@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Eye, Pencil, Plus, Search, Sparkles, Trash2, Upload, X } from "lucide-react"
+import { Eye, MessagesSquare, Pencil, Plus, Search, Send, Sparkles, Trash2, Upload, Users, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
   Dialog,
@@ -50,6 +51,8 @@ import {
 import { InfluencerForm } from "./InfluencerForm"
 import { ImportarInfluencersModal } from "./ImportarInfluencersModal"
 import { ImportacionMasivaModal } from "./ImportacionMasivaModal"
+import { ContactarInfluencerModal } from "./ContactarInfluencerModal"
+import { ContactoMasivoModal } from "./ContactoMasivoModal"
 
 const LIMITE = 10
 // Cuando hay un termino de busqueda activo, se piden mas registros al backend
@@ -83,6 +86,39 @@ export function InfluencerList() {
   const [eliminando, setEliminando] = useState<Influencer | null>(null)
   const [importando, setImportando] = useState(false)
   const [importacionMasiva, setImportacionMasiva] = useState(false)
+  const [contactando, setContactando] = useState<Influencer | null>(null)
+  // Seleccion multiple (se mantiene al cambiar de pagina o de filtros).
+  const [seleccionados, setSeleccionados] = useState<Map<string, Influencer>>(
+    () => new Map(),
+  )
+  const [contactoMasivo, setContactoMasivo] = useState(false)
+  // Modo "mensaje masivo": muestra las casillas de seleccion en la tabla.
+  const [modoSeleccion, setModoSeleccion] = useState(false)
+
+  function salirModoSeleccion() {
+    setModoSeleccion(false)
+    setSeleccionados(new Map())
+  }
+
+  function alternarSeleccion(influencer: Influencer, marcado: boolean) {
+    setSeleccionados((actual) => {
+      const nuevo = new Map(actual)
+      if (marcado) nuevo.set(influencer.id, influencer)
+      else nuevo.delete(influencer.id)
+      return nuevo
+    })
+  }
+
+  function alternarPagina(lista: Influencer[], marcado: boolean) {
+    setSeleccionados((actual) => {
+      const nuevo = new Map(actual)
+      for (const influencer of lista) {
+        if (marcado) nuevo.set(influencer.id, influencer)
+        else nuevo.delete(influencer.id)
+      }
+      return nuevo
+    })
+  }
 
   const { data: categorias } = useCategorias(TIPO_CATEGORIA.TEMATICA)
   const tematicas = [...(categorias?.TEMATICA ?? [])].sort(
@@ -130,7 +166,34 @@ export function InfluencerList() {
       ? "Todavia no hay influencers registrados en el sistema."
       : "No hay resultados para los filtros seleccionados."
 
-  const columnas: Columna<Influencer>[] = [
+  const seleccionadosEnPagina = influencers.filter((i) => seleccionados.has(i.id)).length
+  const paginaCompleta =
+    influencers.length > 0 && seleccionadosEnPagina === influencers.length
+  const listaSeleccionados = [...seleccionados.values()]
+  const seleccionadosConCorreo = listaSeleccionados.filter((i) => i.email?.trim()).length
+
+  const columnaSeleccion: Columna<Influencer> = {
+    id: "seleccion",
+    className: "w-10",
+    header: (
+      <Checkbox
+        aria-label="Seleccionar todos los de esta pagina"
+        checked={
+          paginaCompleta ? true : seleccionadosEnPagina > 0 ? "indeterminate" : false
+        }
+        onCheckedChange={(v) => alternarPagina(influencers, v === true)}
+      />
+    ),
+    cell: (influencer) => (
+      <Checkbox
+        aria-label={`Seleccionar ${influencer.nombre}`}
+        checked={seleccionados.has(influencer.id)}
+        onCheckedChange={(v) => alternarSeleccion(influencer, v === true)}
+      />
+    ),
+  }
+
+  const columnasBase: Columna<Influencer>[] = [
     {
       id: "influencer",
       header: "Influencer",
@@ -193,6 +256,15 @@ export function InfluencerList() {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Contactar"
+            title="Contactar"
+            onClick={() => setContactando(influencer)}
+          >
+            <Send size={16} className="text-primary" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             aria-label="Ver"
             onClick={() => setViendo(influencer)}
           >
@@ -221,6 +293,10 @@ export function InfluencerList() {
     },
   ]
 
+  const columnas = modoSeleccion
+    ? [columnaSeleccion, ...columnasBase]
+    : columnasBase
+
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <PageHeader
@@ -242,6 +318,15 @@ export function InfluencerList() {
             <Button variant="outline" onClick={() => setImportacionMasiva(true)}>
               <Search size={16} />
               Importacion masiva
+            </Button>
+            <Button
+              variant={modoSeleccion ? "secondary" : "outline"}
+              onClick={() =>
+                modoSeleccion ? salirModoSeleccion() : setModoSeleccion(true)
+              }
+            >
+              {modoSeleccion ? <X size={16} /> : <MessagesSquare size={16} />}
+              {modoSeleccion ? "Cancelar mensaje masivo" : "Mensaje masivo"}
             </Button>
             <Button asChild>
               <Link href="/influencers/nuevo">
@@ -351,6 +436,46 @@ export function InfluencerList() {
           {influencers.length === 1 ? "resultado" : "resultados"}). La busqueda
           por texto todavia no cubre todo el listado del sistema.
         </p>
+      )}
+
+      {modoSeleccion && (
+        <div className="sticky top-2 z-10 flex flex-col gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+              {seleccionados.size}
+            </span>
+            <div className="text-sm">
+              <p className="font-medium">
+                {seleccionados.size === 0
+                  ? "Mensaje masivo: selecciona influencers"
+                  : seleccionados.size === 1
+                    ? "1 influencer seleccionado"
+                    : `${seleccionados.size} influencers seleccionados`}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {seleccionados.size === 0
+                  ? "Marca las casillas de la tabla. Puedes usar los filtros y cambiar de pagina."
+                  : `${seleccionadosConCorreo} con correo · ${seleccionados.size - seleccionadosConCorreo} solo por DM`}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {seleccionados.size > 0 && (
+              <Button variant="ghost" size="sm" onClick={() => setSeleccionados(new Map())}>
+                <X size={14} />
+                Quitar seleccion
+              </Button>
+            )}
+            <Button
+              size="sm"
+              disabled={seleccionados.size === 0}
+              onClick={() => setContactoMasivo(true)}
+            >
+              <Users size={14} />
+              Enviar mensaje
+            </Button>
+          </div>
+        </div>
       )}
 
       <DataTable
@@ -487,6 +612,16 @@ export function InfluencerList() {
 
       <ImportarInfluencersModal open={importando} onOpenChange={setImportando} />
       <ImportacionMasivaModal open={importacionMasiva} onOpenChange={setImportacionMasiva} />
+      <ContactoMasivoModal
+        influencers={listaSeleccionados}
+        open={contactoMasivo}
+        onOpenChange={setContactoMasivo}
+        onFinalizar={salirModoSeleccion}
+      />
+      <ContactarInfluencerModal
+        influencer={contactando}
+        onOpenChange={(open) => !open && setContactando(null)}
+      />
     </div>
   )
 }
