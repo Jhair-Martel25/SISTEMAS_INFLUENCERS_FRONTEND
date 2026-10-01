@@ -118,7 +118,7 @@ export interface CaptarInfluencersInput {
 export interface CaptarInfluencersResponse {
   totalResultados: number
   validos: number
-  insertados: number
+  nuevos: number
   actualizados: number
   conEmail: number
   porRed: Record<string, number>
