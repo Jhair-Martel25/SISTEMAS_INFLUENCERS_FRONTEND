@@ -32,6 +32,7 @@ import { usePermission } from "@/hooks/usePermission"
 import { useEnviarEmailMasivo } from "@/features/email/hooks/useEmail"
 import type { Influencer } from "@/types/influencer"
 
+import { abrirChatEnVentana, cerrarVentanaChat } from "../utils/ventana-chat"
 import { SelectorPlantillaCorreo } from "./SelectorPlantillaCorreo"
 
 /**
@@ -85,7 +86,7 @@ function redDe(influencer: Influencer): Red {
 function linkChat(influencer: Influencer): string {
   const usuario = influencer.usuarioIg.replace(/^@/, "")
   const red = redDe(influencer)
-  if (red === "INSTAGRAM") return `https://ig.me/m/${usuario}`
+  if (red === "INSTAGRAM") return `https://www.instagram.com/${usuario}/`
   if (red === "TIKTOK") return `https://www.tiktok.com/@${usuario}`
   return influencer.linkIg || `https://www.facebook.com/${usuario}`
 }
@@ -113,6 +114,7 @@ export function ContactoMasivoModal({
   const [chatAbierto, setChatAbierto] = useState(false)
   const [resumen, setResumen] = useState({ correos: 0, dms: 0, saltados: 0 })
   const [plantillaId, setPlantillaId] = useState("")
+  const [ventanaLateral, setVentanaLateral] = useState(true)
   const [fallidos, setFallidos] = useState<{ nombre: string; error: string }[]>([])
 
   const { isAdmin } = usePermission()
@@ -148,6 +150,7 @@ export function ContactoMasivoModal({
     setResumen({ correos: 0, dms: 0, saltados: 0 })
     setPlantillaId("")
     setFallidos([])
+    cerrarVentanaChat()
   }
 
   function cambiarOpen(abierto: boolean) {
@@ -205,15 +208,21 @@ export function ContactoMasivoModal({
     setPaso(porDM.length > 0 ? "cola" : "fin")
   }
 
-  async function copiarYAbrir() {
-    if (!actual) return
+  async function copiarYAbrir(objetivo: Influencer | undefined = actual) {
+    if (!objetivo) return
     try {
-      await navigator.clipboard.writeText(personalizar(plantilla, actual))
-      toast.success("Mensaje copiado. Pégalo en el chat y envíalo.")
+      await navigator.clipboard.writeText(personalizar(plantilla, objetivo))
+      toast.success(`Mensaje para ${objetivo.nombre} copiado. Pégalo con Ctrl+V.`)
     } catch {
       toast.error("No se pudo copiar el mensaje.")
     }
-    window.open(linkChat(actual), "_blank", "noopener,noreferrer")
+    const abierta = abrirChatEnVentana(linkChat(objetivo), ventanaLateral)
+    if (!abierta) {
+      toast.error(
+        "El navegador bloqueó la ventana. Permite las ventanas emergentes para este sitio.",
+      )
+      return
+    }
     setChatAbierto(true)
   }
 
@@ -223,16 +232,20 @@ export function ContactoMasivoModal({
       enviado ? { ...r, dms: r.dms + 1 } : { ...r, saltados: r.saltados + 1 },
     )
     setChatAbierto(false)
-    if (indice + 1 >= porDM.length) {
+    const siguiente = porDM[indice + 1]
+    if (!siguiente) {
+      cerrarVentanaChat()
       setPaso("fin")
-    } else {
-      setIndice(indice + 1)
+      return
     }
+    setIndice(indice + 1)
+    // Con la ventana lateral, se pasa solo al chat del siguiente influencer.
+    if (ventanaLateral) void copiarYAbrir(siguiente)
   }
 
   return (
     <Dialog open={open} onOpenChange={cambiarOpen}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl [&>*]:min-w-0">
         <DialogHeader>
           <div className="flex items-start gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
@@ -459,6 +472,30 @@ export function ContactoMasivoModal({
                   Siguiente: {porDM[indice + 1].nombre}
                 </p>
               )}
+
+              <div className="flex flex-col gap-2 rounded-lg border border-dashed border-border p-3">
+                <label className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    checked={ventanaLateral}
+                    onCheckedChange={(v) => setVentanaLateral(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Abrir los chats en una ventana lateral
+                    <span className="block text-xs text-muted-foreground">
+                      Se reutiliza la misma ventana y pasa sola al siguiente
+                      chat al presionar &quot;Enviado, siguiente&quot;.
+                    </span>
+                  </span>
+                </label>
+                {ventanaLateral && (
+                  <p className="text-xs text-muted-foreground">
+                    Consejo: pon esta ventana a la izquierda (tecla Windows + ←)
+                    para trabajar lado a lado. En el perfil pulsa &quot;Enviar mensaje&quot; y
+                    pega el texto con Ctrl+V.
+                  </p>
+                )}
+              </div>
             </div>
 
             <DialogFooter className="items-center sm:justify-between">
@@ -475,7 +512,7 @@ export function ContactoMasivoModal({
                 <Button
                   type="button"
                   variant={chatAbierto ? "outline" : "default"}
-                  onClick={copiarYAbrir}
+                  onClick={() => void copiarYAbrir()}
                 >
                   <ExternalLink size={16} />
                   {chatAbierto ? "Abrir de nuevo" : "Copiar y abrir chat"}

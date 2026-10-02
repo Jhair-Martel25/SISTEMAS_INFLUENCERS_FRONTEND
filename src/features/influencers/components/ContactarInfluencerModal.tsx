@@ -31,6 +31,7 @@ import { usePermission } from "@/hooks/usePermission"
 import { useEnviarEmail } from "@/features/email/hooks/useEmail"
 import type { Influencer } from "@/types/influencer"
 
+import { abrirChatEnVentana } from "../utils/ventana-chat"
 import { SelectorPlantillaCorreo } from "./SelectorPlantillaCorreo"
 
 /**
@@ -79,7 +80,7 @@ function redDe(influencer: Influencer): Canal {
 /** Link para abrir el chat (Instagram) o el perfil donde está el botón de mensaje. */
 function linkChat(influencer: Influencer, canal: Canal): string {
   const usuario = influencer.usuarioIg.replace(/^@/, "")
-  if (canal === "INSTAGRAM") return `https://ig.me/m/${usuario}`
+  if (canal === "INSTAGRAM") return `https://www.instagram.com/${usuario}/`
   if (canal === "TIKTOK") return `https://www.tiktok.com/@${usuario}`
   return influencer.linkIg || `https://www.facebook.com/${usuario}`
 }
@@ -139,7 +140,12 @@ function ContenidoContactar({
     } catch {
       toast.error("No se pudo copiar. Selecciona el texto y cópialo manualmente.")
     }
-    window.open(linkChat(influencer, canal), "_blank", "noopener,noreferrer")
+    if (!abrirChatEnVentana(linkChat(influencer, canal))) {
+      toast.error(
+        "El navegador bloqueó la ventana. Permite las ventanas emergentes para este sitio.",
+      )
+      return
+    }
     setChatAbierto(true)
   }
 
@@ -372,8 +378,8 @@ function ContenidoContactar({
         {esDM && (
           <ol className="grid gap-2 rounded-xl border border-dashed border-border p-3 text-xs text-muted-foreground sm:grid-cols-3">
             {[
-              "Copia el mensaje y abre el chat",
-              `Pégalo y envíalo en ${etiquetaCanal(canal)}`,
+              "Copia el mensaje y abre su perfil",
+              `Pulsa "Enviar mensaje", pega (Ctrl+V) y envía`,
               "Vuelve y márcalo como enviado",
             ].map((paso, i) => {
               const hecho = i === 0 && chatAbierto
@@ -461,7 +467,7 @@ function etiquetaCanal(canal: Canal) {
 export function ContactarInfluencerModal({ influencer, onOpenChange }: Props) {
   return (
     <Dialog open={Boolean(influencer)} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl [&>*]:min-w-0">
         <DialogHeader>
           <div className="flex items-start gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">

@@ -59,6 +59,22 @@ const LIMITE = 10
 // para que el filtro (que hoy es solo del lado del cliente, porque la API
 // todavia no soporta busqueda por texto) tenga mas contra que buscar.
 const LIMITE_CON_BUSQUEDA = 100
+
+// Filtro por red social (se aplica en el cliente: el backend aun no acepta
+// el parametro `redSocial` en GET /influencers).
+type FiltroRed = "" | "INSTAGRAM" | "TIKTOK" | "FACEBOOK" | "CORREO"
+const OPCIONES_RED: { value: Exclude<FiltroRed, "">; label: string }[] = [
+  { value: "INSTAGRAM", label: "Instagram" },
+  { value: "TIKTOK", label: "TikTok" },
+  { value: "FACEBOOK", label: "Facebook" },
+  { value: "CORREO", label: "Correo (con email)" },
+]
+
+function coincideRed(influencer: Influencer, filtro: FiltroRed) {
+  if (!filtro) return true
+  if (filtro === "CORREO") return Boolean(influencer.email?.trim())
+  return (influencer.redSocial ?? "INSTAGRAM").toUpperCase() === filtro
+}
 const TODOS = "todos"
 
 function iniciales(nombre: string) {
@@ -126,10 +142,13 @@ export function InfluencerList() {
   )
 
   const busquedaActiva = busqueda.trim().length > 0
+  const [redFiltro, setRedFiltro] = useState<FiltroRed>("")
+  // Busqueda por texto o filtro de red: se cargan mas registros y se filtra aqui.
+  const filtroLocalActivo = busquedaActiva || Boolean(redFiltro)
 
   const { data, isLoading, isError, error } = useInfluencers({
-    page: busquedaActiva ? 1 : page,
-    limit: busquedaActiva ? LIMITE_CON_BUSQUEDA : LIMITE,
+    page: filtroLocalActivo ? 1 : page,
+    limit: filtroLocalActivo ? LIMITE_CON_BUSQUEDA : LIMITE,
     estadoValidacion: estadoValidacion || undefined,
     estadoContacto: estadoContacto || undefined,
     tematica: tematica || undefined,
@@ -139,14 +158,16 @@ export function InfluencerList() {
   const influencersCargados = useMemo(() => data?.data ?? [], [data])
 
   const influencers = useMemo(() => {
-    if (!busquedaActiva) return influencersCargados
+    if (!filtroLocalActivo) return influencersCargados
     const termino = busqueda.trim().toLowerCase()
     return influencersCargados.filter(
       (influencer) =>
-        influencer.nombre.toLowerCase().includes(termino) ||
-        influencer.usuarioIg.toLowerCase().includes(termino),
+        coincideRed(influencer, redFiltro) &&
+        (!termino ||
+          influencer.nombre.toLowerCase().includes(termino) ||
+          influencer.usuarioIg.toLowerCase().includes(termino)),
     )
-  }, [influencersCargados, busqueda, busquedaActiva])
+  }, [influencersCargados, busqueda, redFiltro, filtroLocalActivo])
 
   const totalPages = Math.max(1, Math.ceil((data?.meta.total ?? 0) / LIMITE))
 
@@ -156,7 +177,9 @@ export function InfluencerList() {
       : "No se pudieron cargar los influencers."
     : null
 
-  const hayFiltrosActivos = Boolean(estadoValidacion || estadoContacto || tematica)
+  const hayFiltrosActivos = Boolean(
+    estadoValidacion || estadoContacto || tematica || redFiltro,
+  )
   const sinInfluencersEnElSistema =
     !busquedaActiva && !hayFiltrosActivos && (data?.meta.total ?? 0) === 0
 
@@ -364,6 +387,24 @@ export function InfluencerList() {
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Select
+            value={redFiltro || TODOS}
+            onValueChange={(valor) =>
+              setRedFiltro(valor === TODOS ? "" : (valor as FiltroRed))
+            }
+          >
+            <SelectTrigger className="w-full sm:w-44">
+              <SelectValue placeholder="Red social" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TODOS}>Todas las redes</SelectItem>
+              {OPCIONES_RED.map((opcion) => (
+                <SelectItem key={opcion.value} value={opcion.value}>
+                  {opcion.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
             value={estadoValidacion || TODOS}
             onValueChange={(valor) => {
               setEstadoValidacion(
@@ -429,6 +470,16 @@ export function InfluencerList() {
         </div>
       </DataTableToolbar>
 
+      {redFiltro && !busquedaActiva && (
+        <p className="-mt-2 text-xs text-muted-foreground">
+          Mostrando {influencers.length}{" "}
+          {influencers.length === 1 ? "influencer" : "influencers"} de{" "}
+          {OPCIONES_RED.find((o) => o.value === redFiltro)?.label} entre los{" "}
+          {influencersCargados.length} registros mas recientes que coinciden con
+          los filtros.
+        </p>
+      )}
+
       {busquedaActiva && (
         <p className="-mt-2 text-xs text-muted-foreground">
           Buscando &quot;{busqueda.trim()}&quot; entre los {influencersCargados.length}{" "}
@@ -487,7 +538,7 @@ export function InfluencerList() {
         emptyMessage={mensajeVacio}
       />
 
-      {!busquedaActiva && (
+      {!filtroLocalActivo && (
         <DataTablePagination
           page={page}
           totalPages={totalPages}
@@ -595,7 +646,7 @@ export function InfluencerList() {
               setEliminando(null)
               // Si era el unico registro de esta pagina (y no es la primera),
               // retrocedemos para no quedar viendo una pagina vacia.
-              if (!busquedaActiva && influencers.length === 1 && page > 1) {
+              if (!filtroLocalActivo && influencers.length === 1 && page > 1) {
                 setPage((p) => p - 1)
               }
             },
