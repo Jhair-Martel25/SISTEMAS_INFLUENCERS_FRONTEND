@@ -1,7 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { emailService } from '../services/email.service'
+import { z } from 'zod'
 import { EnviarEmailResultSchema } from '../schemas/email.schema'
-import type { EnviarEmailRequest, EnviarEmailResponse } from '@/types/email'
+import type {
+  EnviarEmailMasivoRequest,
+  EnviarEmailRequest,
+  EnviarEmailResponse,
+} from '@/types/email'
 
 /**
  * Hooks de la feature `email`.
@@ -20,6 +25,22 @@ export function useEnviarEmail() {
     ): Promise<EnviarEmailResponse> => {
       const data = await emailService.enviar(input)
       return EnviarEmailResultSchema.parse(data)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['influencers'] })
+    },
+  })
+}
+
+/** Enviar correo a varios influencers (solo ADMIN). Cada item trae `exitoso`. */
+export function useEnviarEmailMasivo() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (
+      input: EnviarEmailMasivoRequest,
+    ): Promise<EnviarEmailResponse[]> => {
+      const data = await emailService.enviarMasivo(input)
+      return z.array(EnviarEmailResultSchema).parse(data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['influencers'] })

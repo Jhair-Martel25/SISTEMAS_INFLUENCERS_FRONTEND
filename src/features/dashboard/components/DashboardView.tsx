@@ -145,7 +145,11 @@ export function DashboardView() {
             </CardContent>
           </Card>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div
+            className={
+              charts.usoPlantillas ? "grid gap-6 lg:grid-cols-2" : "grid gap-6"
+            }
+          >
             <Card>
               <CardHeader>
                 <CardTitle>{charts.topVoluntarios.title}</CardTitle>
@@ -158,17 +162,19 @@ export function DashboardView() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>{charts.usoPlantillas.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartBarras
-                  chart={charts.usoPlantillas}
-                  gradientId="grad-plantillas"
-                />
-              </CardContent>
-            </Card>
+            {charts.usoPlantillas && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{charts.usoPlantillas.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ChartBarras
+                    chart={charts.usoPlantillas}
+                    gradientId="grad-plantillas"
+                  />
+                </CardContent>
+              </Card>
+            )}
           </div>
         </>
       ) : null}
