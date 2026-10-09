@@ -1,5 +1,3 @@
-import { Clock } from 'lucide-react'
-
 export function LeftPanel() {
   return (
     <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
@@ -15,9 +13,12 @@ export function LeftPanel() {
       <div className="relative z-10 flex flex-col justify-end p-12 pb-16 text-white w-full">
         <div className="backdrop-blur-sm bg-white/5 rounded-3xl p-8 border border-white/10 shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-mint to-primary flex items-center justify-center shadow-lg shadow-mint/30">
-              <Clock size={24} className="text-white" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/logo.png"
+              alt="Logo Sembrando Perú"
+              className="h-14 w-14 rounded-2xl bg-white object-contain p-1 shadow-lg shadow-mint/30"
+            />
             <div className="h-8 w-px bg-white/20" />
             <div className="flex gap-1.5">
               <span className="w-2 h-2 rounded-full bg-mint animate-pulse" />
@@ -27,11 +28,9 @@ export function LeftPanel() {
           </div>
 
           <h2 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
-            Gestiona
+            Gestión de registro
             <br />
-            influencers
-            <br />
-            de impacto social
+            de embajadores
           </h2>
           <p className="text-white/70 text-base md:text-lg leading-relaxed max-w-lg">
             Automatiza validaciones, campañas, agendas y seguimiento con nuestra

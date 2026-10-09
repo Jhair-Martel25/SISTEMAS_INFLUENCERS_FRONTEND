@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Send } from 'lucide-react'
 import { usePermission } from '@/hooks/usePermission'
 import { NAVEGACION } from '@/config/navigation'
 import { ICONO_POR_RECURSO } from './navigation-icons'
@@ -17,9 +16,12 @@ export function Sidebar() {
   return (
     <aside className="flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-mint to-primary">
-          <Send size={16} className="text-primary-foreground" />
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/logo.png"
+          alt="Logo Sembrando Perú"
+          className="h-10 w-10 shrink-0 rounded-lg bg-white object-contain p-0.5"
+        />
         <span className="font-semibold text-white">Sembrando Perú</span>
       </div>
 

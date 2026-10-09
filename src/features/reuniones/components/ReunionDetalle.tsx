@@ -1,5 +1,8 @@
 "use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Video } from "lucide-react"
@@ -119,7 +122,7 @@ export function ReunionDetalle({ id }: { id: string }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Influencer
+              Embajador
             </p>
             <p className="font-medium text-foreground">
               {reunion.influencer.nombre}

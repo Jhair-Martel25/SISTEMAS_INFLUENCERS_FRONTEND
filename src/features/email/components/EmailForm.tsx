@@ -1,5 +1,8 @@
 "use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -75,7 +78,7 @@ export function EmailForm() {
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <PageHeader
         title="Enviar Email"
-        description="Envía el correo de contacto a un influencer usando una plantilla. Solo administradores."
+        description="Envía el correo de contacto a un embajador usando una plantilla. Solo administradores."
         backHref="/dashboard"
       />
 
@@ -83,7 +86,7 @@ export function EmailForm() {
         <CardHeader>
           <CardTitle>Nuevo envío</CardTitle>
           <CardDescription>
-            El influencer debe estar validado y tener email para recibir el
+            El embajador debe estar validado y tener email para recibir el
             correo.
           </CardDescription>
         </CardHeader>
@@ -99,7 +102,7 @@ export function EmailForm() {
                 name="influencerId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Influencer</FormLabel>
+                    <FormLabel>Embajador</FormLabel>
                     <InfluencerCards
                       seleccionadoId={field.value}
                       onSeleccionar={field.onChange}

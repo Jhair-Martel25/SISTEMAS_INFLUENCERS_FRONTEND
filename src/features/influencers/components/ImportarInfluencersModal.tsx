@@ -1,5 +1,8 @@
 "use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useRef, useState } from "react"
 import * as XLSX from "xlsx"
 import { AlertCircle, CheckCircle2, FileSpreadsheet, Upload, X } from "lucide-react"
@@ -287,9 +290,9 @@ export function ImportarInfluencersModal({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Importar influencers</DialogTitle>
+          <DialogTitle>Importar embajadores</DialogTitle>
           <DialogDescription>
-            Sube un archivo CSV o Excel con tus influencers. Columnas
+            Sube un archivo CSV o Excel con tus embajadores. Columnas
             reconocidas: nombre, usuario de Instagram, link del perfil
             (obligatorias), y opcionalmente correo, telefono, seguidores,
             publicaciones y biografia.
@@ -399,7 +402,7 @@ export function ImportarInfluencersModal({
             <Button type="button" disabled={filasValidas.length === 0}>
               <Upload size={16} />
               Importar {filasValidas.length > 0 ? `${filasValidas.length} ` : ""}
-              influencers
+              embajadores
             </Button>
           </div>
         </DialogFooter>

@@ -1,5 +1,8 @@
 "use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useState } from "react"
 import { Check } from "lucide-react"
 
@@ -34,7 +37,7 @@ export function InfluencerCards({
   const errorMessage = isError
     ? error instanceof Error
       ? error.message
-      : "No se pudieron cargar los influencers."
+      : "No se pudieron cargar los embajadores."
     : null
 
   if (isLoading) {
@@ -54,7 +57,7 @@ export function InfluencerCards({
   if (influencers.length === 0) {
     return (
       <p className="py-4 text-sm text-muted-foreground">
-        No hay influencers validados con email para enviar el correo.
+        No hay embajadores validados con email para enviar el correo.
       </p>
     )
   }
@@ -63,7 +66,7 @@ export function InfluencerCards({
     <div className="space-y-3">
       <div
         role="radiogroup"
-        aria-label="Seleccionar influencer"
+        aria-label="Seleccionar embajador"
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
       >
         {influencers.map((influencer) => {

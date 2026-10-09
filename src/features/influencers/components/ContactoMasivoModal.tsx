@@ -1,5 +1,8 @@
 "use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useMemo, useState } from "react"
 import {
   AlertTriangle,
@@ -252,7 +255,7 @@ export function ContactoMasivoModal({
               <Users size={18} className="text-primary" />
             </span>
             <div className="flex flex-col gap-1 text-left">
-              <DialogTitle>Contactar {influencers.length} influencers</DialogTitle>
+              <DialogTitle>Contactar {influencers.length} embajadores</DialogTitle>
               <DialogDescription>
                 Un mismo mensaje, personalizado con el nombre de cada uno.
               </DialogDescription>
@@ -312,7 +315,7 @@ export function ContactoMasivoModal({
                   className="mt-0.5"
                 />
                 <span>
-                  Usar correo cuando el influencer lo tenga
+                  Usar correo cuando el embajador lo tenga
                   <span className="block text-xs text-muted-foreground">
                     Los que no tienen correo visible van a la cola de DMs.
                   </span>

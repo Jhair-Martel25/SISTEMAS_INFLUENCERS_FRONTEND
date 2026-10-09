@@ -1,5 +1,8 @@
 "use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useState } from "react"
 import {
   Check,
@@ -127,7 +130,7 @@ function Resumen({ resultado }: { resultado: CaptarInfluencersResponse }) {
         </span>
         <p className="font-medium">Búsqueda completada</p>
         <p className="text-sm text-muted-foreground">
-          Los influencers ya se guardaron y aparecen en la tabla.
+          Los embajadores ya se guardaron y aparecen en la tabla.
         </p>
       </div>
 
@@ -301,7 +304,7 @@ export function ImportacionMasivaModal({ open, onOpenChange }: Props) {
             <div className="flex flex-col gap-1 text-left">
               <DialogTitle>Importación masiva</DialogTitle>
               <DialogDescription>
-                Busca influencers en redes sociales y guárdalos automáticamente.
+                Busca embajadores en redes sociales y guárdalos automáticamente.
               </DialogDescription>
             </div>
           </div>

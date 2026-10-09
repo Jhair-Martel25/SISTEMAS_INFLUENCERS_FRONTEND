@@ -1,5 +1,8 @@
 ﻿"use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useRouter } from "next/navigation"
 
 import { PageHeader } from "@/components/shared/page-header"
@@ -11,10 +14,10 @@ export default function GenerarInfluencersPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <PageHeader
-        title="Generar influencers con IA"
-        description="Indica el tema, el rango de seguidores y la cantidad. La IA busca y guarda los influencers automaticamente."
+        title="Generar embajadores con IA"
+        description="Indica el tema, el rango de seguidores y la cantidad. La IA busca y guarda los embajadores automaticamente."
         backHref="/influencers"
-        backLabel="Volver a Influencers"
+        backLabel="Volver a Embajadores"
       />
 
       <div className="rounded-xl border border-border bg-card p-6">

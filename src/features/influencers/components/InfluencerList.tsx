@@ -1,5 +1,8 @@
 ﻿"use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import { Eye, MessagesSquare, Pencil, Plus, Search, Send, Sparkles, Trash2, Upload, Users, X } from "lucide-react"
@@ -174,7 +177,7 @@ export function InfluencerList() {
   const errorMessage = isError
     ? error instanceof Error
       ? error.message
-      : "No se pudieron cargar los influencers."
+      : "No se pudieron cargar los embajadores."
     : null
 
   const hayFiltrosActivos = Boolean(
@@ -186,7 +189,7 @@ export function InfluencerList() {
   const mensajeVacio = busquedaActiva
     ? "No hay resultados para esa busqueda en los registros cargados."
     : sinInfluencersEnElSistema
-      ? "Todavia no hay influencers registrados en el sistema."
+      ? "Todavia no hay embajadores registrados en el sistema."
       : "No hay resultados para los filtros seleccionados."
 
   const seleccionadosEnPagina = influencers.filter((i) => seleccionados.has(i.id)).length
@@ -219,7 +222,7 @@ export function InfluencerList() {
   const columnasBase: Columna<Influencer>[] = [
     {
       id: "influencer",
-      header: "Influencer",
+      header: "Embajador",
       cell: (influencer) => (
         <div className="flex items-center gap-3">
           <Avatar size="sm">
@@ -323,14 +326,14 @@ export function InfluencerList() {
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <PageHeader
-        title="Gestion de Influencers"
-        description="Administra, consulta y valida los influencers registrados en el sistema."
+        title="Gestión de Embajadores"
+        description="Administra, consulta y valida los embajadores registrados en el sistema."
         backHref="/dashboard"
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setImportando(true)}>
               <Upload size={16} />
-              Importar influencers
+              Importar embajadores
             </Button>
             {/* Boton "Importar influencers" (CSV/Excel) oculto temporalmente.
             <Button variant="outline" onClick={() => setImportando(true)}>
@@ -354,7 +357,7 @@ export function InfluencerList() {
             <Button asChild>
               <Link href="/influencers/nuevo">
                 <Plus size={16} />
-                Nuevo Influencer
+                Nuevo Embajador
               </Link>
             </Button>
           </div>
@@ -473,7 +476,7 @@ export function InfluencerList() {
       {redFiltro && !busquedaActiva && (
         <p className="-mt-2 text-xs text-muted-foreground">
           Mostrando {influencers.length}{" "}
-          {influencers.length === 1 ? "influencer" : "influencers"} de{" "}
+          {influencers.length === 1 ? "embajador" : "embajadores"} de{" "}
           {OPCIONES_RED.find((o) => o.value === redFiltro)?.label} entre los{" "}
           {influencersCargados.length} registros mas recientes que coinciden con
           los filtros.
@@ -498,10 +501,10 @@ export function InfluencerList() {
             <div className="text-sm">
               <p className="font-medium">
                 {seleccionados.size === 0
-                  ? "Mensaje masivo: selecciona influencers"
+                  ? "Mensaje masivo: selecciona embajadores"
                   : seleccionados.size === 1
-                    ? "1 influencer seleccionado"
-                    : `${seleccionados.size} influencers seleccionados`}
+                    ? "1 embajador seleccionado"
+                    : `${seleccionados.size} embajadores seleccionados`}
               </p>
               <p className="text-xs text-muted-foreground">
                 {seleccionados.size === 0
@@ -611,9 +614,9 @@ export function InfluencerList() {
       <Dialog open={Boolean(editando)} onOpenChange={(open) => !open && setEditando(null)}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Editar influencer</DialogTitle>
+            <DialogTitle>Editar embajador</DialogTitle>
             <DialogDescription>
-              Actualiza los datos del influencer.
+              Actualiza los datos del embajador.
             </DialogDescription>
           </DialogHeader>
           {editando && (
@@ -629,7 +632,7 @@ export function InfluencerList() {
       <ConfirmDialog
         open={Boolean(eliminando)}
         onOpenChange={(open) => !open && setEliminando(null)}
-        title="Eliminar influencer"
+        title="Eliminar embajador"
         description={
           eliminando
             ? `Seguro que deseas eliminar a ${eliminando.nombre}? Esta accion no se puede deshacer.`
@@ -642,7 +645,7 @@ export function InfluencerList() {
           if (!eliminando) return
           eliminar.mutate(eliminando.id, {
             onSuccess: () => {
-              toast.success("Influencer eliminado correctamente.")
+              toast.success("Embajador eliminado correctamente.")
               setEliminando(null)
               // Si era el unico registro de esta pagina (y no es la primera),
               // retrocedemos para no quedar viendo una pagina vacia.
@@ -654,7 +657,7 @@ export function InfluencerList() {
               toast.error(
                 error instanceof Error
                   ? error.message
-                  : "No se pudo eliminar el influencer.",
+                  : "No se pudo eliminar el embajador.",
               )
             },
           })

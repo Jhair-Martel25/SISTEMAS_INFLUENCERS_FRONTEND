@@ -1,5 +1,8 @@
 "use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import {
   Calendar,
   CalendarDays,
@@ -49,7 +52,7 @@ export function DashboardView() {
 
   const seccionInfluencers: KpiDef[] = kpis
     ? [
-        { icon: Users, label: "Total influencers", value: kpis.totalInfluencers },
+        { icon: Users, label: "Total embajadores", value: kpis.totalInfluencers },
         { icon: Clock, label: "Pendientes", value: kpis.pendientes },
         { icon: CheckCircle2, label: "Validados", value: kpis.validados },
         { icon: XCircle, label: "Rechazados", value: kpis.rechazados },
@@ -126,7 +129,7 @@ export function DashboardView() {
         </Card>
       ) : charts && kpis ? (
         <>
-          {renderSeccion("Influencers", seccionInfluencers, "primary")}
+          {renderSeccion("Embajadores", seccionInfluencers, "primary")}
           {renderSeccion("Contacto", seccionContacto, "mint")}
           {renderSeccion("Reuniones", seccionReuniones, "primary")}
 
@@ -134,7 +137,7 @@ export function DashboardView() {
             <CardHeader>
               <CardTitle>{charts.embudo.title}</CardTitle>
               <CardDescription>
-                Progreso de los influencers a través del embudo de contacto.
+                Progreso de los embajadores a través del embudo de contacto.
               </CardDescription>
             </CardHeader>
             <CardContent>

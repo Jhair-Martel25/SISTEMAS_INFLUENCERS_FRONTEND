@@ -1,5 +1,8 @@
 "use client";
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, HelpCircle, Mail, RefreshCw } from "lucide-react";
 
@@ -33,12 +36,12 @@ const BASE_CONOCIMIENTO: EntradaConocimiento[] = [
   {
     palabrasClave: ["que es", "sistema de influencers", "plataforma", "para que sirve", "funciona"],
     respuesta:
-      "El Sistema de Influencers es la plataforma web interna de Sembrando Perú para gestionar influencers de impacto social: valida y administra influencers, organiza horarios, agenda reuniones y gestiona comunicaciones.",
+      "El Sistema de Embajadores es la plataforma web interna de Sembrando Perú para gestionar embajadores de impacto social: valida y administra embajadores, organiza horarios, agenda reuniones y gestiona comunicaciones.",
   },
   {
     palabrasClave: ["quien puede usar", "quienes pueden", "acceso", "usar la plataforma"],
     respuesta:
-      "Solo puede usarla el personal de Sembrando Perú con rol ADMIN o VOLUNTARIO, usando un correo del dominio @sembrandoperu.org. Los influencers no tienen cuenta propia.",
+      "Solo puede usarla el personal de Sembrando Perú con rol ADMIN o VOLUNTARIO, usando un correo del dominio @sembrandoperu.org. Los embajadores no tienen cuenta propia.",
   },
   {
     palabrasClave: ["como consigo", "crear cuenta", "registro", "nueva cuenta", "registrarme"],
@@ -63,17 +66,17 @@ const BASE_CONOCIMIENTO: EntradaConocimiento[] = [
   {
     palabrasClave: ["diferencia entre admin", "admin y voluntario", "roles", "que roles"],
     respuesta:
-      "El ADMIN tiene acceso completo (Dashboard, Usuarios, Emails, etc.). El VOLUNTARIO se enfoca en Influencers, Horarios, Disponibilidad, Reuniones, Plantillas y su Perfil.",
+      "El ADMIN tiene acceso completo (Dashboard, Usuarios, Emails, etc.). El VOLUNTARIO se enfoca en Embajadores, Horarios, Disponibilidad, Reuniones, Plantillas y su Perfil.",
   },
   {
     palabrasClave: ["como agenda", "agendar reunion", "influencer agenda", "reunion influencer"],
     respuesta:
-      "El influencer recibe un enlace público por correo con su identificador único y agenda directamente su bloque de reunión, sin necesidad de crear una cuenta.",
+      "El embajador recibe un enlace público por correo con su identificador único y agenda directamente su bloque de reunión, sin necesidad de crear una cuenta.",
   },
   {
     palabrasClave: ["secciones", "que secciones tiene", "menu", "que puedo hacer"],
     respuesta:
-      "Las secciones son: Dashboard (ADMIN), Influencers, Horarios, Disponibilidad, Reuniones, Usuarios (ADMIN), Plantillas, Email (ADMIN) y Perfil.",
+      "Las secciones son: Dashboard (ADMIN), Embajadores, Horarios, Disponibilidad, Reuniones, Usuarios (ADMIN), Plantillas, Email (ADMIN) y Perfil.",
   },
   {
     palabrasClave: ["dashboard"],
@@ -130,7 +133,7 @@ export default function ChatbotWidget() {
     {
       id: 0,
       autor: "bot",
-      texto: "¡Hola! 👋 Soy el asistente virtual del Sistema de Influencers. ¿En qué te puedo ayudar hoy? Selecciona una opción o escribe tu consulta:",
+      texto: "¡Hola! 👋 Soy el asistente virtual del Sistema de Embajadores. ¿En qué te puedo ayudar hoy? Selecciona una opción o escribe tu consulta:",
       opcionesSugeridas: OPCIONES_INICIALES,
     },
   ]);
