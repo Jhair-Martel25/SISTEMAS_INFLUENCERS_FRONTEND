@@ -32,6 +32,13 @@ export const influencerFormSchema = z.object({
     .trim()
     .min(1, 'El link del perfil es obligatorio')
     .url('Ingresa una URL valida'),
+  empresa: z.string().trim().max(120, 'Maximo 120 caracteres').optional().or(z.literal('')),
+  ruc: z.string().trim().max(20, 'Maximo 20 caracteres').optional().or(z.literal('')),
+  ciiu: z.string().trim().max(20, 'Maximo 20 caracteres').optional().or(z.literal('')),
+  descripcion: z.string().trim().max(500, 'Maximo 500 caracteres').optional().or(z.literal('')),
+  ubigeo: z.string().trim().max(20, 'Maximo 20 caracteres').optional().or(z.literal('')),
+  cargo: z.string().trim().max(100, 'Maximo 100 caracteres').optional().or(z.literal('')),
+  area: z.string().trim().max(100, 'Maximo 100 caracteres').optional().or(z.literal('')),
   email: z
     .string()
     .trim()

@@ -45,6 +45,13 @@ function valoresIniciales(influencer?: Influencer | null): InfluencerFormValues 
     nombre: influencer?.nombre ?? "",
     usuarioIg: influencer?.usuarioIg ?? "",
     linkIg: influencer?.linkIg ?? "",
+    empresa: influencer?.empresa ?? "",
+    ruc: influencer?.ruc ?? "",
+    ciiu: influencer?.ciiu ?? "",
+    descripcion: influencer?.descripcion ?? "",
+    ubigeo: influencer?.ubigeo ?? "",
+    cargo: influencer?.cargo ?? "",
+    area: influencer?.area ?? "",
     email: influencer?.email ?? "",
     phone: influencer?.phone ?? "",
     seguidores: influencer?.seguidores ?? "",
@@ -55,7 +62,7 @@ function valoresIniciales(influencer?: Influencer | null): InfluencerFormValues 
   }
 }
 
-const limpiaOpcional = (valor: string) => (valor.trim() ? valor.trim() : undefined)
+const limpiaOpcional = (valor?: string) => (valor?.trim() ? valor.trim() : undefined)
 
 interface InfluencerFormProps {
   influencer?: Influencer | null
@@ -87,6 +94,13 @@ export function InfluencerForm({
       nombre: values.nombre,
       usuarioIg: values.usuarioIg,
       linkIg: values.linkIg,
+      empresa: limpiaOpcional(values.empresa),
+      ruc: limpiaOpcional(values.ruc),
+      ciiu: limpiaOpcional(values.ciiu),
+      descripcion: limpiaOpcional(values.descripcion),
+      ubigeo: limpiaOpcional(values.ubigeo),
+      cargo: limpiaOpcional(values.cargo),
+      area: limpiaOpcional(values.area),
       email: limpiaOpcional(values.email),
       phone: limpiaOpcional(values.phone),
       seguidores: limpiaOpcional(values.seguidores),
@@ -138,6 +152,109 @@ export function InfluencerForm({
         className="space-y-4"
         noValidate
       >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="empresa"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Empresa</FormLabel>
+                <FormControl>
+                  <Input placeholder="Sin datos" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="ruc"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>RUC</FormLabel>
+                <FormControl>
+                  <Input placeholder="2138348921" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="ciiu"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>CIIU</FormLabel>
+                <FormControl>
+                  <Input placeholder="2341" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="descripcion"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Descripcion</FormLabel>
+                <FormControl>
+                  <Input placeholder="Exportacion madera" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="ubigeo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ubigeo</FormLabel>
+                <FormControl>
+                  <Input placeholder="Lima" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="cargo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cargo</FormLabel>
+                <FormControl>
+                  <Input placeholder="Jefe Area" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="area"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Area</FormLabel>
+                <FormControl>
+                  <Input placeholder="Resp. Social" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <FormField
           control={form.control}
           name="nombre"

@@ -21,6 +21,13 @@ export interface Influencer {
   nombre: string
   usuarioIg: string
   linkIg: string
+  empresa?: string | null
+  ruc?: string | null
+  ciiu?: string | null
+  descripcion?: string | null
+  ubigeo?: string | null
+  cargo?: string | null
+  area?: string | null
   /** Red social de origen (INSTAGRAM, TIKTOK, FACEBOOK...). */
   redSocial?: string | null
   email?: string | null
@@ -42,6 +49,13 @@ export interface CrearInfluencerInput {
   nombre: string
   usuarioIg: string
   linkIg: string
+  empresa?: string
+  ruc?: string
+  ciiu?: string
+  descripcion?: string
+  ubigeo?: string
+  cargo?: string
+  area?: string
   email?: string
   phone?: string
   seguidores?: string
@@ -56,6 +70,13 @@ export interface ActualizarInfluencerInput {
   nombre?: string
   usuarioIg?: string
   linkIg?: string
+  empresa?: string
+  ruc?: string
+  ciiu?: string
+  descripcion?: string
+  ubigeo?: string
+  cargo?: string
+  area?: string
   email?: string
   phone?: string
   seguidores?: string
