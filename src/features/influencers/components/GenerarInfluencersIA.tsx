@@ -1,5 +1,8 @@
 "use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useState } from "react"
 import { Loader2, Sparkles } from "lucide-react"
 import { toast } from "sonner"
@@ -173,7 +176,7 @@ export function GenerarInfluencersIA({ onFinalizar }: Props) {
           setResultado({ tipo: "nuevos", influencers })
           toast.success(
             influencers.length > 0
-              ? `Se generaron ${influencers.length} influencers nuevos.`
+              ? `Se generaron ${influencers.length} embajadores nuevos.`
               : "Generacion completada.",
           )
         },
@@ -185,7 +188,7 @@ export function GenerarInfluencersIA({ onFinalizar }: Props) {
             return
           }
           toast.error(
-            error instanceof Error ? error.message : "No se pudo generar los influencers.",
+            error instanceof Error ? error.message : "No se pudo generar los embajadores.",
           )
         },
       },
@@ -204,13 +207,13 @@ export function GenerarInfluencersIA({ onFinalizar }: Props) {
         {resultado.tipo === "nuevos" && (
           <>
             <p className="text-center text-sm text-muted-foreground">
-              Se generaron {resultado.influencers.length} influencers nuevos y ya quedaron
+              Se generaron {resultado.influencers.length} embajadores nuevos y ya quedaron
               guardados en el sistema:
             </p>
 
             {resultado.influencers.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
-                El backend no devolvio influencers nuevos en la respuesta.
+                El backend no devolvio embajadores nuevos en la respuesta.
               </p>
             ) : (
               <TablaInfluencersGenerados influencers={resultado.influencers} />
@@ -226,14 +229,14 @@ export function GenerarInfluencersIA({ onFinalizar }: Props) {
               <p className="py-6 text-center text-sm text-muted-foreground">Cargando...</p>
             ) : listaAMostrar.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
-                Todavia no hay influencers registrados en el sistema.
+                Todavia no hay embajadores registrados en el sistema.
               </p>
             ) : (
               <>
                 <p className="text-center text-xs text-muted-foreground">
                   {usarFallbackGeneral
-                    ? "No hay influencers de esta tematica todavia. Mostrando los mas recientes del sistema en general:"
-                    : `Influencers de la tematica "${tema}" ya registrados en el sistema:`}
+                    ? "No hay embajadores de esta tematica todavia. Mostrando los mas recientes del sistema en general:"
+                    : `Embajadores de la tematica "${tema}" ya registrados en el sistema:`}
                 </p>
                 <TablaInfluencers influencers={listaAMostrar} />
               </>
@@ -246,7 +249,7 @@ export function GenerarInfluencersIA({ onFinalizar }: Props) {
             Generar otra tanda
           </Button>
           <Button type="button" onClick={() => onFinalizar?.()}>
-            Volver a Influencers
+            Volver a Embajadores
           </Button>
         </div>
       </div>
@@ -290,7 +293,7 @@ export function GenerarInfluencersIA({ onFinalizar }: Props) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="cantidad">Cantidad de influencers</Label>
+        <Label htmlFor="cantidad">Cantidad de embajadores</Label>
         <Input
           id="cantidad"
           type="number"
@@ -311,7 +314,7 @@ export function GenerarInfluencersIA({ onFinalizar }: Props) {
         ) : (
           <>
             <Sparkles size={16} />
-            Generar influencers
+            Generar embajadores
           </>
         )}
       </Button>

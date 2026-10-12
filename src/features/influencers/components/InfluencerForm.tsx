@@ -1,5 +1,8 @@
 "use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -101,14 +104,14 @@ export function InfluencerForm({
         { id: influencer.id, input: payload },
         {
           onSuccess: () => {
-            toast.success("Influencer actualizado correctamente.")
+            toast.success("Embajador actualizado correctamente.")
             onSuccess?.()
           },
           onError: (error) => {
             toast.error(
               error instanceof Error
                 ? error.message
-                : "No se pudo actualizar el influencer.",
+                : "No se pudo actualizar el embajador.",
             )
           },
         },
@@ -118,14 +121,14 @@ export function InfluencerForm({
 
     crear.mutate(payload, {
       onSuccess: () => {
-        toast.success("Influencer creado correctamente.")
+        toast.success("Embajador creado correctamente.")
         onSuccess?.()
       },
       onError: (error) => {
         toast.error(
           error instanceof Error
             ? error.message
-            : "No se pudo crear el influencer.",
+            : "No se pudo crear el embajador.",
         )
       },
     })

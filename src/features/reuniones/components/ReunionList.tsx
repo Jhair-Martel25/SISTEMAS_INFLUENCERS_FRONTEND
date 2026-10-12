@@ -1,5 +1,8 @@
 "use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Eye, Video } from "lucide-react"
@@ -46,7 +49,7 @@ export function ReunionList() {
   const columnas: Columna<Reunion>[] = [
     {
       id: "influencer",
-      header: "Influencer",
+      header: "Embajador",
       cell: (reunion) => (
         <div className="flex flex-col">
           <span className="font-medium text-foreground">
@@ -124,7 +127,7 @@ export function ReunionList() {
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <PageHeader
         title="Gestión de Reuniones"
-        description="Coordina y da seguimiento a las reuniones entre influencers y voluntarios."
+        description="Coordina y da seguimiento a las reuniones entre embajadores y voluntarios."
         backHref="/dashboard"
       />
 

@@ -1,5 +1,8 @@
 "use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import Link from "next/link"
 import { FileText, Loader2 } from "lucide-react"
 
@@ -29,7 +32,7 @@ interface Props {
 
 function vistaPrevia(texto: string, nombreInfluencer?: string) {
   return texto
-    .replaceAll("{{nombre_influencer}}", nombreInfluencer ?? "[nombre del influencer]")
+    .replaceAll("{{nombre_influencer}}", nombreInfluencer ?? "[nombre del embajador]")
     .replaceAll("{{nombre_voluntario}}", "[tu nombre]")
     .replaceAll("{{link_agendamiento}}", "[link de agendamiento]")
 }
