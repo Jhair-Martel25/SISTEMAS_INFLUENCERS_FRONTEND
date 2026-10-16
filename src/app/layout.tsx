@@ -4,7 +4,6 @@ import "./globals.css";
 import { AuthBootstrap } from "@/features/auth/components/AuthBootstrap";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/sonner";
-import ChatbotWidget from "@/components/shared/ChatbotWidget"; // Ajusta la ruta si lo guardaste en otro folder
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,7 +36,6 @@ export default function RootLayout({
           <AuthBootstrap />
           {children}
           <Toaster />
-          <ChatbotWidget />
         </Providers>
       </body>
     </html>

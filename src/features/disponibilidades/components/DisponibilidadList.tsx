@@ -1,5 +1,8 @@
 "use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useState } from "react"
 import { CalendarPlus, Power, Sparkles, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -150,7 +153,7 @@ export function DisponibilidadList() {
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <PageHeader
         title="Gestión de Disponibilidad"
-        description="Administra tus bloques de disponibilidad para las reuniones con influencers."
+        description="Administra tus bloques de disponibilidad para las reuniones con embajadores."
         backHref="/dashboard"
         actions={
           <div className="flex flex-wrap items-center gap-2">

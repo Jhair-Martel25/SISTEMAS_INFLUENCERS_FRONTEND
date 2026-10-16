@@ -1,5 +1,8 @@
 "use client"
 
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import { useState } from "react"
 import {
   AlertTriangle,
@@ -324,8 +327,8 @@ function ContenidoContactar({
             {isAdmin && noValidado && (
               <p className="flex items-start gap-2 rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
                 <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-                Este influencer aún no está validado. El backend solo envía
-                correos a influencers con estado &quot;Validado&quot;.
+                Este embajador aún no está validado. El backend solo envía
+                correos a embajadores con estado &quot;Validado&quot;.
               </p>
             )}
             {errorCorreo && (
@@ -474,7 +477,7 @@ export function ContactarInfluencerModal({ influencer, onOpenChange }: Props) {
               <Send size={18} className="text-primary" />
             </span>
             <div className="flex flex-col gap-1 text-left">
-              <DialogTitle>Contactar influencer</DialogTitle>
+              <DialogTitle>Contactar embajador</DialogTitle>
               <DialogDescription>
                 Envía un correo o un mensaje directo por su red social.
               </DialogDescription>

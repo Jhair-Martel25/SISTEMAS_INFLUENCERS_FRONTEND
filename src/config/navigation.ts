@@ -1,3 +1,6 @@
+// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
+
 import type { Recurso } from './roles'
 
 /**
@@ -29,8 +32,8 @@ export const NAVEGACION: ItemNavegacion[] = [
   {
     recurso: 'influencers',
     href: '/influencers',
-    label: 'Influencers',
-    desc: 'Administra y valida influencers',
+    label: 'Embajadores',
+    desc: 'Administra y valida embajadores',
   },
   {
     recurso: 'horarios',
@@ -66,7 +69,7 @@ export const NAVEGACION: ItemNavegacion[] = [
     recurso: 'email',
     href: '/email',
     label: 'Email',
-    desc: 'Envía correos a influencers',
+    desc: 'Envía correos a embajadores',
   },
   {
     recurso: 'perfil',
