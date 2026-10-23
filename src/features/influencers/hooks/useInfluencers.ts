@@ -80,6 +80,19 @@ export function useCaptarInfluencers() {
   })
 }
 
+/** Importar embajadores desde Excel (POST /influencers/importar-excel). */
+export function useImportarInfluencersExcel() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (archivo: File) => influencersService.importarExcel(archivo),
+    onSuccess: (resultado) => {
+      if (resultado.importados > 0) {
+        queryClient.invalidateQueries({ queryKey: ['influencers'] })
+      }
+    },
+  })
+}
+
 /** Editar/validar un influencer (PATCH /:id/editar). */
 export function useEditarInfluencer() {
   const queryClient = useQueryClient()

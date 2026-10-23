@@ -146,3 +146,25 @@ export interface CaptarInfluencersResponse {
   conEmail: number
   porRed: Record<string, number>
 }
+
+/** Fila no importada porque el usuario ya existe (POST /influencers/importar-excel). */
+export interface FilaOmitidaImportacion {
+  fila: number
+  usuarioIg: string
+  motivo: string
+}
+
+/** Fila con un dato invalido (POST /influencers/importar-excel). */
+export interface FilaErrorImportacion {
+  fila: number
+  campo: string
+  mensaje: string
+}
+
+/** Respuesta de POST /influencers/importar-excel. */
+export interface ResultadoImportacionExcel {
+  totalFilas: number
+  importados: number
+  omitidos: FilaOmitidaImportacion[]
+  errores: FilaErrorImportacion[]
+}

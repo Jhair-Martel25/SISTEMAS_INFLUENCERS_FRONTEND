@@ -10,6 +10,7 @@ import type {
   Influencer,
   InfluencerFiltros,
   InfluencerGenerado,
+  ResultadoImportacionExcel,
 } from '@/types/influencer'
 
 const BASE_PATH = '/influencers'
@@ -58,6 +59,21 @@ async editar(id: string, input: ActualizarInfluencerInput): Promise<Influencer> 
   /** Cambiar estado de contacto manualmente (solo ADMIN). */
   async contactar(id: string, input: ContactarInfluencerInput): Promise<Influencer> {
     return apiClient.patch<Influencer>(`${BASE_PATH}/${id}/contactar`, input)
+  },
+
+  /** Importar embajadores desde un .xlsx (POST /influencers/importar-excel, campo "archivo"). */
+  async importarExcel(archivo: File): Promise<ResultadoImportacionExcel> {
+    const formData = new FormData()
+    formData.append('archivo', archivo)
+    return apiClient.postForm<ResultadoImportacionExcel>(
+      `${BASE_PATH}/importar-excel`,
+      formData,
+    )
+  },
+
+  /** Descargar la plantilla Excel oficial (GET /influencers/plantilla-excel). */
+  async descargarPlantilla(): Promise<Blob> {
+    return apiClient.getBlob(`${BASE_PATH}/plantilla-excel`)
   },
 
   /** Eliminar influencer (solo ADMIN). */

@@ -48,9 +48,14 @@ export interface RequestOptions {
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
-function buildHeaders(token: string | null, custom?: HeadersInit): HeadersInit {
+function buildHeaders(
+  token: string | null,
+  custom?: HeadersInit,
+  json = true,
+): HeadersInit {
   return {
-    'Content-Type': 'application/json',
+    // Con FormData no se fija Content-Type: el navegador agrega el boundary.
+    ...(json ? { 'Content-Type': 'application/json' } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...custom,
   }
@@ -114,20 +119,57 @@ export class HttpBase {
     return this.request<T>(path, 'DELETE', undefined, options)
   }
 
+  /** POST multipart/form-data (subida de archivos). Devuelve el `data` del envoltorio. */
+  async postForm<T>(
+    path: string,
+    formData: FormData,
+    options?: RequestOptions,
+  ): Promise<T> {
+    const response = await this.send(path, 'POST', formData, options)
+    return handleResponse<T>(response)
+  }
+
+  /** GET de un archivo binario (Excel, PDF...). Devuelve el contenido como Blob. */
+  async getBlob(path: string, options?: RequestOptions): Promise<Blob> {
+    const response = await this.send(path, 'GET', undefined, options)
+    if (!response.ok) {
+      // Los errores siguen llegando en JSON: reutilizar el manejo comun.
+      await handleResponse<never>(response)
+    }
+    return response.blob()
+  }
+
   private async request<T>(
     path: string,
     method: HttpMethod,
     body?: unknown,
     options: RequestOptions = {},
   ): Promise<T> {
+    const response = await this.send(
+      path,
+      method,
+      body !== undefined ? JSON.stringify(body) : undefined,
+      options,
+    )
+    return handleResponse<T>(response)
+  }
+
+  /** Ejecuta el fetch con token y reintento tras renovar la sesion (401). */
+  private async send(
+    path: string,
+    method: HttpMethod,
+    body: BodyInit | undefined,
+    options: RequestOptions = {},
+  ): Promise<Response> {
     const { params, headers, signal, skipAuth = false } = options
     const url = `${this.baseUrl}${path}${buildQueryString(params)}`
+    const json = !(body instanceof FormData)
 
     const doFetch = (token: string | null) =>
       fetch(url, {
         method,
-        headers: buildHeaders(token, headers),
-        body: body !== undefined ? JSON.stringify(body) : undefined,
+        headers: buildHeaders(token, headers, json),
+        body,
         signal,
       })
 
@@ -155,7 +197,7 @@ export class HttpBase {
       }
     }
 
-    return handleResponse<T>(response)
+    return response
   }
 
   private obtainFreshToken(): Promise<string> {
