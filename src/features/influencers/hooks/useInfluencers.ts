@@ -34,6 +34,33 @@ export function useInfluencers(filtros?: InfluencerFiltros) {
   })
 }
 
+/** Tope de seguridad de paginas al traer la lista completa (100 por pagina). */
+const MAX_PAGINAS_TODOS = 50
+
+/**
+ * Todos los influencers que cumplen los filtros (recorre todas las paginas).
+ * Lo usan las pantallas de Correos y Mensajes DM, que filtran por red social
+ * y por correo en el cliente porque el backend aun no acepta esos filtros.
+ */
+export function useTodosInfluencers(
+  filtros?: Omit<InfluencerFiltros, 'page' | 'limit'>,
+) {
+  return useQuery({
+    queryKey: ['influencers', 'todos', filtros ?? {}],
+    queryFn: async (): Promise<Influencer[]> => {
+      const todos: Influencer[] = []
+      for (let page = 1; page <= MAX_PAGINAS_TODOS; page++) {
+        const respuesta = InfluencerListaSchema.parse(
+          await influencersService.listar({ ...filtros, page, limit: 100 }),
+        )
+        todos.push(...respuesta.data)
+        if (respuesta.data.length === 0 || todos.length >= respuesta.meta.total) break
+      }
+      return todos
+    },
+  })
+}
+
 /** Detalle de un influencer. */
 export function useInfluencer(id: string) {
   return useQuery({

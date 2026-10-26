@@ -18,6 +18,7 @@ const VARIANTES_VALIDACION: Record<string, VarianteBadge> = {
 const VARIANTES_CONTACTO: Record<string, VarianteBadge> = {
   [ESTADO_CONTACTO.SIN_CONTACTAR]: "outline",
   [ESTADO_CONTACTO.CORREO_ENVIADO]: "default",
+  [ESTADO_CONTACTO.DM_ENVIADO]: "default",
   [ESTADO_CONTACTO.FORMULARIO_LLENADO]: "default",
   [ESTADO_CONTACTO.REUNION_AGENDADA]: "secondary",
   [ESTADO_CONTACTO.RECHAZO_CONTACTO]: "destructive",

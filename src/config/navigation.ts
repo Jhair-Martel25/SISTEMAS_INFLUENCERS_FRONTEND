@@ -68,8 +68,14 @@ export const NAVEGACION: ItemNavegacion[] = [
   {
     recurso: 'email',
     href: '/email',
-    label: 'Email',
-    desc: 'Envía correos a embajadores',
+    label: 'Correos',
+    desc: 'Envía correos a embajadores con una plantilla',
+  },
+  {
+    recurso: 'mensajesDm',
+    href: '/mensajes-dm',
+    label: 'Mensajes DM',
+    desc: 'Contacta embajadores por Instagram, TikTok o Facebook',
   },
   {
     recurso: 'perfil',
@@ -90,4 +96,4 @@ export function recursoDeRuta(pathname: string): Recurso | undefined {
   ).sort((a, b) => b.href.length - a.href.length)[0]
 
   return match?.recurso
-}
+}

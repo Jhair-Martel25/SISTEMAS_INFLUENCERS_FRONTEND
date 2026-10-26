@@ -26,6 +26,7 @@ export const ETIQUETAS_VALIDACION: Record<EstadoValidacion, string> = {
 export const ETIQUETAS_CONTACTO: Record<EstadoContacto, string> = {
   [ESTADO_CONTACTO.SIN_CONTACTAR]: 'Sin contactar',
   [ESTADO_CONTACTO.CORREO_ENVIADO]: 'Correo enviado',
+  [ESTADO_CONTACTO.DM_ENVIADO]: 'DM enviado',
   [ESTADO_CONTACTO.FORMULARIO_LLENADO]: 'Formulario llenado',
   [ESTADO_CONTACTO.REUNION_AGENDADA]: 'Reunión agendada',
   [ESTADO_CONTACTO.RECHAZO_CONTACTO]: 'Rechazo de contacto',

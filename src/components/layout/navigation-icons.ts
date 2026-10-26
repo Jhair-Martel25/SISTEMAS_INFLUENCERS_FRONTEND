@@ -4,6 +4,7 @@ import {
   FileText,
   Home,
   Mail,
+  MessageCircle,
   UserCog,
   UserPlus,
   Users,
@@ -27,5 +28,6 @@ export const ICONO_POR_RECURSO: Record<Recurso, LucideIcon> = {
   usuarios: UserPlus,
   plantillas: FileText,
   email: Mail,
+  mensajesDm: MessageCircle,
   perfil: UserCog,
-}
+}

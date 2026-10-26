@@ -21,6 +21,7 @@ export const RECURSOS = {
   USUARIOS: 'usuarios',
   PLANTILLAS: 'plantillas',
   EMAIL: 'email',
+  MENSAJES_DM: 'mensajesDm',
   PERFIL: 'perfil',
 } as const
 
@@ -35,6 +36,7 @@ const PERMISOS_POR_ROL: Record<Role, Recurso[]> = {
     RECURSOS.USUARIOS,
     RECURSOS.PLANTILLAS,
     RECURSOS.EMAIL,
+    RECURSOS.MENSAJES_DM,
     RECURSOS.PERFIL, // ← ADMIN puede modificar su correo y contraseña
   ],
   VOLUNTARIO: [
@@ -43,6 +45,7 @@ const PERMISOS_POR_ROL: Record<Role, Recurso[]> = {
     RECURSOS.DISPONIBILIDAD,
     RECURSOS.REUNIONES,
     RECURSOS.PLANTILLAS,
+    RECURSOS.MENSAJES_DM,
     RECURSOS.PERFIL, // ← VOLUNTARIO puede modificar su correo y contraseña
   ],
 }
@@ -61,4 +64,4 @@ export function esAdmin(role: Role | undefined): boolean {
 /** Ruta inicial a la que redirigir según el rol. */
 export function homeSegunRol(role: Role | undefined): string {
   return esAdmin(role) ? '/dashboard' : '/influencers'
-}
+}
