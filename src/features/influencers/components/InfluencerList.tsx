@@ -619,7 +619,7 @@ export function InfluencerList() {
       </Dialog>
 
       <Dialog open={Boolean(editando)} onOpenChange={(open) => !open && setEditando(null)}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-3xl overflow-y-auto p-4 sm:w-full sm:p-6">
           <DialogHeader>
             <DialogTitle>Editar embajador</DialogTitle>
             <DialogDescription>

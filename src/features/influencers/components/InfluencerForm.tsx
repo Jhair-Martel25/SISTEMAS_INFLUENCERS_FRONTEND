@@ -213,7 +213,7 @@ export function InfluencerForm({
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <FormField
             control={form.control}
             name="ubigeo"
@@ -242,7 +242,7 @@ export function InfluencerForm({
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <FormField
             control={form.control}
             name="area"
