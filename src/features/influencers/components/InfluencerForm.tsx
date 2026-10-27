@@ -39,6 +39,7 @@ import {
   influencerFormSchema,
   type InfluencerFormValues,
 } from "../schemas/influencer-form.schema"
+import { UbigeoAutocomplete } from "./UbigeoAutocomplete"
 
 const BIOGRAFIA_MAX = 500
 const MENSAJE_MAX = 1000
@@ -53,6 +54,9 @@ function valoresIniciales(influencer?: Influencer | null): InfluencerFormValues 
     ciiu: influencer?.ciiu ?? "",
     descripcion: influencer?.descripcion ?? "",
     ubigeo: influencer?.ubigeo ?? "",
+    departamento: influencer?.departamento ?? "",
+    provincia: influencer?.provincia ?? "",
+    distrito: influencer?.distrito ?? "",
     cargo: influencer?.cargo ?? "",
     area: influencer?.area ?? "",
     email: influencer?.email ?? "",
@@ -102,6 +106,9 @@ export function InfluencerForm({
       ciiu: limpiaOpcional(values.ciiu),
       descripcion: limpiaOpcional(values.descripcion),
       ubigeo: limpiaOpcional(values.ubigeo),
+      departamento: limpiaOpcional(values.departamento),
+      provincia: limpiaOpcional(values.provincia),
+      distrito: limpiaOpcional(values.distrito),
       cargo: limpiaOpcional(values.cargo),
       area: limpiaOpcional(values.area),
       email: limpiaOpcional(values.email),
@@ -216,19 +223,6 @@ export function InfluencerForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
-            name="ubigeo"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Ubigeo</FormLabel>
-                <FormControl>
-                  <Input placeholder="Lima" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
             name="cargo"
             render={({ field }) => (
               <FormItem>
@@ -240,9 +234,6 @@ export function InfluencerForm({
               </FormItem>
             )}
           />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
             name="area"
@@ -256,6 +247,11 @@ export function InfluencerForm({
               </FormItem>
             )}
           />
+        </div>
+
+        {/* Ubigeo con autocompletado y campos derivados */}
+        <div className="rounded-lg border border-border/60 bg-muted/10 p-3.5">
+          <UbigeoAutocomplete form={form} disabled={pendiente} />
         </div>
 
         <FormField
