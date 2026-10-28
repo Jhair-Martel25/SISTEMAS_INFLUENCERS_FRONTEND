@@ -42,7 +42,9 @@ export const InfluencerSchema = z.object({
   linkIg: z.string(),
   tipoEmbajador: TipoEmbajadorEnum.optional(),
   empresaId: z.string().nullable().optional(),
-  empresaRegistrada: EmpresaRegistradaResumenSchema.nullable(),
+  // Los influencers personales no tienen una empresa vinculada y el backend
+  // histórico puede omitir esta propiedad en lugar de devolver null.
+  empresaRegistrada: EmpresaRegistradaResumenSchema.nullable().optional(),
   empresa: z.string().nullable().optional(),
   ruc: z.string().nullable().optional(),
   ciiu: z.string().nullable().optional(),
