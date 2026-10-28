@@ -1,4 +1,5 @@
 import {
+  Building2,
   CalendarCheck,
   CalendarClock,
   FileText,
@@ -21,6 +22,7 @@ import type { Recurso } from '@/config/roles'
 export const ICONO_POR_RECURSO: Record<Recurso, LucideIcon> = {
   dashboard: Home,
   influencers: Users,
+  empresas: Building2,
   horarios: CalendarClock,
   disponibilidad: CalendarCheck,
   reuniones: Video,

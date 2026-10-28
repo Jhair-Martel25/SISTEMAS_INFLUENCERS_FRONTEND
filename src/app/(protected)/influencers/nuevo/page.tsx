@@ -1,27 +1,34 @@
-"use client"
-
-// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
-// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
-
-import { useRouter } from "next/navigation"
-
 import { PageHeader } from "@/components/shared/page-header"
-import { InfluencerForm } from "@/features/influencers/components/InfluencerForm"
+import { RegistroEmbajadorForm } from "@/features/influencers/components/RegistroEmbajadorForm"
+import { TIPO_EMBAJADOR, type TipoEmbajador } from "@/types/empresa"
 
-export default function RegistroInfluencerPage() {
-  const router = useRouter()
+export default async function RegistroInfluencerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ empresaId?: string; tipo?: string }>
+}) {
+  const params = await searchParams
+  const tipoInicial =
+    params.tipo === TIPO_EMBAJADOR.EMPRESA
+      ? (TIPO_EMBAJADOR.EMPRESA as TipoEmbajador)
+      : params.tipo === TIPO_EMBAJADOR.INFLUENCER
+        ? (TIPO_EMBAJADOR.INFLUENCER as TipoEmbajador)
+        : undefined
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <PageHeader
         title="Registro de Embajador"
-        description="Ingresa los datos de perfil para añadirlo al sistema."
+        description="Registra un perfil personal o un embajador corporativo vinculado a una empresa."
         backHref="/influencers"
         backLabel="Volver a Embajadores"
       />
 
       <div className="rounded-xl border border-border bg-card p-6">
-        <InfluencerForm onSuccess={() => router.push("/influencers")} />
+        <RegistroEmbajadorForm
+          empresaId={params.empresaId}
+          tipoInicial={tipoInicial}
+        />
       </div>
     </div>
   )

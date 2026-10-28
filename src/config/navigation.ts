@@ -36,6 +36,12 @@ export const NAVEGACION: ItemNavegacion[] = [
     desc: 'Administra y valida embajadores',
   },
   {
+    recurso: 'empresas',
+    href: '/empresas',
+    label: 'Empresas',
+    desc: 'Base corporativa y contactos',
+  },
+  {
     recurso: 'horarios',
     href: '/horarios',
     label: 'Horarios',
