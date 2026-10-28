@@ -12,6 +12,7 @@ import type {
   InfluencerGenerado,
   ResultadoImportacionExcel,
 } from '@/types/influencer'
+import type { TipoEmbajadorOpcion } from '@/types/empresa'
 
 const BASE_PATH = '/influencers'
 
@@ -25,6 +26,11 @@ export const influencersService = {
 
   async obtenerPorId(id: string): Promise<Influencer> {
     return apiClient.get<Influencer>(`${BASE_PATH}/${id}`)
+  },
+
+  /** Tipos de embajador disponibles (GET /influencers/tipos-embajador). */
+  async tiposEmbajador(): Promise<TipoEmbajadorOpcion[]> {
+    return apiClient.get<TipoEmbajadorOpcion[]>(`${BASE_PATH}/tipos-embajador`)
   },
 
   /** Crear influencer manualmente (sin Apify). */

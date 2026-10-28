@@ -15,14 +15,15 @@ import type { Role } from '@/types/api'
 export const RECURSOS = {
   DASHBOARD: 'dashboard',
   INFLUENCERS: 'influencers',
+  EMPRESAS: 'empresas',
   HORARIOS: 'horarios',
   DISPONIBILIDAD: 'disponibilidad',
   REUNIONES: 'reuniones',
   USUARIOS: 'usuarios',
   PLANTILLAS: 'plantillas',
   EMAIL: 'email',
-  MENSAJES_DM: 'mensajesDm',
   PERFIL: 'perfil',
+  EMPRESAS_CONTACTOS: 'empresas-contactos',
 } as const
 
 export type Recurso = (typeof RECURSOS)[keyof typeof RECURSOS]
@@ -31,22 +32,24 @@ const PERMISOS_POR_ROL: Record<Role, Recurso[]> = {
   ADMIN: [
     RECURSOS.DASHBOARD,
     RECURSOS.INFLUENCERS,
+    RECURSOS.EMPRESAS,
     RECURSOS.HORARIOS,
     RECURSOS.REUNIONES,
     RECURSOS.USUARIOS,
     RECURSOS.PLANTILLAS,
     RECURSOS.EMAIL,
-    RECURSOS.MENSAJES_DM,
     RECURSOS.PERFIL, // ← ADMIN puede modificar su correo y contraseña
+    RECURSOS.EMPRESAS_CONTACTOS,
   ],
   VOLUNTARIO: [
     RECURSOS.INFLUENCERS,
+    RECURSOS.EMPRESAS,
     RECURSOS.HORARIOS,
     RECURSOS.DISPONIBILIDAD,
     RECURSOS.REUNIONES,
     RECURSOS.PLANTILLAS,
-    RECURSOS.MENSAJES_DM,
     RECURSOS.PERFIL, // ← VOLUNTARIO puede modificar su correo y contraseña
+    RECURSOS.EMPRESAS_CONTACTOS,
   ],
 }
 
@@ -64,4 +67,4 @@ export function esAdmin(role: Role | undefined): boolean {
 /** Ruta inicial a la que redirigir según el rol. */
 export function homeSegunRol(role: Role | undefined): string {
   return esAdmin(role) ? '/dashboard' : '/influencers'
-}
+}

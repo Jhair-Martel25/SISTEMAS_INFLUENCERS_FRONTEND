@@ -36,6 +36,12 @@ export const NAVEGACION: ItemNavegacion[] = [
     desc: 'Administra y valida embajadores',
   },
   {
+    recurso: 'empresas',
+    href: '/empresas',
+    label: 'Empresas',
+    desc: 'Base corporativa y contactos',
+  },
+  {
     recurso: 'horarios',
     href: '/horarios',
     label: 'Horarios',
@@ -68,14 +74,14 @@ export const NAVEGACION: ItemNavegacion[] = [
   {
     recurso: 'email',
     href: '/email',
-    label: 'Correos',
-    desc: 'Envía correos a embajadores con una plantilla',
+    label: 'Email',
+    desc: 'Envía correos a embajadores',
   },
-  {
-    recurso: 'mensajesDm',
-    href: '/mensajes-dm',
-    label: 'Mensajes DM',
-    desc: 'Contacta embajadores por Instagram, TikTok o Facebook',
+   {
+    recurso: 'empresas-contactos',
+    href: '/empresas-contactos',
+    label: 'Gestión de Empresas y Contactos',
+    desc: 'Administra empresas y sus personas de contacto',
   },
   {
     recurso: 'perfil',
@@ -96,4 +102,4 @@ export function recursoDeRuta(pathname: string): Recurso | undefined {
   ).sort((a, b) => b.href.length - a.href.length)[0]
 
   return match?.recurso
-}
+}

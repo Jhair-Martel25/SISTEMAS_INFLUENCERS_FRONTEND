@@ -1,10 +1,10 @@
 import {
+  Building2,
   CalendarCheck,
   CalendarClock,
   FileText,
   Home,
   Mail,
-  MessageCircle,
   UserCog,
   UserPlus,
   Users,
@@ -22,12 +22,13 @@ import type { Recurso } from '@/config/roles'
 export const ICONO_POR_RECURSO: Record<Recurso, LucideIcon> = {
   dashboard: Home,
   influencers: Users,
+  empresas: Building2,
   horarios: CalendarClock,
   disponibilidad: CalendarCheck,
   reuniones: Video,
   usuarios: UserPlus,
   plantillas: FileText,
   email: Mail,
-  mensajesDm: MessageCircle,
   perfil: UserCog,
-}
+   'empresas-contactos': Building2,
+}

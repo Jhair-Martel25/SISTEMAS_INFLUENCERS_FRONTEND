@@ -5,10 +5,11 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Eye, MessagesSquare, Pencil, Plus, Search, Send, Sparkles, Trash2, Upload, Users, X } from "lucide-react"
+import { Building2, Eye, MessagesSquare, Pencil, Plus, Search, Send, Trash2, Upload, Users, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -45,6 +46,7 @@ import {
 } from "@/types/api"
 import { TIPO_CATEGORIA } from "@/types/categoria"
 import type { Influencer } from "@/types/influencer"
+import { TIPO_EMBAJADOR, type TipoEmbajador } from "@/types/empresa"
 import { etiquetaEstado } from "@/lib/utils/format"
 import { useCategorias } from "../../categorias/hooks/useCategorias"
 import {
@@ -98,6 +100,7 @@ export function InfluencerList() {
   >("")
   const [estadoContacto, setEstadoContacto] = useState<EstadoContacto | "">("")
   const [tematica, setTematica] = useState("")
+  const [tipoEmbajador, setTipoEmbajador] = useState<TipoEmbajador | "">("")
   const [busqueda, setBusqueda] = useState("")
 
   const [viendo, setViendo] = useState<Influencer | null>(null)
@@ -154,6 +157,7 @@ export function InfluencerList() {
     limit: filtroLocalActivo ? LIMITE_CON_BUSQUEDA : LIMITE,
     estadoValidacion: estadoValidacion || undefined,
     estadoContacto: estadoContacto || undefined,
+    tipoEmbajador: tipoEmbajador || undefined,
     tematica: tematica || undefined,
   })
   const eliminar = useEliminarInfluencer()
@@ -181,7 +185,7 @@ export function InfluencerList() {
     : null
 
   const hayFiltrosActivos = Boolean(
-    estadoValidacion || estadoContacto || tematica || redFiltro,
+    estadoValidacion || estadoContacto || tematica || redFiltro || tipoEmbajador,
   )
   const sinInfluencersEnElSistema =
     !busquedaActiva && !hayFiltrosActivos && (data?.meta.total ?? 0) === 0
@@ -230,9 +234,33 @@ export function InfluencerList() {
               {iniciales(influencer.nombre)}
             </AvatarFallback>
           </Avatar>
-          <span className="font-medium text-foreground">
-            {influencer.nombre}
-          </span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-medium text-foreground">
+                {influencer.nombre}
+              </span>
+              <Badge
+                variant={
+                  influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+                    ? "secondary"
+                    : "outline"
+                }
+              >
+                {influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+                  ? "Empresa"
+                  : "Influencer"}
+              </Badge>
+            </div>
+            {influencer.empresaRegistrada && (
+              <Link
+                href={`/empresas/${influencer.empresaRegistrada.id}`}
+                className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
+              >
+                <Building2 size={12} />
+                {influencer.empresaRegistrada.nombre}
+              </Link>
+            )}
+          </div>
         </div>
       ),
     },
@@ -396,6 +424,26 @@ export function InfluencerList() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Select
+            value={tipoEmbajador || TODOS}
+            onValueChange={(valor) => {
+              setTipoEmbajador(
+                valor === TODOS ? "" : (valor as TipoEmbajador),
+              )
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-44">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TODOS}>Todos los tipos</SelectItem>
+              <SelectItem value={TIPO_EMBAJADOR.EMPRESA}>Empresa</SelectItem>
+              <SelectItem value={TIPO_EMBAJADOR.INFLUENCER}>
+                Influencer
+              </SelectItem>
+            </SelectContent>
+          </Select>
           <Select
             value={redFiltro || TODOS}
             onValueChange={(valor) =>
@@ -564,6 +612,25 @@ export function InfluencerList() {
           </DialogHeader>
           {viendo && (
             <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="col-span-2">
+                <p className="text-muted-foreground">Tipo</p>
+                <p className="font-medium">
+                  {viendo.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+                    ? "Empresa"
+                    : "Influencer"}
+                </p>
+              </div>
+              {viendo.empresaRegistrada && (
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">Empresa</p>
+                  <Link
+                    href={`/empresas/${viendo.empresaRegistrada.id}`}
+                    className="font-medium text-primary underline"
+                  >
+                    {viendo.empresaRegistrada.nombre}
+                  </Link>
+                </div>
+              )}
               <div>
                 <p className="text-muted-foreground">Correo</p>
                 <p className="font-medium">{viendo.email || "-"}</p>
