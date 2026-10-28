@@ -77,6 +77,12 @@ export const NAVEGACION: ItemNavegacion[] = [
     label: 'Email',
     desc: 'Envía correos a embajadores',
   },
+   {
+    recurso: 'empresas-contactos',
+    href: '/empresas-contactos',
+    label: 'Gestión de Empresas y Contactos',
+    desc: 'Administra empresas y sus personas de contacto',
+  },
   {
     recurso: 'perfil',
     href: '/perfil',

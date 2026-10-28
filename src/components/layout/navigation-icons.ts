@@ -30,4 +30,5 @@ export const ICONO_POR_RECURSO: Record<Recurso, LucideIcon> = {
   plantillas: FileText,
   email: Mail,
   perfil: UserCog,
+   'empresas-contactos': Building2,
 }
