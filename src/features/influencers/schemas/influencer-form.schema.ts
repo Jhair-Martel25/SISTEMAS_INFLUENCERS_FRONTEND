@@ -37,6 +37,9 @@ export const influencerFormSchema = z.object({
   ciiu: z.string().trim().max(20, 'Maximo 20 caracteres').optional().or(z.literal('')),
   descripcion: z.string().trim().max(500, 'Maximo 500 caracteres').optional().or(z.literal('')),
   ubigeo: z.string().trim().max(20, 'Maximo 20 caracteres').optional().or(z.literal('')),
+  departamento: z.string().trim().max(100, 'Maximo 100 caracteres').optional().or(z.literal('')),
+  provincia: z.string().trim().max(100, 'Maximo 100 caracteres').optional().or(z.literal('')),
+  distrito: z.string().trim().max(100, 'Maximo 100 caracteres').optional().or(z.literal('')),
   cargo: z.string().trim().max(100, 'Maximo 100 caracteres').optional().or(z.literal('')),
   area: z.string().trim().max(100, 'Maximo 100 caracteres').optional().or(z.literal('')),
   email: z
