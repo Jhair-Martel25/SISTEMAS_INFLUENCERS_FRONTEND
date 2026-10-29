@@ -124,7 +124,7 @@ function aBusqueda(empresa: Empresa): EmpresaBusqueda {
     departamento: empresa.departamento ?? null,
     provincia: empresa.provincia ?? null,
     distrito: empresa.distrito ?? null,
-    totalContactos: empresa.contactos.length,
+    totalContactos: empresa.contactos?.length ?? 0,
   }
 }
 
@@ -145,7 +145,7 @@ function comoActualizacion(
 
 interface InfluencerFormProps {
   influencer?: Influencer | null
-  /** Prellena el formulario como embajador de esta empresa. */
+  /** Empresa preseleccionada (por ejemplo al registrar desde la ficha de empresa). */
   empresaInicialId?: string
   /** Tipo preseleccionado (por ejemplo desde /influencers/nuevo?tipo=EMPRESA). */
   tipoInicial?: TipoEmbajador
@@ -166,16 +166,17 @@ export function InfluencerForm({
   const esEdicion = Boolean(influencer)
   const pendiente = crear.isPending || editar.isPending
 
-  const [empresaIdSeleccionada, setEmpresaIdSeleccionada] = useState(
-    influencer?.empresaId ?? empresaInicialId ?? "",
-  )
+  const [registrandoEmpresa, setRegistrandoEmpresa] = useState(false)
+  const [gestionandoContactos, setGestionandoContactos] = useState(false)
   const [empresaSeleccionada, setEmpresaSeleccionada] =
     useState<EmpresaBusqueda | null>(null)
   const [contactoSeleccionado, setContactoSeleccionado] =
     useState<ContactoEmpresa | null>(null)
-  const [registrandoEmpresa, setRegistrandoEmpresa] = useState(false)
-  const [gestionandoContactos, setGestionandoContactos] = useState(false)
-  const prefillAplicado = useRef("")
+  const [empresaIdSeleccionada, setEmpresaIdSeleccionada] = useState<string>(
+    influencer?.empresaId ?? empresaInicialId ?? "",
+  )
+
+  const prefillAplicado = useRef<string>("")
 
   const form = useForm<InfluencerFormValues>({
     resolver: zodResolver(influencerFormSchema),
@@ -191,10 +192,10 @@ export function InfluencerForm({
   const empresaBloqueada =
     esEdicion && influencer?.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
 
-  const { data: empresaDetalle } = useEmpresa(empresaIdSeleccionada)
   const { data: tiposRemotos } = useTiposEmbajador()
   const tipos = tiposRemotos?.length ? tiposRemotos : TIPOS_EMBAJADOR
 
+  const { data: empresaDetalle } = useEmpresa(empresaIdSeleccionada)
   const contactos = empresaDetalle?.contactos ?? []
 
   const biografiaValor = form.watch("biografia") ?? ""
@@ -242,6 +243,25 @@ export function InfluencerForm({
     if (valor === TIPO_EMBAJADOR.INFLUENCER) {
       elegirEmpresa(null)
       form.setValue("contactoEmpresaId", "")
+      form.setValue("empresa", "")
+      form.setValue("ruc", "")
+      form.setValue("ciiu", "")
+      form.setValue("sector", "")
+      form.setValue("descripcion", "")
+      form.setValue("direccion", "")
+      form.setValue("sitioWeb", "")
+      form.setValue("ubigeo", "")
+      form.setValue("departamento", "")
+      form.setValue("provincia", "")
+      form.setValue("distrito", "")
+      form.setValue("cargo", "")
+      form.setValue("area", "")
+    } else {
+      form.setValue("usuarioIg", "")
+      form.setValue("linkIg", "")
+      form.setValue("seguidores", "")
+      form.setValue("cantidad_post", "")
+      form.setValue("biografia", "")
     }
   }
 
@@ -291,35 +311,49 @@ export function InfluencerForm({
   }, [empresaDetalle])
 
   function handleSubmit(values: InfluencerFormValues) {
-    const payload = {
-      nombre: values.nombre,
-      usuarioIg: limpiaOpcional(values.usuarioIg),
-      linkIg: limpiaOpcional(values.linkIg),
+    const esEmpresaVal = values.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+
+    // Para empresa, si no tiene nombre o usuarioIg/linkIg, preparamos datos consistentes
+    const nombreFinal = esEmpresaVal
+      ? (values.nombre?.trim() || values.empresa?.trim() || "Empresa Embajadora")
+      : (values.nombre?.trim() ?? "")
+
+    const handleSugerido = esEmpresaVal && !values.usuarioIg && !values.linkIg
+      ? (values.ruc ? `empresa_${values.ruc}` : (values.empresa ? values.empresa.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 25) : 'empresa_embajador'))
+      : limpiaOpcional(values.usuarioIg)
+
+    const linkIgFinal = limpiaOpcional(values.linkIg) || (esEmpresaVal && handleSugerido ? `https://instagram.com/${handleSugerido}` : undefined)
+
+    const payload: CrearInfluencerInput = {
+      nombre: nombreFinal,
+      usuarioIg: handleSugerido,
+      linkIg: linkIgFinal,
       tipoEmbajador: values.tipoEmbajador,
-      ...(values.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+      ...(esEmpresaVal
         ? {
             empresaId: limpiaOpcional(values.empresaId),
             contactoEmpresaId: limpiaOpcional(values.contactoEmpresaId),
+            empresa: limpiaOpcional(values.empresa),
+            ruc: limpiaOpcional(values.ruc),
+            ciiu: limpiaOpcional(values.ciiu),
+            sector: limpiaOpcional(values.sector),
+            descripcion: limpiaOpcional(values.descripcion),
+            direccion: limpiaOpcional(values.direccion),
+            sitioWeb: limpiaOpcional(values.sitioWeb),
+            ubigeo: limpiaOpcional(values.ubigeo),
+            departamento: limpiaOpcional(values.departamento),
+            provincia: limpiaOpcional(values.provincia),
+            distrito: limpiaOpcional(values.distrito),
+            cargo: limpiaOpcional(values.cargo),
+            area: limpiaOpcional(values.area),
           }
-        : {}),
-      empresa: limpiaOpcional(values.empresa),
-      ruc: limpiaOpcional(values.ruc),
-      ciiu: limpiaOpcional(values.ciiu),
-      sector: limpiaOpcional(values.sector),
-      descripcion: limpiaOpcional(values.descripcion),
-      direccion: limpiaOpcional(values.direccion),
-      sitioWeb: limpiaOpcional(values.sitioWeb),
-      ubigeo: limpiaOpcional(values.ubigeo),
-      departamento: limpiaOpcional(values.departamento),
-      provincia: limpiaOpcional(values.provincia),
-      distrito: limpiaOpcional(values.distrito),
-      cargo: limpiaOpcional(values.cargo),
-      area: limpiaOpcional(values.area),
+        : {
+            seguidores: limpiaOpcional(values.seguidores),
+            cantidad_post: limpiaOpcional(values.cantidad_post),
+            biografia: limpiaOpcional(values.biografia),
+          }),
       email: limpiaOpcional(values.email),
       phone: limpiaOpcional(values.phone),
-      seguidores: limpiaOpcional(values.seguidores),
-      cantidad_post: limpiaOpcional(values.cantidad_post),
-      biografia: limpiaOpcional(values.biografia),
       mensajePersonalizado: limpiaOpcional(values.mensajePersonalizado),
       estadoValidacion: values.estadoValidacion,
     }
@@ -366,7 +400,7 @@ export function InfluencerForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleSubmit)}
-        className="space-y-4"
+        className="space-y-5"
         noValidate
       >
         {!esEdicion && (
@@ -413,175 +447,137 @@ export function InfluencerForm({
           </section>
         )}
 
-        {esEmpresa ? (
-          <section className="space-y-4 rounded-lg border border-border/60 bg-muted/10 p-4">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Empresa del embajador{" "}
-                <span className="text-destructive">*</span>
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {empresaBloqueada
-                  ? "El tipo y la empresa no se pueden cambiar al editar un embajador corporativo."
-                  : "Busca la empresa en la base corporativa o registrala manualmente."}
-              </p>
-            </div>
-
-            {empresaBloqueada ? (
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5">
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Building2 size={18} />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-foreground">
-                      {empresaSeleccionada?.nombre ??
-                        influencer?.empresaRegistrada?.nombre ??
-                        influencer?.empresa ??
-                        "Empresa vinculada"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {[
-                        influencer?.ruc ? `RUC ${influencer.ruc}` : null,
-                        influencer?.sector,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ") || "Datos corporativos"}
-                    </p>
-                  </div>
-                </div>
-                {influencer?.empresaId && (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/empresas/${influencer.empresaId}`}>
-                      <ExternalLink size={14} />
-                      Ver empresa
-                    </Link>
-                  </Button>
-                )}
+        {/* ========================================================================= */}
+        {/* CAMPOS EXCLUSIVOS DE EMPRESA                                              */}
+        {/* ========================================================================= */}
+        {esEmpresa && (
+          <>
+            <section className="space-y-4 rounded-lg border border-border/60 bg-muted/10 p-4">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Empresa del embajador
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {empresaBloqueada
+                    ? "El tipo y la empresa no se pueden cambiar al editar un embajador corporativo."
+                    : "Busca la empresa en la base corporativa o completa los datos en los campos a continuación."}
+                </p>
               </div>
-            ) : (
-              <EmpresaSearch
-                seleccionada={empresaSeleccionada}
-                onSelect={elegirEmpresa}
-                onRegistrarManual={() => setRegistrandoEmpresa(true)}
-                disabled={pendiente}
-                error={errorEmpresa}
-              />
-            )}
 
-            {empresaSeleccionada && (
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-foreground">
-                    Contacto / funcionario
-                  </span>
-                  {!empresaBloqueada && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setGestionandoContactos(true)}
-                    >
-                      <Users size={14} />
-                      Gestionar contactos
+              {empresaBloqueada ? (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Building2 size={18} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-foreground">
+                        {empresaSeleccionada?.nombre ??
+                          influencer?.empresaRegistrada?.nombre ??
+                          influencer?.empresa ??
+                          "Empresa vinculada"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {[
+                          influencer?.ruc ? `RUC ${influencer.ruc}` : null,
+                          influencer?.sector,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || "Datos corporativos"}
+                      </p>
+                    </div>
+                  </div>
+                  {influencer?.empresaId && (
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/empresas/${influencer.empresaId}`}>
+                        <ExternalLink size={14} />
+                        Ver empresa
+                      </Link>
                     </Button>
                   )}
                 </div>
+              ) : (
+                <EmpresaSearch
+                  seleccionada={empresaSeleccionada}
+                  onSelect={elegirEmpresa}
+                  onRegistrarManual={() => setRegistrandoEmpresa(true)}
+                  disabled={pendiente}
+                  error={errorEmpresa}
+                />
+              )}
 
-                <Select
-                  value={contactoSeleccionado?.id ?? SIN_CONTACTO}
-                  onValueChange={(valor) => {
-                    if (valor === SIN_CONTACTO) {
-                      seleccionarContacto(null)
-                      return
-                    }
-                    const contacto = contactos.find((c) => c.id === valor) ?? null
-                    seleccionarContacto(contacto)
-                  }}
-                  disabled={pendiente || empresaBloqueada}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecciona un contacto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={SIN_CONTACTO}>
-                      Sin contacto especifico
-                    </SelectItem>
-                    {contactos.map((contacto) => (
-                      <SelectItem key={contacto.id} value={contacto.id}>
-                        {contacto.nombreCompleto}
-                        {contacto.cargo ? ` — ${contacto.cargo}` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {contactoSeleccionado ? (
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="secondary">Contacto</Badge>
-                    <span>{contactoSeleccionado.nombreCompleto}</span>
-                    {contactoSeleccionado.cargo && (
-                      <span>· {contactoSeleccionado.cargo}</span>
-                    )}
-                    {contactoSeleccionado.email && (
-                      <span>· {contactoSeleccionado.email}</span>
+              {empresaSeleccionada && (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-foreground">
+                      Contacto / funcionario
+                    </span>
+                    {!empresaBloqueada && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setGestionandoContactos(true)}
+                      >
+                        <Users size={14} />
+                        Gestionar contactos
+                      </Button>
                     )}
                   </div>
-                ) : contactos.length === 0 ? (
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    Esta empresa no tiene contactos. Agrega uno para identificar
-                    a la persona embajadora.
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Si no eliges un contacto, se usara el contacto principal de
-                    la empresa.
-                  </p>
-                )}
-              </div>
-            )}
 
-            {empresaSeleccionada && (
-              <div className="grid gap-3 rounded-lg border border-border/60 bg-card p-3 text-xs sm:grid-cols-2">
-                <div>
-                  <p className="text-muted-foreground">RUC / CIIU</p>
-                  <p className="font-medium text-foreground">
-                    {[empresaSeleccionada.ruc, empresaSeleccionada.ciiu]
-                      .filter(Boolean)
-                      .join(" · ") || "-"}
-                  </p>
+                  <Select
+                    value={contactoSeleccionado?.id ?? SIN_CONTACTO}
+                    onValueChange={(valor) => {
+                      if (valor === SIN_CONTACTO) {
+                        seleccionarContacto(null)
+                        return
+                      }
+                      const contacto = contactos.find((c) => c.id === valor) ?? null
+                      seleccionarContacto(contacto)
+                    }}
+                    disabled={pendiente || empresaBloqueada}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecciona un contacto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={SIN_CONTACTO}>
+                        Sin contacto especifico
+                      </SelectItem>
+                      {contactos.map((contacto) => (
+                        <SelectItem key={contacto.id} value={contacto.id}>
+                          {contacto.nombreCompleto}
+                          {contacto.cargo ? ` — ${contacto.cargo}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {contactoSeleccionado ? (
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <Badge variant="secondary">Contacto</Badge>
+                      <span>{contactoSeleccionado.nombreCompleto}</span>
+                      {contactoSeleccionado.cargo && (
+                        <span>· {contactoSeleccionado.cargo}</span>
+                      )}
+                      {contactoSeleccionado.email && (
+                        <span>· {contactoSeleccionado.email}</span>
+                      )}
+                    </div>
+                  ) : contactos.length === 0 ? (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      Esta empresa no tiene contactos registrados.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Si no eliges un contacto, se usara el contacto principal de la empresa.
+                    </p>
+                  )}
                 </div>
-                <div>
-                  <p className="text-muted-foreground">Sector</p>
-                  <p className="font-medium text-foreground">
-                    {empresaSeleccionada.sector ||
-                      empresaSeleccionada.tipoEmpresaCiiu ||
-                      "-"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Ubicacion</p>
-                  <p className="font-medium text-foreground">
-                    {[
-                      empresaSeleccionada.distrito,
-                      empresaSeleccionada.provincia,
-                      empresaSeleccionada.departamento,
-                    ]
-                      .filter(Boolean)
-                      .join(", ") || "-"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Contactos registrados</p>
-                  <p className="font-medium text-foreground">
-                    {empresaSeleccionada.totalContactos}
-                  </p>
-                </div>
-              </div>
-            )}
-          </section>
-        ) : (
-          <>
+              )}
+            </section>
+
+            {/* Datos corporativos de la empresa (Image 2) */}
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
@@ -648,7 +644,7 @@ export function InfluencerForm({
                   <FormItem>
                     <FormLabel>Cargo</FormLabel>
                     <FormControl>
-                      <Input placeholder="Jefe Area" {...field} />
+                      <Input placeholder="Gerente General" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -668,66 +664,129 @@ export function InfluencerForm({
                 )}
               />
             </div>
+
+            {/* Ubigeo con autocompletado y campos derivados */}
+            <div className="rounded-lg border border-border/60 bg-muted/10 p-3.5">
+              <UbigeoAutocomplete form={form} disabled={pendiente} />
+            </div>
           </>
         )}
 
-        {/* Ubigeo con autocompletado y campos derivados */}
-        <div className="rounded-lg border border-border/60 bg-muted/10 p-3.5">
-          <UbigeoAutocomplete form={form} disabled={pendiente} />
-        </div>
+        {/* ========================================================================= */}
+        {/* CAMPOS EXCLUSIVOS DE INFLUENCER                                           */}
+        {/* ========================================================================= */}
+        {!esEmpresa && (
+          <>
+            <FormField
+              control={form.control}
+              name="nombre"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Nombre del embajador <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="Alejandro Tripoli Bolsa" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <FormField
-          control={form.control}
-          name="nombre"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                {esEmpresa ? "Nombre del embajador" : "Nombre completo"}{" "}
-                <span className="text-destructive">*</span>
-              </FormLabel>
-              <FormControl>
-                <Input placeholder="Andrea Paz" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="usuarioIg"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Usuario de Instagram</FormLabel>
+                    <FormControl>
+                      <Input placeholder="andreapaz" {...field} />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Sin el @. Solo letras, numeros, puntos y guiones bajos.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="linkIg"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Link del perfil</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://instagram.com/..." {...field} />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Puedes enviar solo uno: el sistema genera el otro.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="usuarioIg"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Usuario de Instagram</FormLabel>
-                <FormControl>
-                  <Input placeholder="andreapaz" {...field} />
-                </FormControl>
-                <p className="text-xs text-muted-foreground">
-                  Sin el @. Solo letras, numeros, puntos y guiones bajos.
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="linkIg"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Link del perfil</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://instagram.com/..." {...field} />
-                </FormControl>
-                <p className="text-xs text-muted-foreground">
-                  Puedes enviar solo uno: el sistema genera el otro.
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="seguidores"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Seguidores</FormLabel>
+                    <FormControl>
+                      <Input placeholder="150k" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="cantidad_post"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Publicaciones</FormLabel>
+                    <FormControl>
+                      <Input placeholder="120" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
+            <FormField
+              control={form.control}
+              name="biografia"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-baseline justify-between">
+                    <FormLabel>Biografia</FormLabel>
+                    <span
+                      className={`text-xs ${
+                        biografiaValor.length > BIOGRAFIA_MAX
+                          ? "text-destructive"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {biografiaValor.length}/{BIOGRAFIA_MAX}
+                    </span>
+                  </div>
+                  <FormControl>
+                    <Textarea rows={3} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        )}
+
+        {/* ========================================================================= */}
+        {/* CAMPOS COMUNES (Contacto, Mensaje, Validación)                           */}
+        {/* ========================================================================= */}
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -760,60 +819,6 @@ export function InfluencerForm({
             )}
           />
         </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="seguidores"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Seguidores</FormLabel>
-                <FormControl>
-                  <Input placeholder="150k" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="cantidad_post"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Publicaciones</FormLabel>
-                <FormControl>
-                  <Input placeholder="120" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="biografia"
-          render={({ field }) => (
-            <FormItem>
-              <div className="flex items-baseline justify-between">
-                <FormLabel>Biografia</FormLabel>
-                <span
-                  className={`text-xs ${
-                    biografiaValor.length > BIOGRAFIA_MAX
-                      ? "text-destructive"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {biografiaValor.length}/{BIOGRAFIA_MAX}
-                </span>
-              </div>
-              <FormControl>
-                <Textarea rows={3} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <FormField
           control={form.control}
