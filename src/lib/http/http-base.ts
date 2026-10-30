@@ -7,6 +7,7 @@
  *    (rotando tokens) y reintentar la petición original.
  *  - Normalizar respuestas: devolver el `data` del envoltorio `{ data, mensaje }`.
  *  - Lanzar `ApiError` con el `mensaje` real del backend.
+ *  - Timeout controlado (20s) para evitar bloqueos indefinidos si el backend no responde.
  *
  * No debe importar de `features/` (evita dependencias circulares); solo usa
  * `lib/auth-storage`.
@@ -25,6 +26,7 @@ const API_BASE_URL =
 
 /** Endpoints de auth que nunca deben reintentar con refresh (evita bucles). */
 const AUTH_ENDPOINTS = ['/auth/login', '/auth/refresh']
+const DEFAULT_TIMEOUT_MS = 20000
 
 export class ApiError extends Error {
   status: number
@@ -123,36 +125,65 @@ export class HttpBase {
     const { params, headers, signal, skipAuth = false } = options
     const url = `${this.baseUrl}${path}${buildQueryString(params)}`
 
-    const doFetch = (token: string | null) =>
-      fetch(url, {
-        method,
-        headers: buildHeaders(token, headers),
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-        signal,
-      })
+    const controller = new AbortController()
+    const timerId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS)
 
-    const token = skipAuth ? null : getStoredToken()
-    let response = await doFetch(token)
+    if (signal) {
+      signal.addEventListener('abort', () => controller.abort(), { once: true })
+    }
 
-    const shouldRefresh = !skipAuth && !AUTH_ENDPOINTS.includes(path)
-
-    if (response.status === 401 && shouldRefresh) {
+    const doFetch = async (token: string | null) => {
       try {
-        const newToken = await this.obtainFreshToken()
-        response = await doFetch(newToken)
-      } catch (err) {
-        clearStoredAuth()
-        this.onUnauthorized?.()
-        const message =
-          err instanceof ApiError
-            ? err.message
-            : 'Sesión expirada. Vuelve a iniciar sesión.'
+        return await fetch(url, {
+          method,
+          headers: buildHeaders(token, headers),
+          body: body !== undefined ? JSON.stringify(body) : undefined,
+          signal: controller.signal,
+        })
+      } catch (err: unknown) {
+        if (err instanceof ApiError) {
+          throw err
+        }
+        if ((err as Error)?.name === 'AbortError') {
+          throw new ApiError(
+            `El servidor backend (${this.baseUrl}) tardó demasiado en responder. Si estás en local, verifica que el backend esté encendido en el puerto 3000.`,
+            408,
+          )
+        }
         throw new ApiError(
-          message,
-          401,
-          err instanceof ApiError ? err.data : null,
+          `No se pudo conectar con el servidor backend (${this.baseUrl}). Verifica tu conexión o asegúrate de que el backend esté corriendo.`,
+          503,
         )
       }
+    }
+
+    let response: Response
+    try {
+      const token = skipAuth ? null : getStoredToken()
+      response = await doFetch(token)
+
+      const shouldRefresh = !skipAuth && !AUTH_ENDPOINTS.includes(path)
+
+      if (response.status === 401 && shouldRefresh) {
+        try {
+          const newToken = await this.obtainFreshToken()
+          response = await doFetch(newToken)
+        } catch (err) {
+          clearStoredAuth()
+          this.onUnauthorized?.()
+          const message =
+            err instanceof ApiError
+              ? err.message
+              : 'Sesión expirada. Vuelve a iniciar sesión.'
+          throw new ApiError(
+            message,
+            401,
+            err instanceof ApiError ? err.data : null,
+          )
+        }
+      }
+    } finally {
+      clearTimeout(timerId)
     }
 
     return handleResponse<T>(response)
@@ -175,34 +206,45 @@ export class HttpBase {
       throw new ApiError('No hay una sesión activa.', 401)
     }
 
-    const response = await fetch(`${this.baseUrl}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id, refreshToken }),
-    })
+    const controller = new AbortController()
+    const timerId = setTimeout(() => controller.abort(), 10000)
 
-    const body = await parseJson(response)
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, refreshToken }),
+        signal: controller.signal,
+      })
 
-    if (!response.ok) {
-      throw new ApiError(
-        body?.mensaje
-          ? String(body.mensaje)
-          : 'La sesión expiró. Vuelve a iniciar sesión.',
-        response.status,
-        body,
-      )
+      const body = await parseJson(response)
+
+      if (!response.ok) {
+        throw new ApiError(
+          body?.mensaje
+            ? String(body.mensaje)
+            : 'La sesión expiró. Vuelve a iniciar sesión.',
+          response.status,
+          body,
+        )
+      }
+
+      const data = body?.data as
+        | { backendToken?: string; refreshToken?: string }
+        | undefined
+
+      if (!data?.backendToken || !data?.refreshToken) {
+        throw new ApiError('Respuesta de renovación de sesión inválida.', 500, body)
+      }
+
+      updateStoredTokens(data.backendToken, data.refreshToken)
+      return data.backendToken
+    } catch (err: unknown) {
+      if (err instanceof ApiError) throw err
+      throw new ApiError('Error de red al renovar la sesión.', 401)
+    } finally {
+      clearTimeout(timerId)
     }
-
-    const data = body?.data as
-      | { backendToken?: string; refreshToken?: string }
-      | undefined
-
-    if (!data?.backendToken || !data?.refreshToken) {
-      throw new ApiError('Respuesta de renovación de sesión inválida.', 500, body)
-    }
-
-    updateStoredTokens(data.backendToken, data.refreshToken)
-    return data.backendToken
   }
 }
 

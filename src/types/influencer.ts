@@ -1,4 +1,9 @@
 import type { EstadoContacto, EstadoValidacion } from './api'
+import type {
+  CrearEmpresaInput,
+  EmpresaRegistradaResumen,
+  TipoEmbajador,
+} from './empresa'
 
 /**
  * Influencers
@@ -21,10 +26,18 @@ export interface Influencer {
   nombre: string
   usuarioIg: string
   linkIg: string
+  /** EMPRESA si representa a una empresa; INFLUENCER si es un perfil personal. */
+  tipoEmbajador?: TipoEmbajador
+  /** Empresa vinculada (solo tipo EMPRESA). */
+  empresaId?: string | null
+  empresaRegistrada?: EmpresaRegistradaResumen | null
   empresa?: string | null
   ruc?: string | null
   ciiu?: string | null
+  sector?: string | null
   descripcion?: string | null
+  direccion?: string | null
+  sitioWeb?: string | null
   ubigeo?: string | null
   departamento?: string | null
   provincia?: string | null
@@ -49,13 +62,24 @@ export interface Influencer {
 
 /** Body de POST /influencers (creación manual, sin Apify). */
 export interface CrearInfluencerInput {
-  nombre: string
-  usuarioIg: string
-  linkIg: string
+  nombre?: string
+  /** El backend deriva uno del otro: basta con enviar usuarioIg o linkIg. */
+  usuarioIg?: string
+  linkIg?: string
+  tipoEmbajador?: TipoEmbajador
+  /** Empresa existente (solo tipo EMPRESA). */
+  empresaId?: string
+  /** Datos de una empresa nueva (solo tipo EMPRESA, alternativa a empresaId). */
+  nuevaEmpresa?: CrearEmpresaInput
+  /** Contacto/funcionario de la empresa que sera el embajador. */
+  contactoEmpresaId?: string
   empresa?: string
   ruc?: string
   ciiu?: string
+  sector?: string
   descripcion?: string
+  direccion?: string
+  sitioWeb?: string
   ubigeo?: string
   departamento?: string
   provincia?: string
@@ -79,7 +103,10 @@ export interface ActualizarInfluencerInput {
   empresa?: string
   ruc?: string
   ciiu?: string
+  sector?: string
   descripcion?: string
+  direccion?: string
+  sitioWeb?: string
   ubigeo?: string
   departamento?: string
   provincia?: string
@@ -105,6 +132,8 @@ export interface ContactarInfluencerInput {
 export interface InfluencerFiltros {
   estadoValidacion?: EstadoValidacion
   estadoContacto?: EstadoContacto
+  tipoEmbajador?: TipoEmbajador
+  empresaId?: string
   tematica?: string
   page?: number
   limit?: number

@@ -36,6 +36,12 @@ export const NAVEGACION: ItemNavegacion[] = [
     desc: 'Administra y valida embajadores',
   },
   {
+    recurso: 'empresas',
+    href: '/empresas',
+    label: 'Empresas',
+    desc: 'Base corporativa y contactos',
+  },
+  {
     recurso: 'horarios',
     href: '/horarios',
     label: 'Horarios',
@@ -70,6 +76,12 @@ export const NAVEGACION: ItemNavegacion[] = [
     href: '/email',
     label: 'Email',
     desc: 'Envía correos a embajadores',
+  },
+   {
+    recurso: 'empresas-contactos',
+    href: '/empresas-contactos',
+    label: 'Gestión de Empresas y Contactos',
+    desc: 'Administra empresas y sus personas de contacto',
   },
   {
     recurso: 'perfil',

@@ -46,6 +46,15 @@ export function useInfluencer(id: string) {
   })
 }
 
+/** Tipos de embajador (EMPRESA / INFLUENCER) con su descripcion. */
+export function useTiposEmbajador() {
+  return useQuery({
+    queryKey: ['influencers', 'tipos-embajador'],
+    queryFn: () => influencersService.tiposEmbajador(),
+    staleTime: Infinity,
+  })
+}
+
 /** Crear un influencer manualmente. */
 export function useCrearInfluencer() {
   const queryClient = useQueryClient()
