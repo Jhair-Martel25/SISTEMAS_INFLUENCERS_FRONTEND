@@ -5,7 +5,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Building2, Eye, MessagesSquare, Pencil, Plus, Search, Send, Trash2, Upload, UserRound, Users, X } from "lucide-react"
+import { Building2, Eye, Mail, MessagesSquare, Pencil, Plus, Search, Send, Trash2, Upload, UserRound, Users, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -277,40 +277,105 @@ export function InfluencerList() {
       },
     },
     {
-      id: "instagram",
-      header: "Instagram",
-      cell: (influencer) => (
-        <a href={influencer.linkIg}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-muted-foreground transition-colors hover:text-primary"
-        >
-          @{influencer.usuarioIg}
-        </a>
-      ),
+      id: "canalContacto",
+      header:
+        tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+          ? "Correo"
+          : tipoEmbajador === TIPO_EMBAJADOR.INFLUENCER
+            ? "Instagram"
+            : "Instagram / Correo",
+      cell: (influencer) => {
+        const esEmpresa = influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+        if (esEmpresa) {
+          const correo = influencer.email?.trim()
+          return correo ? (
+            <a
+              href={`mailto:${correo}`}
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-primary max-w-[200px]"
+              title={correo}
+            >
+              <Mail size={13} className="shrink-0 text-muted-foreground" />
+              <span className="truncate">{correo}</span>
+            </a>
+          ) : (
+            <span className="text-xs text-muted-foreground">-</span>
+          )
+        }
+
+        const handle = influencer.usuarioIg?.trim()
+        return handle ? (
+          <a
+            href={influencer.linkIg || `https://instagram.com/${handle}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-muted-foreground transition-colors hover:text-primary"
+          >
+            @{handle}
+          </a>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
+        )
+      },
     },
     {
-      id: "seguidores",
-      header: "Seguidores",
-      cell: (influencer) => influencer.seguidores ?? "-",
+      id: "datoPrincipal",
+      header:
+        tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+          ? "RUC"
+          : tipoEmbajador === TIPO_EMBAJADOR.INFLUENCER
+            ? "Seguidores"
+            : "Seguidores / RUC",
+      cell: (influencer) => {
+        const esEmpresa = influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+        if (esEmpresa) {
+          const ruc = influencer.ruc?.trim() || influencer.empresaRegistrada?.ruc?.trim()
+          return ruc ? (
+            <span className="font-mono text-xs font-medium text-foreground">
+              {ruc}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">-</span>
+          )
+        }
+        return (
+          <span className="text-xs text-foreground">
+            {influencer.seguidores || "-"}
+          </span>
+        )
+      },
     },
     {
-      id: "publicaciones",
-      header: "Publicaciones",
-      cell: (influencer) => influencer.cantidad_post ?? "-",
+      id: "datoSecundario",
+      header:
+        tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+          ? "CIIU"
+          : tipoEmbajador === TIPO_EMBAJADOR.INFLUENCER
+            ? "Publicaciones"
+            : "Publicaciones / CIIU",
+      cell: (influencer) => {
+        const esEmpresa = influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+        if (esEmpresa) {
+          const ciiu = influencer.ciiu?.trim() || influencer.empresaRegistrada?.ciiu?.trim()
+          return ciiu ? (
+            <span className="font-mono text-xs font-medium text-foreground">
+              {ciiu}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">-</span>
+          )
+        }
+        return (
+          <span className="text-xs text-foreground">
+            {influencer.cantidad_post || "-"}
+          </span>
+        )
+      },
     },
     {
       id: "validacion",
       header: "Validacion",
       cell: (influencer) => (
         <EstadoBadge estado={influencer.estadoValidacion} tipo="validacion" />
-      ),
-    },
-    {
-      id: "contacto",
-      header: "Contacto",
-      cell: (influencer) => (
-        <EstadoBadge estado={influencer.estadoContacto} tipo="contacto" />
       ),
     },
     {
