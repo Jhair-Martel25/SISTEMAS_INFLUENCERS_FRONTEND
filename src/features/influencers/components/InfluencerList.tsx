@@ -1,11 +1,11 @@
-﻿"use client"
+"use client"
 
 // Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
 // Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Building2, Eye, MessagesSquare, Pencil, Plus, Search, Send, Trash2, Upload, Users, X } from "lucide-react"
+import { Building2, Eye, MessagesSquare, Pencil, Plus, Search, Send, Trash2, Upload, UserRound, Users, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -235,22 +235,9 @@ export function InfluencerList() {
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="font-medium text-foreground">
-                {influencer.nombre}
-              </span>
-              <Badge
-                variant={
-                  influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
-                    ? "secondary"
-                    : "outline"
-                }
-              >
-                {influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
-                  ? "Empresa"
-                  : "Influencer"}
-              </Badge>
-            </div>
+            <span className="block font-medium text-foreground">
+              {influencer.nombre}
+            </span>
             {influencer.empresaRegistrada && (
               <Link
                 href={`/empresas/${influencer.empresaRegistrada.id}`}
@@ -263,6 +250,31 @@ export function InfluencerList() {
           </div>
         </div>
       ),
+    },
+    {
+      id: "tipoEmbajador",
+      header: "Tipo",
+      cell: (influencer) => {
+        const esEmpresa = influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+        return (
+          <Badge
+            variant={esEmpresa ? "secondary" : "outline"}
+            className="gap-1 font-medium"
+          >
+            {esEmpresa ? (
+              <>
+                <Building2 size={12} className="text-primary" />
+                Empresa
+              </>
+            ) : (
+              <>
+                <UserRound size={12} className="text-muted-foreground" />
+                Influencer
+              </>
+            )}
+          </Badge>
+        )
+      },
     },
     {
       id: "instagram",
