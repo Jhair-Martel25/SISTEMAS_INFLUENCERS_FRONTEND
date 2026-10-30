@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react"
 import * as XLSX from "xlsx"
-import { AlertCircle, CheckCircle2, FileSpreadsheet, Loader2, Upload, X } from "lucide-react"
+import { AlertCircle, CheckCircle2, Download, FileSpreadsheet, Loader2, Upload, X } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
@@ -27,6 +27,19 @@ const EXTENSIONES_PERMITIDAS = [".csv", ".xlsx", ".xls"]
 const TAMANO_MAXIMO_MB = 10
 const FILAS_MAXIMAS = 500
 
+type CampoImportable =
+  | "empresa"
+  | "contacto"
+  | "ruc"
+  | "ciiu"
+  | "descripcion"
+  | "cargo"
+  | "area"
+  | "ubigeo"
+  | "email"
+  | "phone"
+  | "mensajePersonalizado"
+
 export interface FilaImportadaEmpresa {
   numeroFila: number
   empresa: string
@@ -41,10 +54,14 @@ export interface FilaImportadaEmpresa {
   phone: string
   mensajePersonalizado: string
   errores: string[]
+  incompleto: boolean
+  formato: boolean
+  duplicadoArchivo: boolean
+  existeEnSistema: boolean
 }
 
 const ALIAS_COLUMNAS: Record<
-  keyof Omit<FilaImportadaEmpresa, "numeroFila" | "errores">,
+  CampoImportable,
   string[]
 > = {
   empresa: [
@@ -108,19 +125,32 @@ function extensionValida(nombreArchivo: string): boolean {
   return EXTENSIONES_PERMITIDAS.some((ext) => nombreEnMinusculas.endsWith(ext))
 }
 
-function construirIndiceColumnas(): Map<string, keyof Omit<FilaImportadaEmpresa, "numeroFila" | "errores">> {
-  const indice = new Map<string, keyof Omit<FilaImportadaEmpresa, "numeroFila" | "errores">>()
+function construirIndiceColumnas(): Map<string, CampoImportable> {
+  const indice = new Map<string, CampoImportable>()
   for (const [campo, alias] of Object.entries(ALIAS_COLUMNAS)) {
     for (const nombreAlias of alias) {
-      indice.set(nombreAlias, campo as keyof Omit<FilaImportadaEmpresa, "numeroFila" | "errores">)
+      indice.set(nombreAlias, campo as CampoImportable)
     }
   }
   return indice
 }
 
+const CAMPOS_OBLIGATORIOS: { campo: CampoImportable; etiqueta: string }[] = [
+  { campo: "empresa", etiqueta: "Empresa" },
+  { campo: "contacto", etiqueta: "Contacto" },
+  { campo: "ruc", etiqueta: "RUC" },
+  { campo: "ciiu", etiqueta: "CIIU" },
+  { campo: "descripcion", etiqueta: "Descripción" },
+  { campo: "cargo", etiqueta: "Cargo" },
+  { campo: "area", etiqueta: "Área" },
+  { campo: "ubigeo", etiqueta: "Ubigeo" },
+  { campo: "email", etiqueta: "Correo electrónico" },
+  { campo: "phone", etiqueta: "Teléfono" },
+]
+
 function mapearFila(
   filaOriginal: Record<string, unknown>,
-  indiceColumnas: Map<string, keyof Omit<FilaImportadaEmpresa, "numeroFila" | "errores">>,
+  indiceColumnas: Map<string, CampoImportable>,
   numeroFila: number,
 ): FilaImportadaEmpresa {
   const valores: Record<string, string> = {
@@ -146,8 +176,26 @@ function mapearFila(
   }
 
   const errores: string[] = []
-  if (!valores.empresa) {
-    errores.push("Falta el nombre de la empresa")
+  const faltantes = CAMPOS_OBLIGATORIOS.filter(({ campo }) => !valores[campo]).map(
+    ({ etiqueta }) => etiqueta,
+  )
+  if (faltantes.length > 0) {
+    errores.push(`Faltan datos obligatorios: ${faltantes.join(", ")}`)
+  }
+
+  let formato = false
+  const rucDigitos = valores.ruc.replace(/\D/g, "")
+  if (valores.ruc && rucDigitos.length !== 11) {
+    errores.push("El RUC debe tener 11 dígitos")
+    formato = true
+  }
+  if (valores.ubigeo && !/^\d{6}$/.test(valores.ubigeo)) {
+    errores.push("El ubigeo debe tener 6 dígitos")
+    formato = true
+  }
+  if (valores.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valores.email)) {
+    errores.push("El correo no tiene un formato válido")
+    formato = true
   }
 
   return {
@@ -164,7 +212,135 @@ function mapearFila(
     phone: valores.phone,
     mensajePersonalizado: valores.mensajePersonalizado,
     errores,
+    incompleto: faltantes.length > 0,
+    formato,
+    duplicadoArchivo: false,
+    existeEnSistema: false,
   }
+}
+
+const ENCABEZADOS_PLANTILLA = [
+  "Empresa",
+  "Contacto",
+  "RUC",
+  "CIIU",
+  "Descripción",
+  "Cargo",
+  "Área",
+  "Ubigeo",
+  "Correo electrónico",
+  "Teléfono",
+  "Mensaje personalizado",
+]
+
+const INSTRUCCIONES_PLANTILLA = [
+  ["Campo", "Obligatorio", "Formato"],
+  ["Empresa", "Sí", "Razón social de la empresa"],
+  ["Contacto", "Sí", "Nombre de la persona de contacto"],
+  ["RUC", "Sí", "11 dígitos"],
+  ["CIIU", "Sí", "Código CIIU de la actividad"],
+  ["Descripción", "Sí", "Giro o rubro de la empresa"],
+  ["Cargo", "Sí", "Cargo del contacto"],
+  ["Área", "Sí", "Área del contacto"],
+  ["Ubigeo", "Sí", "Código de 6 dígitos"],
+  ["Correo electrónico", "Sí", "Correo válido, por ejemplo nombre@empresa.com"],
+  ["Teléfono", "Sí", "Número de contacto"],
+  ["Mensaje personalizado", "No", "Texto opcional, máximo 1000 caracteres"],
+]
+
+function descargarPlantilla() {
+  const libro = XLSX.utils.book_new()
+  const hoja = XLSX.utils.aoa_to_sheet([ENCABEZADOS_PLANTILLA])
+  hoja["!cols"] = ENCABEZADOS_PLANTILLA.map(() => ({ wch: 22 }))
+  XLSX.utils.book_append_sheet(libro, hoja, "Empresas")
+  const instrucciones = XLSX.utils.aoa_to_sheet(INSTRUCCIONES_PLANTILLA)
+  instrucciones["!cols"] = [{ wch: 22 }, { wch: 14 }, { wch: 50 }]
+  XLSX.utils.book_append_sheet(libro, instrucciones, "Instrucciones")
+  XLSX.writeFile(libro, "plantilla_empresas_embajadoras.xlsx")
+}
+
+function marcarDuplicadosEnArchivo(
+  filas: FilaImportadaEmpresa[],
+): FilaImportadaEmpresa[] {
+  const normalizarRuc = (f: FilaImportadaEmpresa) => f.ruc.replace(/\D/g, "")
+  const normalizarEmail = (f: FilaImportadaEmpresa) => f.email.trim().toLowerCase()
+
+  const contarRuc = new Map<string, number>()
+  const contarEmail = new Map<string, number>()
+  for (const f of filas) {
+    const r = normalizarRuc(f)
+    const e = normalizarEmail(f)
+    if (r) contarRuc.set(r, (contarRuc.get(r) ?? 0) + 1)
+    if (e) contarEmail.set(e, (contarEmail.get(e) ?? 0) + 1)
+  }
+
+  return filas.map((f) => {
+    const r = normalizarRuc(f)
+    const e = normalizarEmail(f)
+    const repetidoRuc = r !== "" && (contarRuc.get(r) ?? 0) > 1
+    const repetidoEmail = e !== "" && (contarEmail.get(e) ?? 0) > 1
+    if (!repetidoRuc && !repetidoEmail) return f
+    const motivo = repetidoRuc ? "RUC repetido en el archivo" : "Correo repetido en el archivo"
+    return {
+      ...f,
+      duplicadoArchivo: true,
+      errores: [...f.errores, motivo],
+    }
+  })
+}
+
+async function marcarExistentesEnSistema(
+  filas: FilaImportadaEmpresa[],
+): Promise<FilaImportadaEmpresa[]> {
+  const rucs = Array.from(
+    new Set(
+      filas
+        .map((f) => f.ruc.replace(/\D/g, ""))
+        .filter((r) => r.length === 11),
+    ),
+  )
+
+  const existentes = new Set<string>()
+  const TAMANO_LOTE = 10
+  for (let i = 0; i < rucs.length; i += TAMANO_LOTE) {
+    const lote = rucs.slice(i, i + TAMANO_LOTE)
+    const resultados = await Promise.allSettled(
+      lote.map((ruc) => empresasService.obtenerPorRuc(ruc)),
+    )
+    resultados.forEach((res, idx) => {
+      if (res.status === "fulfilled" && res.value?.id) {
+        existentes.add(lote[idx])
+      }
+    })
+  }
+
+  return filas.map((f) => ({
+    ...f,
+    existeEnSistema: existentes.has(f.ruc.replace(/\D/g, "")),
+  }))
+}
+
+function descargarFilasNoImportadas(filasOmitidas: FilaImportadaEmpresa[]) {
+  const encabezados = [...ENCABEZADOS_PLANTILLA, "Motivo"]
+  const datos = filasOmitidas.map((f) => [
+    f.empresa,
+    f.contacto,
+    f.ruc,
+    f.ciiu,
+    f.descripcion,
+    f.cargo,
+    f.area,
+    f.ubigeo,
+    f.email,
+    f.phone,
+    f.mensajePersonalizado,
+    f.existeEnSistema ? "Ya existe en el sistema" : f.errores.join("; "),
+  ])
+  const hoja = XLSX.utils.aoa_to_sheet([encabezados, ...datos])
+  hoja["!cols"] = encabezados.map(() => ({ wch: 22 }))
+  const libro = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(libro, hoja, "Filas no importadas")
+  XLSX.writeFile(libro, "filas_no_importadas.xlsx")
 }
 
 interface ImportarInfluencersModalProps {
@@ -185,15 +361,24 @@ export function ImportarInfluencersModal({
   const [leyendoArchivo, setLeyendoArchivo] = useState(false)
   const [importando, setImportando] = useState(false)
   const [progresoTexto, setProgresoTexto] = useState("")
+  const [confirmando, setConfirmando] = useState(false)
 
-  const filasValidas = filas.filter((f) => f.errores.length === 0)
+  const filasValidas = filas.filter(
+    (f) => f.errores.length === 0 && !f.existeEnSistema,
+  )
   const filasConError = filas.filter((f) => f.errores.length > 0)
+  const filasYaExisten = filas.filter((f) => f.existeEnSistema)
+  const filasNoImportadas = filas.filter((f) => !filasValidas.includes(f))
+  const contadorIncompletos = filas.filter((f) => f.incompleto).length
+  const contadorFormato = filas.filter((f) => f.formato).length
+  const contadorDuplicadosArchivo = filas.filter((f) => f.duplicadoArchivo).length
 
   function limpiar() {
     setArchivo(null)
     setFilas([])
     setErrorArchivo(null)
     setProgresoTexto("")
+    setConfirmando(false)
     if (inputRef.current) inputRef.current.value = ""
   }
 
@@ -271,7 +456,9 @@ export function ImportarInfluencersModal({
         mapearFila(fila, indiceColumnas, i + 2),
       )
 
-      setFilas(filasMapeadas)
+      setFilas(
+        await marcarExistentesEnSistema(marcarDuplicadosEnArchivo(filasMapeadas)),
+      )
     } catch {
       setErrorArchivo(
         "No se pudo leer el archivo. Confirma que sea un CSV o Excel válido y no esté dañado.",
@@ -285,6 +472,7 @@ export function ImportarInfluencersModal({
     if (filasValidas.length === 0 || importando) return
 
     setImportando(true)
+    setConfirmando(false)
     setErrorArchivo(null)
 
     let exitosos = 0
@@ -473,7 +661,11 @@ export function ImportarInfluencersModal({
       id: "estado",
       header: "Estado",
       cell: (fila) =>
-        fila.errores.length === 0 ? (
+        fila.existeEnSistema ? (
+          <Badge variant="secondary" className="w-fit">
+            Ya existe en el sistema
+          </Badge>
+        ) : fila.errores.length === 0 ? (
           <Badge
             variant="default"
             className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -499,7 +691,7 @@ export function ImportarInfluencersModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="w-[95vw] sm:max-w-7xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Importar empresas embajadoras</DialogTitle>
           <DialogDescription>
@@ -510,6 +702,13 @@ export function ImportarInfluencersModal({
         </DialogHeader>
 
         <div className="flex flex-col gap-4 overflow-y-auto pr-1">
+          <div className="flex justify-end">
+            <Button type="button" variant="outline" size="sm" onClick={descargarPlantilla}>
+              <Download size={14} />
+              Descargar plantilla
+            </Button>
+          </div>
+
           {!archivo ? (
             <label
               htmlFor="archivo-importar-empresas"
@@ -575,7 +774,7 @@ export function ImportarInfluencersModal({
           {filas.length > 0 && !leyendoArchivo && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge
                     variant="default"
                     className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -583,14 +782,31 @@ export function ImportarInfluencersModal({
                     <CheckCircle2 size={12} />
                     {filasValidas.length} listos
                   </Badge>
-                  {filasConError.length > 0 && (
+                  {contadorIncompletos > 0 && (
                     <Badge variant="destructive" className="gap-1">
                       <AlertCircle size={12} />
-                      {filasConError.length} con errores
+                      {contadorIncompletos} incompletos
+                    </Badge>
+                  )}
+                  {contadorFormato > 0 && (
+                    <Badge variant="destructive" className="gap-1">
+                      <AlertCircle size={12} />
+                      {contadorFormato} con formato incorrecto
+                    </Badge>
+                  )}
+                  {contadorDuplicadosArchivo > 0 && (
+                    <Badge variant="destructive" className="gap-1">
+                      <AlertCircle size={12} />
+                      {contadorDuplicadosArchivo} repetidos en el archivo
+                    </Badge>
+                  )}
+                  {filasYaExisten.length > 0 && (
+                    <Badge variant="secondary" className="gap-1">
+                      {filasYaExisten.length} ya existen en el sistema
                     </Badge>
                   )}
                   <span className="text-muted-foreground">
-                    de {filas.length} empresas encontradas
+                    de {filas.length} filas leídas
                   </span>
                 </div>
                 {importando && (
@@ -599,6 +815,20 @@ export function ImportarInfluencersModal({
                   </span>
                 )}
               </div>
+
+              {filasNoImportadas.length > 0 && (
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => descargarFilasNoImportadas(filasNoImportadas)}
+                  >
+                    <Download size={14} />
+                    Descargar filas no importadas ({filasNoImportadas.length})
+                  </Button>
+                </div>
+              )}
 
               <div className="max-h-80 overflow-y-auto rounded-lg border">
                 <DataTable
@@ -609,12 +839,30 @@ export function ImportarInfluencersModal({
               </div>
             </div>
           )}
+          {confirmando && (
+            <div className="flex flex-col gap-3 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3">
+              <p className="text-sm font-medium text-foreground">
+                Vas a importar {filasValidas.length} empresa(s) al sistema.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Se omiten {filasYaExisten.length} que ya existen y {filasConError.length} con errores o repetidos.
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setConfirmando(false)}>
+                  Volver
+                </Button>
+                <Button type="button" size="sm" onClick={handleImportar}>
+                  Confirmar importación
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-t pt-4">
           <p className="text-xs text-muted-foreground">
             {filasValidas.length > 0
-              ? "Las empresas válidas se registrarán automáticamente con sus datos corporativos."
+              ? "Solo se importan las filas listas. Las repetidas o que ya existen en el sistema se omiten."
               : "Selecciona un archivo con datos de empresas para comenzar."}
           </p>
           <div className="flex justify-end gap-2">
@@ -629,7 +877,7 @@ export function ImportarInfluencersModal({
             <Button
               type="button"
               disabled={filasValidas.length === 0 || importando}
-              onClick={handleImportar}
+              onClick={() => setConfirmando(true)}
             >
               {importando ? (
                 <>
