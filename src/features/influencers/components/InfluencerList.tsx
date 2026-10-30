@@ -277,13 +277,8 @@ export function InfluencerList() {
       },
     },
     {
-      id: "canalContacto",
-      header:
-        tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
-          ? "Correo"
-          : tipoEmbajador === TIPO_EMBAJADOR.INFLUENCER
-            ? "Instagram"
-            : "Instagram / Correo",
+      id: "contacto",
+      header: "Contacto",
       cell: (influencer) => {
         const esEmpresa = influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
         if (esEmpresa) {
@@ -318,56 +313,54 @@ export function InfluencerList() {
       },
     },
     {
-      id: "datoPrincipal",
-      header:
-        tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
-          ? "RUC"
-          : tipoEmbajador === TIPO_EMBAJADOR.INFLUENCER
-            ? "Seguidores"
-            : "Seguidores / RUC",
+      id: "ruc",
+      header: "RUC",
       cell: (influencer) => {
-        const esEmpresa = influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
-        if (esEmpresa) {
-          const ruc = influencer.ruc?.trim() || influencer.empresaRegistrada?.ruc?.trim()
-          return ruc ? (
-            <span className="font-mono text-xs font-medium text-foreground">
-              {ruc}
-            </span>
-          ) : (
-            <span className="text-xs text-muted-foreground">-</span>
-          )
-        }
-        return (
-          <span className="text-xs text-foreground">
-            {influencer.seguidores || "-"}
+        const ruc = influencer.ruc?.trim() || influencer.empresaRegistrada?.ruc?.trim()
+        return ruc ? (
+          <span className="font-mono text-xs font-medium text-foreground">
+            {ruc}
           </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
         )
       },
     },
     {
-      id: "datoSecundario",
-      header:
-        tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
-          ? "CIIU"
-          : tipoEmbajador === TIPO_EMBAJADOR.INFLUENCER
-            ? "Publicaciones"
-            : "Publicaciones / CIIU",
+      id: "ciiu",
+      header: "CIIU",
       cell: (influencer) => {
-        const esEmpresa = influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
-        if (esEmpresa) {
-          const ciiu = influencer.ciiu?.trim() || influencer.empresaRegistrada?.ciiu?.trim()
-          return ciiu ? (
-            <span className="font-mono text-xs font-medium text-foreground">
-              {ciiu}
-            </span>
-          ) : (
-            <span className="text-xs text-muted-foreground">-</span>
-          )
-        }
-        return (
-          <span className="text-xs text-foreground">
-            {influencer.cantidad_post || "-"}
+        const ciiu = influencer.ciiu?.trim() || influencer.empresaRegistrada?.ciiu?.trim()
+        return ciiu ? (
+          <span className="font-mono text-xs font-medium text-foreground">
+            {ciiu}
           </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
+        )
+      },
+    },
+    {
+      id: "seguidores",
+      header: "Seguidores",
+      cell: (influencer) => {
+        const seg = influencer.seguidores?.trim()
+        return seg ? (
+          <span className="text-xs text-foreground">{seg}</span>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
+        )
+      },
+    },
+    {
+      id: "publicaciones",
+      header: "Publicaciones",
+      cell: (influencer) => {
+        const posts = influencer.cantidad_post?.trim()
+        return posts ? (
+          <span className="text-xs text-foreground">{posts}</span>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
         )
       },
     },
