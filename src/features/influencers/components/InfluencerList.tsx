@@ -431,7 +431,7 @@ export function InfluencerList() {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setImportando(true)}>
               <Upload size={16} />
-              Importar embajadores
+              Importar empresas
             </Button>
             {/* Boton "Importar influencers" (CSV/Excel) oculto temporalmente.
             <Button variant="outline" onClick={() => setImportando(true)}>
