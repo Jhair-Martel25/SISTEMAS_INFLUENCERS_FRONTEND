@@ -80,7 +80,7 @@ export const NAVEGACION: ItemNavegacion[] = [
    {
     recurso: 'empresas-contactos',
     href: '/empresas-contactos',
-    label: 'Gestión de Empresas y Contactos',
+    label: 'Empresas y Contactos',
     desc: 'Administra empresas y sus personas de contacto',
   },
   {

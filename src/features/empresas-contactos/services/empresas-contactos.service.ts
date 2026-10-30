@@ -25,7 +25,13 @@ export const empresasContactosService = {
   enviarCorreoContacto(input: { email: string; nombreDestino: string; asunto: string; mensaje: string }): Promise<{ exitoso: boolean; email: string }> {
     return apiClient.post('/email/enviar-contacto', input)
   },
-  enviarCorreosEmpresariales(input: { contactoIds: string[]; asunto: string; contenido: string }): Promise<{ contactoId: string; email: string; exitoso: boolean; error?: string }[]> {
+  enviarCorreosEmpresariales(input: {
+    contactoIds?: string[]
+    empresaIds?: string[]
+    asunto: string
+    contenido: string
+    plantillaId?: string
+  }): Promise<{ id: string; contactoId?: string; tipo?: 'CONTACTO' | 'EMPRESA'; email: string; exitoso: boolean; error?: string }[]> {
     return apiClient.post('/email/enviar-correos-empresariales', input)
   },
 }

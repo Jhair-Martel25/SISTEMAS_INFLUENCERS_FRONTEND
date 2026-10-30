@@ -34,5 +34,14 @@ export function useEnviarCorreoContacto() {
 
 export function useEnviarCorreosEmpresariales() {
   const refresh = useRefreshEmpresas()
-  return useMutation({ mutationFn: (input: { contactoIds: string[]; asunto: string; contenido: string }) => empresasContactosService.enviarCorreosEmpresariales(input), onSuccess: refresh })
+  return useMutation({
+    mutationFn: (input: {
+      contactoIds?: string[]
+      empresaIds?: string[]
+      asunto: string
+      contenido: string
+      plantillaId?: string
+    }) => empresasContactosService.enviarCorreosEmpresariales(input),
+    onSuccess: refresh,
+  })
 }
