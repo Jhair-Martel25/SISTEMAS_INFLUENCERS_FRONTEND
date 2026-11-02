@@ -91,7 +91,7 @@ function iniciales(nombre: string) {
     .toUpperCase()
 }
 
-export function InfluencerList() {
+export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: boolean } = {}) {
   const { isAdmin } = usePermission()
 
   const [page, setPage] = useState(1)
@@ -157,7 +157,7 @@ export function InfluencerList() {
     limit: filtroLocalActivo ? LIMITE_CON_BUSQUEDA : LIMITE,
     estadoValidacion: estadoValidacion || undefined,
     estadoContacto: estadoContacto || undefined,
-    tipoEmbajador: tipoEmbajador || undefined,
+    tipoEmbajador: soloInfluencers ? TIPO_EMBAJADOR.INFLUENCER : tipoEmbajador || undefined,
     tematica: tematica || undefined,
   })
   const eliminar = useEliminarInfluencer()
@@ -193,7 +193,7 @@ export function InfluencerList() {
   const mensajeVacio = busquedaActiva
     ? "No hay resultados para esa busqueda en los registros cargados."
     : sinInfluencersEnElSistema
-      ? "Todavia no hay embajadores registrados en el sistema."
+      ? soloInfluencers ? "Todavia no hay influencers registrados en el sistema." : "Todavia no hay embajadores registrados en el sistema."
       : "No hay resultados para los filtros seleccionados."
 
   const seleccionadosEnPagina = influencers.filter((i) => seleccionados.has(i.id)).length
@@ -424,10 +424,10 @@ export function InfluencerList() {
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <PageHeader
-        title="Gestión de Embajadores"
-        description="Administra, consulta y valida los embajadores registrados en el sistema."
+        title={soloInfluencers ? "Gestión de Influencers" : "Gestión de Embajadores"}
+        description={soloInfluencers ? "Consulta, contacta y administra los influencers registrados como embajadores." : "Administra, consulta y valida los embajadores registrados en el sistema."}
         backHref="/dashboard"
-        actions={
+        actions={!soloInfluencers ? (
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setImportando(true)}>
               <Upload size={16} />
@@ -466,7 +466,7 @@ export function InfluencerList() {
               </Link>
             </Button>
           </div>
-        }
+        ) : undefined}
       />
 
       <DataTableToolbar>
@@ -494,7 +494,7 @@ export function InfluencerList() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Select
+          {!soloInfluencers && <Select
             value={tipoEmbajador || TODOS}
             onValueChange={(valor) => {
               setTipoEmbajador(
@@ -513,7 +513,7 @@ export function InfluencerList() {
                 Influencer
               </SelectItem>
             </SelectContent>
-          </Select>
+          </Select>}
           <Select
             value={redFiltro || TODOS}
             onValueChange={(valor) =>

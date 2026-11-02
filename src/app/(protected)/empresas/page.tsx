@@ -1,5 +1,5 @@
-import { EmpresaList } from '@/features/empresas/components/EmpresaList'
+import { InfluencerList } from '@/features/influencers/components/InfluencerList'
 
 export default function EmpresasPage() {
-  return <EmpresaList />
+  return <InfluencerList soloInfluencers />
 }
