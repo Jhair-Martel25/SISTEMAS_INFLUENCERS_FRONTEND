@@ -116,6 +116,9 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
   const [contactoMasivo, setContactoMasivo] = useState(false)
   // Modo "mensaje masivo": muestra las casillas de seleccion en la tabla.
   const [modoSeleccion, setModoSeleccion] = useState(false)
+  const [accionSeleccion, setAccionSeleccion] = useState<"mensaje" | "eliminar">("mensaje")
+  const [eliminacionMasiva, setEliminacionMasiva] = useState(false)
+  const [eliminandoMasivo, setEliminandoMasivo] = useState(false)
 
   function salirModoSeleccion() {
     setModoSeleccion(false)
@@ -142,6 +145,34 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
     })
   }
 
+  async function eliminarSeleccionados() {
+    const ids = [...seleccionados.keys()]
+    if (ids.length === 0) return
+    setEliminandoMasivo(true)
+    let eliminados = 0
+    const fallidos: string[] = []
+    for (const id of ids) {
+      try {
+        await eliminar.mutateAsync(id)
+        eliminados++
+      } catch {
+        fallidos.push(seleccionados.get(id)?.nombre ?? id)
+      }
+    }
+    setEliminandoMasivo(false)
+    setEliminacionMasiva(false)
+    salirModoSeleccion()
+    if (eliminados > 0) {
+      toast.success(`Se eliminaron ${eliminados} embajador(es) correctamente.`)
+    }
+    if (fallidos.length > 0) {
+      toast.error(
+        `No se pudieron eliminar ${fallidos.length}: ${fallidos.slice(0, 3).join(", ")}`,
+      )
+    }
+  }
+
+
   const { data: categorias } = useCategorias(TIPO_CATEGORIA.TEMATICA)
   const tematicas = [...(categorias?.TEMATICA ?? [])].sort(
     (a, b) => a.orden - b.orden,
@@ -155,7 +186,7 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
   const { data, isLoading, isError, error } = useInfluencers({
     page: filtroLocalActivo ? 1 : page,
     limit: filtroLocalActivo ? LIMITE_CON_BUSQUEDA : LIMITE,
-    estadoValidacion: estadoValidacion || undefined,
+    estadoValidacion: soloInfluencers ? ESTADO_VALIDACION.VALIDADO : estadoValidacion || undefined,
     estadoContacto: estadoContacto || undefined,
     tipoEmbajador: soloInfluencers ? TIPO_EMBAJADOR.INFLUENCER : tipoEmbajador || undefined,
     tematica: tematica || undefined,
@@ -427,8 +458,9 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
         title={soloInfluencers ? "Gestión de Influencers" : "Gestión de Embajadores"}
         description={soloInfluencers ? "Consulta, contacta y administra los influencers registrados como embajadores." : "Administra, consulta y valida los embajadores registrados en el sistema."}
         backHref="/dashboard"
-        actions={!soloInfluencers ? (
+        actions={(
           <div className="flex flex-wrap gap-2">
+            {!soloInfluencers && (<>
             <Button variant="outline" onClick={() => setImportando(true)}>
               <Upload size={16} />
               Importar empresas
@@ -450,23 +482,45 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
               </Link>
             </Button>
 
+            </>)}
+            {!soloInfluencers && (
             <Button
-              variant={modoSeleccion ? "secondary" : "outline"}
-              onClick={() =>
-                modoSeleccion ? salirModoSeleccion() : setModoSeleccion(true)
-              }
+              variant={modoSeleccion && accionSeleccion === "mensaje" ? "secondary" : "outline"}
+              onClick={() => {
+                if (modoSeleccion && accionSeleccion === "mensaje") salirModoSeleccion()
+                else {
+                  setAccionSeleccion("mensaje")
+                  setModoSeleccion(true)
+                }
+              }}
             >
-              {modoSeleccion ? <X size={16} /> : <MessagesSquare size={16} />}
-              {modoSeleccion ? "Cancelar mensaje masivo" : "Mensaje masivo"}
+              {modoSeleccion && accionSeleccion === "mensaje" ? <X size={16} /> : <MessagesSquare size={16} />}
+              {modoSeleccion && accionSeleccion === "mensaje" ? "Cancelar mensaje masivo" : "Mensaje masivo"}
             </Button>
-            <Button asChild>
-              <Link href="/influencers/nuevo">
-                <Plus size={16} />
-                Nuevo Embajador
-              </Link>
+            )}
+            <Button
+              variant={modoSeleccion && accionSeleccion === "eliminar" ? "secondary" : "outline"}
+              onClick={() => {
+                if (modoSeleccion && accionSeleccion === "eliminar") salirModoSeleccion()
+                else {
+                  setAccionSeleccion("eliminar")
+                  setModoSeleccion(true)
+                }
+              }}
+            >
+              {modoSeleccion && accionSeleccion === "eliminar" ? <X size={16} /> : <Trash2 size={16} />}
+              {modoSeleccion && accionSeleccion === "eliminar" ? "Cancelar eliminación" : "Eliminar varios"}
             </Button>
+            {!soloInfluencers && (
+              <Button asChild>
+                <Link href="/influencers/nuevo">
+                  <Plus size={16} />
+                  Nuevo Embajador
+                </Link>
+              </Button>
+            )}
           </div>
-        ) : undefined}
+        )}
       />
 
       <DataTableToolbar>
@@ -532,6 +586,7 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
               ))}
             </SelectContent>
           </Select>
+          {!soloInfluencers && (
           <Select
             value={estadoValidacion || TODOS}
             onValueChange={(valor) => {
@@ -553,6 +608,7 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
               ))}
             </SelectContent>
           </Select>
+          )}
 
           <Select
             value={estadoContacto || TODOS}
@@ -626,7 +682,7 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
             <div className="text-sm">
               <p className="font-medium">
                 {seleccionados.size === 0
-                  ? "Mensaje masivo: selecciona embajadores"
+                  ? (accionSeleccion === "eliminar" ? "Eliminación masiva: selecciona embajadores" : "Mensaje masivo: selecciona embajadores")
                   : seleccionados.size === 1
                     ? "1 embajador seleccionado"
                     : `${seleccionados.size} embajadores seleccionados`}
@@ -645,14 +701,26 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
                 Quitar seleccion
               </Button>
             )}
-            <Button
-              size="sm"
-              disabled={seleccionados.size === 0}
-              onClick={() => setContactoMasivo(true)}
-            >
-              <Users size={14} />
-              Enviar mensaje
-            </Button>
+            {accionSeleccion === "eliminar" ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={seleccionados.size === 0}
+                onClick={() => setEliminacionMasiva(true)}
+              >
+                <Trash2 size={14} />
+                Eliminar seleccionados
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                disabled={seleccionados.size === 0}
+                onClick={() => setContactoMasivo(true)}
+              >
+                <Users size={14} />
+                Enviar mensaje
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -806,6 +874,17 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
             },
           })
         }}
+      />
+
+      <ConfirmDialog
+        open={eliminacionMasiva}
+        onOpenChange={(open) => !open && setEliminacionMasiva(false)}
+        title="Eliminar embajadores"
+        description={`Seguro que deseas eliminar ${seleccionados.size} embajador(es)? Esta accion no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        destructive
+        isPending={eliminandoMasivo}
+        onConfirm={eliminarSeleccionados}
       />
 
       <ImportarInfluencersModal open={importando} onOpenChange={setImportando} />
