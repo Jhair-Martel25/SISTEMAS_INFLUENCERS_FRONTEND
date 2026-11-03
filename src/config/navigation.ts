@@ -42,6 +42,18 @@ export const NAVEGACION: ItemNavegacion[] = [
     desc: 'Consulta y administra influencers registrados',
   },
   {
+    recurso: 'empresas-contactos',
+    href: '/empresas-contactos',
+    label: 'Empresas y Contactos',
+    desc: 'Administra empresas y sus personas de contacto',
+  },
+  {
+    recurso: 'reuniones',
+    href: '/reuniones/gestion',
+    label: 'Reuniones',
+    desc: 'Coordina y da seguimiento',
+  },
+  {
     recurso: 'horarios',
     href: '/horarios',
     label: 'Horarios',
@@ -54,34 +66,16 @@ export const NAVEGACION: ItemNavegacion[] = [
     desc: 'Gestiona tus bloques de disponibilidad',
   },
   {
-    recurso: 'reuniones',
-    href: '/reuniones/gestion',
-    label: 'Reuniones',
-    desc: 'Coordina y da seguimiento',
-  },
-  {
-    recurso: 'usuarios',
-    href: '/usuarios',
-    label: 'Usuarios',
-    desc: 'Administra usuarios y roles',
-  },
-  {
     recurso: 'plantillas',
     href: '/plantillas',
     label: 'Plantillas',
     desc: 'Gestiona plantillas de correo',
   },
   {
-    recurso: 'email',
-    href: '/email',
-    label: 'Email',
-    desc: 'Envía correos a embajadores',
-  },
-   {
-    recurso: 'empresas-contactos',
-    href: '/empresas-contactos',
-    label: 'Empresas y Contactos',
-    desc: 'Administra empresas y sus personas de contacto',
+    recurso: 'usuarios',
+    href: '/usuarios',
+    label: 'Usuarios',
+    desc: 'Administra usuarios y roles',
   },
   {
     recurso: 'perfil',
