@@ -1,19 +1,9 @@
 "use client"
 
-// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
-// Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
-
 import { useRef, useState } from "react"
 import * as XLSX from "xlsx"
-import {
-  AlertCircle,
-  CheckCircle2,
-  Download,
-  FileSpreadsheet,
-  Loader2,
-  Upload,
-  X,
-} from "lucide-react"
+import { AlertCircle, CheckCircle2, Download, FileSpreadsheet, Loader2, Upload, X } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -27,177 +17,330 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { DataTable, type Columna } from "@/components/shared/data-table"
-import type {
-  FilaErrorImportacion,
-  FilaOmitidaImportacion,
-  ResultadoImportacionExcel,
-} from "@/types/influencer"
+
+import { ESTADO_VALIDACION } from "@/types/api"
+import { TIPO_EMBAJADOR, type CrearEmpresaInput } from "@/types/empresa"
+import { empresasService } from "@/features/empresas/services/empresas.service"
 import { influencersService } from "../services/influencers.service"
-import { useImportarInfluencersExcel } from "../hooks/useInfluencers"
 
-/**
- * Modal para importar embajadores en lote desde la plantilla Excel oficial.
- *
- * - Descarga la plantilla con GET /influencers/plantilla-excel.
- * - Lee el archivo en el navegador solo para mostrar una vista previa y
- *   avisar de errores antes de enviarlo (mismas reglas que el backend).
- * - Envia el archivo completo a POST /influencers/importar-excel (campo
- *   "archivo"). El backend es quien valida e importa: devuelve cuantos se
- *   importaron, los omitidos (ya existian) y los errores por fila.
- */
+const EXTENSIONES_PERMITIDAS = [".csv", ".xlsx", ".xls"]
+const TAMANO_MAXIMO_MB = 10
+const FILAS_MAXIMAS = 500
 
-const EXTENSION_PERMITIDA = ".xlsx"
-const TAMANO_MAXIMO_MB = 5
-const FILAS_MAXIMAS = 1000
-const USUARIO_EJEMPLO = "andreapaz"
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-type Campo =
-  | "nombre"
-  | "usuarioIg"
-  | "linkIg"
+type CampoImportable =
+  | "empresa"
+  | "contacto"
+  | "ruc"
+  | "ciiu"
+  | "descripcion"
+  | "cargo"
+  | "area"
+  | "ubigeo"
   | "email"
-  | "biografia"
+  | "phone"
   | "mensajePersonalizado"
-  | "cantidad_post"
-  | "seguidores"
 
-/** Encabezados que acepta el backend (normalizados), igual que excel-influencer.util.ts. */
-const ALIAS_ENCABEZADOS: Record<string, Campo> = {
-  nombre: "nombre",
-  usuarioig: "usuarioIg",
-  usuario_ig: "usuarioIg",
-  usuario: "usuarioIg",
-  linkig: "linkIg",
-  link_ig: "linkIg",
-  link: "linkIg",
-  email: "email",
-  correo: "email",
-  correo_electronico: "email",
-  biografia: "biografia",
-  bio: "biografia",
-  mensaje_personalidado: "mensajePersonalizado",
-  mensaje_personalizado: "mensajePersonalizado",
-  mensajepersonalizado: "mensajePersonalizado",
-  cantidad_post: "cantidad_post",
-  cantidadpost: "cantidad_post",
-  cantidad_publicaciones: "cantidad_post",
-  posts: "cantidad_post",
-  seguidores: "seguidores",
-  followers: "seguidores",
-}
-
-const OBLIGATORIOS: { campo: Campo; etiqueta: string }[] = [
-  { campo: "nombre", etiqueta: "Nombre" },
-  { campo: "usuarioIg", etiqueta: "UsuarioIg" },
-  { campo: "linkIg", etiqueta: "LinkIg" },
-]
-
-interface FilaPrevia {
+export interface FilaImportadaEmpresa {
   numeroFila: number
-  nombre: string
-  usuarioIg: string
-  linkIg: string
-  seguidores: string
+  empresa: string
+  contacto: string
+  ruc: string
+  ciiu: string
+  descripcion: string
+  cargo: string
+  area: string
+  ubigeo: string
+  email: string
+  phone: string
+  mensajePersonalizado: string
   errores: string[]
+  incompleto: boolean
+  formato: boolean
+  duplicadoArchivo: boolean
+  existeEnSistema: boolean
 }
 
-function normalizarEncabezado(valor: string): string {
+const ALIAS_COLUMNAS: Record<
+  CampoImportable,
+  string[]
+> = {
+  empresa: [
+    "empresa",
+    "nombreempresa",
+    "razonsocial",
+    "razon_social",
+    "compania",
+    "company",
+    "nombre",
+  ],
+  contacto: [
+    "contacto",
+    "contact",
+    "funcionario",
+    "representante",
+    "nombredelcontacto",
+    "nombrecompleto",
+    "nombres",
+  ],
+  ruc: ["ruc", "rucempresa", "identificacion", "documento", "nitoruc"],
+  ciiu: ["ciiu", "codigociiu", "codigo_ciiu", "actividadeconomica"],
+  descripcion: [
+    "descripcion",
+    "rubro",
+    "giro",
+    "actividad",
+    "descripciondelaempresa",
+  ],
+  cargo: ["cargo", "puesto", "posicion", "ocupacion"],
+  area: ["area", "departamento", "seccion", "gerencia"],
+  ubigeo: ["ubigeo", "codigoubigeo", "codigo_ubigeo"],
+  email: [
+    "correoelectronico",
+    "correo",
+    "email",
+    "mail",
+    "emailcorporativo",
+    "correocongenerico",
+  ],
+  phone: ["telefono", "celular", "phone", "tel", "whatsapp", "telefono1"],
+  mensajePersonalizado: [
+    "mensajepersonalizado",
+    "mensaje",
+    "custommessage",
+    "nota",
+    "observacion",
+  ],
+}
+
+function normalizarTexto(valor: string): string {
   return valor
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .trim()
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/[\s-]+/g, "_")
-    .replace(/_+/g, "_")
+    .replace(/[^a-z0-9]/g, "")
 }
 
-function normalizarLink(valor: string): string {
-  const link = valor.trim()
-  if (!link) return ""
-  return /^https?:\/\//i.test(link) ? link : `https://${link}`
+function extensionValida(nombreArchivo: string): boolean {
+  const nombreEnMinusculas = nombreArchivo.toLowerCase()
+  return EXTENSIONES_PERMITIDAS.some((ext) => nombreEnMinusculas.endsWith(ext))
 }
 
-function esUrlValida(link: string): boolean {
-  try {
-    const url = new URL(link)
-    return url.protocol === "http:" || url.protocol === "https:"
-  } catch {
-    return false
+function construirIndiceColumnas(): Map<string, CampoImportable> {
+  const indice = new Map<string, CampoImportable>()
+  for (const [campo, alias] of Object.entries(ALIAS_COLUMNAS)) {
+    for (const nombreAlias of alias) {
+      indice.set(nombreAlias, campo as CampoImportable)
+    }
+  }
+  return indice
+}
+
+const CAMPOS_OBLIGATORIOS: { campo: CampoImportable; etiqueta: string }[] = [
+  { campo: "empresa", etiqueta: "Empresa" },
+  { campo: "contacto", etiqueta: "Contacto" },
+  { campo: "ruc", etiqueta: "RUC" },
+  { campo: "ciiu", etiqueta: "CIIU" },
+  { campo: "descripcion", etiqueta: "Descripción" },
+  { campo: "cargo", etiqueta: "Cargo" },
+  { campo: "area", etiqueta: "Área" },
+  { campo: "ubigeo", etiqueta: "Ubigeo" },
+  { campo: "email", etiqueta: "Correo electrónico" },
+  { campo: "phone", etiqueta: "Teléfono" },
+]
+
+function mapearFila(
+  filaOriginal: Record<string, unknown>,
+  indiceColumnas: Map<string, CampoImportable>,
+  numeroFila: number,
+): FilaImportadaEmpresa {
+  const valores: Record<string, string> = {
+    empresa: "",
+    contacto: "",
+    ruc: "",
+    ciiu: "",
+    descripcion: "",
+    cargo: "",
+    area: "",
+    ubigeo: "",
+    email: "",
+    phone: "",
+    mensajePersonalizado: "",
+  }
+
+  for (const [headerOriginal, valorCelda] of Object.entries(filaOriginal)) {
+    const headerNormalizado = normalizarTexto(headerOriginal)
+    const campo = indiceColumnas.get(headerNormalizado)
+    if (campo) {
+      valores[campo] = String(valorCelda ?? "").trim()
+    }
+  }
+
+  const errores: string[] = []
+  const faltantes = CAMPOS_OBLIGATORIOS.filter(({ campo }) => !valores[campo]).map(
+    ({ etiqueta }) => etiqueta,
+  )
+  if (faltantes.length > 0) {
+    errores.push(`Faltan datos obligatorios: ${faltantes.join(", ")}`)
+  }
+
+  let formato = false
+  const rucDigitos = valores.ruc.replace(/\D/g, "")
+  if (valores.ruc && rucDigitos.length !== 11) {
+    errores.push("El RUC debe tener 11 dígitos")
+    formato = true
+  }
+  if (valores.ubigeo && !/^\d{6}$/.test(valores.ubigeo)) {
+    errores.push("El ubigeo debe tener 6 dígitos")
+    formato = true
+  }
+  if (valores.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valores.email)) {
+    errores.push("El correo no tiene un formato válido")
+    formato = true
+  }
+
+  return {
+    numeroFila,
+    empresa: valores.empresa,
+    contacto: valores.contacto,
+    ruc: valores.ruc,
+    ciiu: valores.ciiu,
+    descripcion: valores.descripcion,
+    cargo: valores.cargo,
+    area: valores.area,
+    ubigeo: valores.ubigeo,
+    email: valores.email,
+    phone: valores.phone,
+    mensajePersonalizado: valores.mensajePersonalizado,
+    errores,
+    incompleto: faltantes.length > 0,
+    formato,
+    duplicadoArchivo: false,
+    existeEnSistema: false,
   }
 }
 
-function descargarBlob(blob: Blob, nombreArchivo: string) {
-  const url = URL.createObjectURL(blob)
-  const enlace = document.createElement("a")
-  enlace.href = url
-  enlace.download = nombreArchivo
-  document.body.appendChild(enlace)
-  enlace.click()
-  enlace.remove()
-  URL.revokeObjectURL(url)
+const ENCABEZADOS_PLANTILLA = [
+  "Empresa",
+  "Contacto",
+  "RUC",
+  "CIIU",
+  "Descripción",
+  "Cargo",
+  "Área",
+  "Ubigeo",
+  "Correo electrónico",
+  "Teléfono",
+  "Mensaje personalizado",
+]
+
+const INSTRUCCIONES_PLANTILLA = [
+  ["Campo", "Obligatorio", "Formato"],
+  ["Empresa", "Sí", "Razón social de la empresa"],
+  ["Contacto", "Sí", "Nombre de la persona de contacto"],
+  ["RUC", "Sí", "11 dígitos"],
+  ["CIIU", "Sí", "Código CIIU de la actividad"],
+  ["Descripción", "Sí", "Giro o rubro de la empresa"],
+  ["Cargo", "Sí", "Cargo del contacto"],
+  ["Área", "Sí", "Área del contacto"],
+  ["Ubigeo", "Sí", "Código de 6 dígitos"],
+  ["Correo electrónico", "Sí", "Correo válido, por ejemplo nombre@empresa.com"],
+  ["Teléfono", "Sí", "Número de contacto"],
+  ["Mensaje personalizado", "No", "Texto opcional, máximo 1000 caracteres"],
+]
+
+function descargarPlantilla() {
+  const libro = XLSX.utils.book_new()
+  const hoja = XLSX.utils.aoa_to_sheet([ENCABEZADOS_PLANTILLA])
+  hoja["!cols"] = ENCABEZADOS_PLANTILLA.map(() => ({ wch: 22 }))
+  XLSX.utils.book_append_sheet(libro, hoja, "Empresas")
+  const instrucciones = XLSX.utils.aoa_to_sheet(INSTRUCCIONES_PLANTILLA)
+  instrucciones["!cols"] = [{ wch: 22 }, { wch: 14 }, { wch: 50 }]
+  XLSX.utils.book_append_sheet(libro, instrucciones, "Instrucciones")
+  XLSX.writeFile(libro, "plantilla_empresas_embajadoras.xlsx")
 }
 
-/** Lee la primera hoja y arma la vista previa con las mismas reglas del backend. */
-function leerHoja(libro: XLSX.WorkBook): {
-  faltantes: string[]
-  filas: FilaPrevia[]
-} {
-  const hoja = libro.Sheets[libro.SheetNames[0]]
-  const matriz = XLSX.utils.sheet_to_json<unknown[]>(hoja, {
-    header: 1,
-    defval: "",
-    blankrows: false,
-  })
+function marcarDuplicadosEnArchivo(
+  filas: FilaImportadaEmpresa[],
+): FilaImportadaEmpresa[] {
+  const normalizarRuc = (f: FilaImportadaEmpresa) => f.ruc.replace(/\D/g, "")
+  const normalizarEmail = (f: FilaImportadaEmpresa) => f.email.trim().toLowerCase()
 
-  const encabezados = (matriz[0] ?? []).map((v) => String(v ?? ""))
-  const columnaPorCampo = new Map<Campo, number>()
-  encabezados.forEach((encabezado, indice) => {
-    const campo = ALIAS_ENCABEZADOS[normalizarEncabezado(encabezado)]
-    if (campo && !columnaPorCampo.has(campo)) columnaPorCampo.set(campo, indice)
-  })
+  const contarRuc = new Map<string, number>()
+  const contarEmail = new Map<string, number>()
+  for (const f of filas) {
+    const r = normalizarRuc(f)
+    const e = normalizarEmail(f)
+    if (r) contarRuc.set(r, (contarRuc.get(r) ?? 0) + 1)
+    if (e) contarEmail.set(e, (contarEmail.get(e) ?? 0) + 1)
+  }
 
-  const faltantes = OBLIGATORIOS.filter((o) => !columnaPorCampo.has(o.campo)).map(
-    (o) => o.etiqueta,
+  return filas.map((f) => {
+    const r = normalizarRuc(f)
+    const e = normalizarEmail(f)
+    const repetidoRuc = r !== "" && (contarRuc.get(r) ?? 0) > 1
+    const repetidoEmail = e !== "" && (contarEmail.get(e) ?? 0) > 1
+    if (!repetidoRuc && !repetidoEmail) return f
+    const motivo = repetidoRuc ? "RUC repetido en el archivo" : "Correo repetido en el archivo"
+    return {
+      ...f,
+      duplicadoArchivo: true,
+      errores: [...f.errores, motivo],
+    }
+  })
+}
+
+async function marcarExistentesEnSistema(
+  filas: FilaImportadaEmpresa[],
+): Promise<FilaImportadaEmpresa[]> {
+  const rucs = Array.from(
+    new Set(
+      filas
+        .map((f) => f.ruc.replace(/\D/g, ""))
+        .filter((r) => r.length === 11),
+    ),
   )
-  if (faltantes.length > 0) return { faltantes, filas: [] }
 
-  const usuariosVistos = new Map<string, number>()
-  const filas: FilaPrevia[] = []
+  const existentes = new Set<string>()
+  const TAMANO_LOTE = 10
+  for (let i = 0; i < rucs.length; i += TAMANO_LOTE) {
+    const lote = rucs.slice(i, i + TAMANO_LOTE)
+    const resultados = await Promise.allSettled(
+      lote.map((ruc) => empresasService.obtenerPorRuc(ruc)),
+    )
+    resultados.forEach((res, idx) => {
+      if (res.status === "fulfilled" && res.value?.id) {
+        existentes.add(lote[idx])
+      }
+    })
+  }
 
-  matriz.slice(1).forEach((celdas, i) => {
-    const valor = (campo: Campo) => {
-      const col = columnaPorCampo.get(campo)
-      return col === undefined ? "" : String(celdas[col] ?? "").trim()
-    }
-    const nombre = valor("nombre")
-    const usuarioIg = valor("usuarioIg").replace(/^@+/, "").trim()
-    const linkIg = normalizarLink(valor("linkIg"))
-    const email = valor("email").toLowerCase()
-    const seguidores = valor("seguidores")
+  return filas.map((f) => ({
+    ...f,
+    existeEnSistema: existentes.has(f.ruc.replace(/\D/g, "")),
+  }))
+}
 
-    if (!nombre && !usuarioIg && !linkIg && !email && !seguidores) return
-
-    const numeroFila = i + 2 // la fila 1 es el encabezado
-    const errores: string[] = []
-    if (!nombre) errores.push("Falta el nombre")
-    if (!usuarioIg) errores.push("Falta el usuario")
-    else if (/\s/.test(usuarioIg)) errores.push("El usuario no debe tener espacios")
-    if (!linkIg) errores.push("Falta el link")
-    else if (!esUrlValida(linkIg)) errores.push("El link no es una URL valida")
-    if (email && !EMAIL_REGEX.test(email)) errores.push("Correo con formato invalido")
-
-    const clave = usuarioIg.toLowerCase()
-    if (clave && errores.length === 0) {
-      const previa = usuariosVistos.get(clave)
-      if (previa !== undefined) errores.push(`Usuario repetido (fila ${previa})`)
-      else usuariosVistos.set(clave, numeroFila)
-    }
-
-    filas.push({ numeroFila, nombre, usuarioIg, linkIg, seguidores, errores })
-  })
-
-  return { faltantes: [], filas }
+function descargarFilasNoImportadas(filasOmitidas: FilaImportadaEmpresa[]) {
+  const encabezados = [...ENCABEZADOS_PLANTILLA, "Motivo"]
+  const datos = filasOmitidas.map((f) => [
+    f.empresa,
+    f.contacto,
+    f.ruc,
+    f.ciiu,
+    f.descripcion,
+    f.cargo,
+    f.area,
+    f.ubigeo,
+    f.email,
+    f.phone,
+    f.mensajePersonalizado,
+    f.existeEnSistema ? "Ya existe en el sistema" : f.errores.join("; "),
+  ])
+  const hoja = XLSX.utils.aoa_to_sheet([encabezados, ...datos])
+  hoja["!cols"] = encabezados.map(() => ({ wch: 22 }))
+  const libro = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(libro, hoja, "Filas no importadas")
+  XLSX.writeFile(libro, "filas_no_importadas.xlsx")
 }
 
 interface ImportarInfluencersModalProps {
@@ -209,151 +352,324 @@ export function ImportarInfluencersModal({
   open,
   onOpenChange,
 }: ImportarInfluencersModalProps) {
+  const queryClient = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
-  const importar = useImportarInfluencersExcel()
 
   const [archivo, setArchivo] = useState<File | null>(null)
-  const [filas, setFilas] = useState<FilaPrevia[]>([])
+  const [filas, setFilas] = useState<FilaImportadaEmpresa[]>([])
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
-  const [procesando, setProcesando] = useState(false)
-  const [descargando, setDescargando] = useState(false)
-  const [resultado, setResultado] = useState<ResultadoImportacionExcel | null>(null)
+  const [leyendoArchivo, setLeyendoArchivo] = useState(false)
+  const [importando, setImportando] = useState(false)
+  const [progresoTexto, setProgresoTexto] = useState("")
+  const [confirmando, setConfirmando] = useState(false)
 
-  const filasValidas = filas.filter((f) => f.errores.length === 0)
+  const filasValidas = filas.filter(
+    (f) => f.errores.length === 0 && !f.existeEnSistema,
+  )
   const filasConError = filas.filter((f) => f.errores.length > 0)
-  const tieneFilaEjemplo = filas.some((f) => f.usuarioIg.toLowerCase() === USUARIO_EJEMPLO)
+  const filasYaExisten = filas.filter((f) => f.existeEnSistema)
+  const filasNoImportadas = filas.filter((f) => !filasValidas.includes(f))
+  const contadorIncompletos = filas.filter((f) => f.incompleto).length
+  const contadorFormato = filas.filter((f) => f.formato).length
+  const contadorDuplicadosArchivo = filas.filter((f) => f.duplicadoArchivo).length
 
   function limpiar() {
     setArchivo(null)
     setFilas([])
     setErrorArchivo(null)
-    setResultado(null)
-    importar.reset()
+    setProgresoTexto("")
+    setConfirmando(false)
     if (inputRef.current) inputRef.current.value = ""
   }
 
-  function handleClose(abierto: boolean) {
-    if (!abierto && importar.isPending) return
-    if (!abierto) limpiar()
-    onOpenChange(abierto)
-  }
-
-  async function handleDescargarPlantilla() {
-    setDescargando(true)
-    try {
-      const blob = await influencersService.descargarPlantilla()
-      descargarBlob(blob, "plantilla-embajadores.xlsx")
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "No se pudo descargar la plantilla.",
-      )
-    } finally {
-      setDescargando(false)
+  function handleClose(abrir: boolean) {
+    if (!abrir && !importando) {
+      limpiar()
+      onOpenChange(false)
     }
   }
 
-  function rechazarArchivo(mensaje: string) {
-    setErrorArchivo(mensaje)
-    setArchivo(null)
-    setFilas([])
-    if (inputRef.current) inputRef.current.value = ""
-  }
-
-  async function handleArchivoSeleccionado(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleArchivoSeleccionado(
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
     const file = event.target.files?.[0]
     if (!file) return
 
     setErrorArchivo(null)
     setFilas([])
-    setResultado(null)
 
-    if (!file.name.toLowerCase().endsWith(EXTENSION_PERMITIDA)) {
-      rechazarArchivo("Formato no soportado. Usa la plantilla en formato Excel (.xlsx).")
+    if (!extensionValida(file.name)) {
+      setErrorArchivo(
+        `Formato no soportado. Usa un archivo ${EXTENSIONES_PERMITIDAS.join(", ")}.`,
+      )
+      setArchivo(null)
+      if (inputRef.current) inputRef.current.value = ""
       return
     }
+
     if (file.size > TAMANO_MAXIMO_MB * 1024 * 1024) {
-      rechazarArchivo(`El archivo supera el tamano maximo permitido (${TAMANO_MAXIMO_MB} MB).`)
+      setErrorArchivo(
+        `El archivo supera el tamaño máximo permitido (${TAMANO_MAXIMO_MB} MB).`,
+      )
+      setArchivo(null)
+      if (inputRef.current) inputRef.current.value = ""
       return
     }
 
     setArchivo(file)
-    setProcesando(true)
+    setLeyendoArchivo(true)
+
     try {
-      const libro = XLSX.read(await file.arrayBuffer(), { type: "array" })
-      if (!libro.SheetNames[0]) {
-        rechazarArchivo("El archivo no tiene ninguna hoja con datos.")
+      const buffer = await file.arrayBuffer()
+      const libro = XLSX.read(buffer, { type: "array" })
+      const primeraHoja = libro.SheetNames[0]
+
+      if (!primeraHoja) {
+        setErrorArchivo("El archivo no tiene ninguna hoja con datos.")
+        setLeyendoArchivo(false)
         return
       }
-      const { faltantes, filas: filasLeidas } = leerHoja(libro)
-      if (faltantes.length > 0) {
-        rechazarArchivo(
-          `Faltan columnas obligatorias en la fila 1: ${faltantes.join(", ")}. Descarga la plantilla y usa sus encabezados.`,
+
+      const filasCrudas = XLSX.utils.sheet_to_json<Record<string, unknown>>(
+        libro.Sheets[primeraHoja],
+        { defval: "" },
+      )
+
+      if (filasCrudas.length === 0) {
+        setErrorArchivo(
+          "El archivo no tiene filas con datos (o falta la fila de encabezados).",
         )
+        setLeyendoArchivo(false)
         return
       }
-      if (filasLeidas.length === 0) {
-        rechazarArchivo("El archivo no tiene filas con datos debajo de los encabezados.")
-        return
-      }
-      if (filasLeidas.length > FILAS_MAXIMAS) {
-        rechazarArchivo(
-          `El archivo tiene ${filasLeidas.length} filas. El limite es ${FILAS_MAXIMAS} por importacion.`,
+
+      if (filasCrudas.length > FILAS_MAXIMAS) {
+        setErrorArchivo(
+          `El archivo tiene ${filasCrudas.length} filas. Por ahora el límite es ${FILAS_MAXIMAS} por importación.`,
         )
+        setLeyendoArchivo(false)
         return
       }
-      setFilas(filasLeidas)
+
+      const indiceColumnas = construirIndiceColumnas()
+      const filasMapeadas = filasCrudas.map((fila, i) =>
+        mapearFila(fila, indiceColumnas, i + 2),
+      )
+
+      setFilas(
+        await marcarExistentesEnSistema(marcarDuplicadosEnArchivo(filasMapeadas)),
+      )
     } catch {
-      rechazarArchivo("No se pudo leer el archivo. Confirma que sea un Excel valido y no este danado.")
+      setErrorArchivo(
+        "No se pudo leer el archivo. Confirma que sea un CSV o Excel válido y no esté dañado.",
+      )
     } finally {
-      setProcesando(false)
+      setLeyendoArchivo(false)
     }
   }
 
-  function handleImportar() {
-    if (!archivo) return
+  async function handleImportar() {
+    if (filasValidas.length === 0 || importando) return
+
+    setImportando(true)
+    setConfirmando(false)
     setErrorArchivo(null)
-    importar.mutate(archivo, {
-      onSuccess: (respuesta) => {
-        setResultado(respuesta)
-        if (respuesta.importados > 0) {
-          toast.success(
-            respuesta.importados === 1
-              ? "Se importo 1 embajador."
-              : `Se importaron ${respuesta.importados} embajadores.`,
-          )
-        } else {
-          toast.warning("No se importo ningun embajador. Revisa el detalle.")
+
+    let exitosos = 0
+    const errores: string[] = []
+
+    for (let i = 0; i < filasValidas.length; i++) {
+      const fila = filasValidas[i]
+      setProgresoTexto(
+        `Importando ${i + 1} de ${filasValidas.length}: ${fila.empresa}...`,
+      )
+
+      try {
+        let empresaId: string | undefined
+        let nuevaEmpresa: CrearEmpresaInput | undefined
+
+        const rucLimpio = fila.ruc ? fila.ruc.replace(/\D/g, "") : ""
+
+        if (rucLimpio) {
+          try {
+            const existente = await empresasService.obtenerPorRuc(rucLimpio)
+            if (existente?.id) {
+              empresaId = existente.id
+            }
+          } catch {
+            // Si no existe, se registrará como nueva
+          }
         }
-      },
-      onError: (error) => {
-        setErrorArchivo(
-          error instanceof Error ? error.message : "No se pudo importar el archivo.",
-        )
-      },
-    })
+
+        if (!empresaId) {
+          try {
+            const busqueda = await empresasService.buscar({
+              q: fila.empresa.trim(),
+              limite: 5,
+            })
+            const coincidencia = busqueda.find(
+              (b) =>
+                b.nombre.trim().toLowerCase() ===
+                fila.empresa.trim().toLowerCase(),
+            )
+            if (coincidencia?.id) {
+              empresaId = coincidencia.id
+            }
+          } catch {
+            // Continuar
+          }
+        }
+
+        if (!empresaId) {
+          nuevaEmpresa = {
+            nombre: fila.empresa.trim(),
+            ruc: rucLimpio || undefined,
+            ciiu: fila.ciiu?.trim() || undefined,
+            descripcion: fila.descripcion?.trim() || undefined,
+            ubigeo: fila.ubigeo?.trim() || undefined,
+            emailCorporativo: fila.email?.trim() || undefined,
+            telefono1: fila.phone?.trim() || undefined,
+            contactos: fila.contacto?.trim()
+              ? [
+                  {
+                    nombres: fila.contacto.trim(),
+                    cargo: fila.cargo?.trim() || undefined,
+                    area: fila.area?.trim() || undefined,
+                    email: fila.email?.trim() || undefined,
+                    telefono: fila.phone?.trim() || undefined,
+                    principal: true,
+                  },
+                ]
+              : [],
+          }
+        }
+
+        const handleSugerido = rucLimpio
+          ? `empresa_${rucLimpio}`
+          : `empresa_${fila.empresa
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, "_")
+              .slice(0, 20)}`
+
+        await influencersService.crear({
+          tipoEmbajador: TIPO_EMBAJADOR.EMPRESA,
+          empresaId,
+          nuevaEmpresa,
+          nombre: fila.contacto?.trim() || fila.empresa.trim(),
+          usuarioIg: handleSugerido,
+          linkIg: `https://instagram.com/${handleSugerido}`,
+          empresa: fila.empresa.trim(),
+          ruc: rucLimpio || undefined,
+          ciiu: fila.ciiu?.trim() || undefined,
+          descripcion: fila.descripcion?.trim() || undefined,
+          cargo: fila.cargo?.trim() || undefined,
+          area: fila.area?.trim() || undefined,
+          ubigeo: fila.ubigeo?.trim() || undefined,
+          email: fila.email?.trim() || undefined,
+          phone: fila.phone?.trim() || undefined,
+          mensajePersonalizado: fila.mensajePersonalizado?.trim() || undefined,
+          estadoValidacion: ESTADO_VALIDACION.VALIDADO,
+        })
+
+        exitosos++
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al registrar"
+        errores.push(`Fila ${fila.numeroFila} (${fila.empresa}): ${msg}`)
+      }
+    }
+
+    setImportando(false)
+    setProgresoTexto("")
+
+    queryClient.invalidateQueries({ queryKey: ["influencers"] })
+    queryClient.invalidateQueries({ queryKey: ["empresas"] })
+
+    if (exitosos > 0) {
+      toast.success(
+        `Se importaron ${exitosos} empresa(s) embajadora(s) correctamente.`,
+      )
+    }
+
+    if (errores.length > 0) {
+      toast.error(
+        `Hubo inconvenientes en ${errores.length} fila(s).`,
+        {
+          description: errores.slice(0, 3).join("\n"),
+        },
+      )
+    }
+
+    if (exitosos > 0 && errores.length === 0) {
+      handleClose(false)
+    }
   }
 
-  const columnasPreview: Columna<FilaPrevia>[] = [
-    { id: "fila", header: "Fila", cell: (f) => f.numeroFila, className: "w-14 text-muted-foreground" },
-    { id: "nombre", header: "Nombre", cell: (f) => f.nombre || "-" },
-    { id: "usuario", header: "Usuario", cell: (f) => (f.usuarioIg ? `@${f.usuarioIg}` : "-") },
+  const columnasPreview: Columna<FilaImportadaEmpresa>[] = [
     {
-      id: "link",
-      header: "Link",
-      cell: (f) =>
-        f.linkIg ? (
-          <span className="block max-w-[200px] truncate text-muted-foreground">{f.linkIg}</span>
-        ) : (
-          "-"
-        ),
+      id: "fila",
+      header: "Fila",
+      cell: (fila) => fila.numeroFila,
+      className: "w-14 text-muted-foreground",
     },
-    { id: "seguidores", header: "Seguidores", cell: (f) => f.seguidores || "-" },
+    {
+      id: "empresa",
+      header: "Empresa",
+      cell: (fila) => (
+        <span className="font-medium text-foreground">
+          {fila.empresa || "-"}
+        </span>
+      ),
+    },
+    {
+      id: "contacto",
+      header: "Contacto",
+      cell: (fila) => fila.contacto || "-",
+    },
+    {
+      id: "ruc",
+      header: "RUC",
+      cell: (fila) => (
+        <span className="font-mono text-xs text-foreground">
+          {fila.ruc || "-"}
+        </span>
+      ),
+    },
+    {
+      id: "ciiu",
+      header: "CIIU",
+      cell: (fila) => (
+        <span className="font-mono text-xs text-foreground">
+          {fila.ciiu || "-"}
+        </span>
+      ),
+    },
+    {
+      id: "ubigeo",
+      header: "Ubigeo",
+      cell: (fila) => fila.ubigeo || "-",
+    },
+    {
+      id: "correo",
+      header: "Correo",
+      cell: (fila) => (
+        <span className="block max-w-[180px] truncate text-muted-foreground">
+          {fila.email || "-"}
+        </span>
+      ),
+    },
     {
       id: "estado",
       header: "Estado",
-      cell: (f) =>
-        f.errores.length === 0 ? (
-          <Badge variant="default" className="gap-1">
+      cell: (fila) =>
+        fila.existeEnSistema ? (
+          <Badge variant="secondary" className="w-fit">
+            Ya existe en el sistema
+          </Badge>
+        ) : fila.errores.length === 0 ? (
+          <Badge
+            variant="default"
+            className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
             <CheckCircle2 size={12} />
             Listo
           </Badge>
@@ -361,99 +677,85 @@ export function ImportarInfluencersModal({
           <div className="flex flex-col gap-1">
             <Badge variant="destructive" className="w-fit gap-1">
               <AlertCircle size={12} />
-              {f.errores.length === 1 ? "1 error" : `${f.errores.length} errores`}
+              {fila.errores.length === 1
+                ? "1 error"
+                : `${fila.errores.length} errores`}
             </Badge>
-            <span className="text-xs text-muted-foreground">{f.errores.join("; ")}</span>
+            <span className="text-xs text-muted-foreground">
+              {fila.errores.join("; ")}
+            </span>
           </div>
         ),
     },
   ]
 
-  const columnasOmitidos: Columna<FilaOmitidaImportacion>[] = [
-    { id: "fila", header: "Fila", cell: (f) => f.fila, className: "w-14 text-muted-foreground" },
-    { id: "usuario", header: "Usuario", cell: (f) => `@${f.usuarioIg}` },
-    { id: "motivo", header: "Motivo", cell: (f) => f.motivo },
-  ]
-
-  const columnasErrores: Columna<FilaErrorImportacion>[] = [
-    { id: "fila", header: "Fila", cell: (f) => f.fila, className: "w-14 text-muted-foreground" },
-    { id: "campo", header: "Campo", cell: (f) => f.campo },
-    { id: "mensaje", header: "Detalle", cell: (f) => f.mensaje },
-  ]
-
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="w-[95vw] sm:max-w-7xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Importar embajadores</DialogTitle>
+          <DialogTitle>Importar empresas embajadoras</DialogTitle>
           <DialogDescription>
-            Descarga la plantilla, completala y subela en formato .xlsx. Nombre,
-            UsuarioIg y LinkIg son obligatorios; el resto de columnas son
-            opcionales. Los embajadores se registran como Instagram y en estado
-            Pendiente.
+            Sube un archivo CSV o Excel con tus empresas. Columnas reconocidas:
+            Empresa, Contacto, RUC, CIIU, Descripción, Cargo, Área, Ubigeo,
+            Correo electrónico, Teléfono y Mensaje personalizado.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
-          {!resultado && (
-            <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">
-                Usa siempre la plantilla oficial y borra la fila de ejemplo antes de subirla.
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleDescargarPlantilla}
-                disabled={descargando}
-              >
-                {descargando ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                Descargar plantilla
-              </Button>
-            </div>
-          )}
+        <div className="flex flex-col gap-4 overflow-y-auto pr-1">
+          <div className="flex justify-end">
+            <Button type="button" variant="outline" size="sm" onClick={descargarPlantilla}>
+              <Download size={14} />
+              Descargar plantilla
+            </Button>
+          </div>
 
-          {!resultado &&
-            (!archivo ? (
-              <label
-                htmlFor="archivo-importar"
-                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border px-6 py-10 text-center transition-colors hover:border-primary/50 hover:bg-muted/40"
-              >
-                <Upload size={28} className="text-muted-foreground" />
-                <p className="text-sm font-medium text-foreground">Haz clic para elegir un archivo</p>
-                <p className="text-xs text-muted-foreground">
-                  Formato aceptado: {EXTENSION_PERMITIDA} (maximo {TAMANO_MAXIMO_MB} MB y {FILAS_MAXIMAS} filas)
-                </p>
-                <input
-                  id="archivo-importar"
-                  ref={inputRef}
-                  type="file"
-                  accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                  className="hidden"
-                  onChange={handleArchivoSeleccionado}
-                />
-              </label>
-            ) : (
-              <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <FileSpreadsheet size={18} className="shrink-0 text-primary" />
-                  <span className="truncate text-sm font-medium text-foreground">{archivo.name}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    ({(archivo.size / 1024).toFixed(0)} KB)
-                  </span>
-                </div>
+          {!archivo ? (
+            <label
+              htmlFor="archivo-importar-empresas"
+              className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border px-6 py-10 text-center transition-colors hover:border-primary/50 hover:bg-muted/40"
+            >
+              <Upload size={28} className="text-muted-foreground" />
+              <p className="text-sm font-medium text-foreground">
+                Haz clic para elegir un archivo Excel o CSV
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Formatos aceptados: {EXTENSIONES_PERMITIDAS.join(", ")} (máximo{" "}
+                {TAMANO_MAXIMO_MB} MB)
+              </p>
+              <input
+                id="archivo-importar-empresas"
+                ref={inputRef}
+                type="file"
+                accept={EXTENSIONES_PERMITIDAS.join(",")}
+                className="hidden"
+                disabled={importando}
+                onChange={handleArchivoSeleccionado}
+              />
+            </label>
+          ) : (
+            <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <FileSpreadsheet size={18} className="shrink-0 text-primary" />
+                <span className="truncate text-sm font-medium text-foreground">
+                  {archivo.name}
+                </span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  ({(archivo.size / 1024).toFixed(0)} KB)
+                </span>
+              </div>
+              {!importando && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   aria-label="Quitar archivo"
                   onClick={limpiar}
-                  disabled={importar.isPending}
                 >
                   <X size={16} />
                 </Button>
-              </div>
-            ))}
+              )}
+            </div>
+          )}
 
           {errorArchivo && (
             <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
@@ -462,143 +764,137 @@ export function ImportarInfluencersModal({
             </div>
           )}
 
-          {procesando && <p className="text-center text-sm text-muted-foreground">Leyendo archivo...</p>}
+          {leyendoArchivo && (
+            <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
+              <Loader2 className="animate-spin" size={16} />
+              <span>Leyendo archivo...</span>
+            </div>
+          )}
 
-          {!resultado && filas.length > 0 && !procesando && (
+          {filas.length > 0 && !leyendoArchivo && (
             <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <Badge variant="default" className="gap-1">
-                  <CheckCircle2 size={12} />
-                  {filasValidas.length} listos
-                </Badge>
-                {filasConError.length > 0 && (
-                  <Badge variant="destructive" className="gap-1">
-                    <AlertCircle size={12} />
-                    {filasConError.length} con errores
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant="default"
+                    className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    <CheckCircle2 size={12} />
+                    {filasValidas.length} listos
                   </Badge>
+                  {contadorIncompletos > 0 && (
+                    <Badge variant="destructive" className="gap-1">
+                      <AlertCircle size={12} />
+                      {contadorIncompletos} incompletos
+                    </Badge>
+                  )}
+                  {contadorFormato > 0 && (
+                    <Badge variant="destructive" className="gap-1">
+                      <AlertCircle size={12} />
+                      {contadorFormato} con formato incorrecto
+                    </Badge>
+                  )}
+                  {contadorDuplicadosArchivo > 0 && (
+                    <Badge variant="destructive" className="gap-1">
+                      <AlertCircle size={12} />
+                      {contadorDuplicadosArchivo} repetidos en el archivo
+                    </Badge>
+                  )}
+                  {filasYaExisten.length > 0 && (
+                    <Badge variant="secondary" className="gap-1">
+                      {filasYaExisten.length} ya existen en el sistema
+                    </Badge>
+                  )}
+                  <span className="text-muted-foreground">
+                    de {filas.length} filas leídas
+                  </span>
+                </div>
+                {importando && (
+                  <span className="text-xs font-medium text-primary animate-pulse">
+                    {progresoTexto}
+                  </span>
                 )}
-                <span className="text-muted-foreground">de {filas.length} filas encontradas</span>
               </div>
 
-              {tieneFilaEjemplo && (
-                <div className="flex items-start gap-2 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                  <span>
-                    El archivo todavia tiene la fila de ejemplo (@{USUARIO_EJEMPLO}). Borrala para no
-                    registrarla como embajador.
-                  </span>
+              {filasNoImportadas.length > 0 && (
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => descargarFilasNoImportadas(filasNoImportadas)}
+                  >
+                    <Download size={14} />
+                    Descargar filas no importadas ({filasNoImportadas.length})
+                  </Button>
                 </div>
               )}
 
-              <div className="max-h-72 overflow-y-auto">
+              <div className="max-h-80 overflow-y-auto rounded-lg border">
                 <DataTable
                   columnas={columnasPreview}
                   datos={filas}
-                  getRowId={(f) => String(f.numeroFila)}
+                  getRowId={(fila) => String(fila.numeroFila)}
                 />
               </div>
             </div>
           )}
-
-          {resultado && (
-            <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <ResumenItem etiqueta="Filas leidas" valor={resultado.totalFilas} />
-                <ResumenItem etiqueta="Importados" valor={resultado.importados} destacado />
-                <ResumenItem etiqueta="Omitidos" valor={resultado.omitidos.length} />
-                <ResumenItem etiqueta="Con errores" valor={resultado.errores.length} />
+          {confirmando && (
+            <div className="flex flex-col gap-3 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3">
+              <p className="text-sm font-medium text-foreground">
+                Vas a importar {filasValidas.length} empresa(s) al sistema.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Se omiten {filasYaExisten.length} que ya existen y {filasConError.length} con errores o repetidos.
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setConfirmando(false)}>
+                  Volver
+                </Button>
+                <Button type="button" size="sm" onClick={handleImportar}>
+                  Confirmar importación
+                </Button>
               </div>
-
-              {resultado.omitidos.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm font-medium">Omitidos (ya existian en el sistema)</p>
-                  <DataTable
-                    columnas={columnasOmitidos}
-                    datos={resultado.omitidos}
-                    getRowId={(f) => `omitido-${f.fila}`}
-                  />
-                </div>
-              )}
-
-              {resultado.errores.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm font-medium">Filas con errores (no se importaron)</p>
-                  <DataTable
-                    columnas={columnasErrores}
-                    datos={resultado.errores}
-                    getRowId={(f) => `error-${f.fila}-${f.campo}`}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Corrige esas filas en tu Excel y vuelve a subirlo: las que ya se importaron
-                    apareceran como omitidas.
-                  </p>
-                </div>
-              )}
             </div>
           )}
         </div>
 
-        <DialogFooter className="flex justify-end gap-2">
-          {resultado ? (
-            <>
-              <Button type="button" variant="outline" onClick={limpiar}>
-                Importar otro archivo
-              </Button>
-              <Button type="button" onClick={() => handleClose(false)}>
-                Listo
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleClose(false)}
-                disabled={importar.isPending}
-              >
-                Cerrar
-              </Button>
-              <Button
-                type="button"
-                onClick={handleImportar}
-                disabled={!archivo || filasValidas.length === 0 || procesando || importar.isPending}
-              >
-                {importar.isPending ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
+        <DialogFooter className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-t pt-4">
+          <p className="text-xs text-muted-foreground">
+            {filasValidas.length > 0
+              ? "Solo se importan las filas listas. Las repetidas o que ya existen en el sistema se omiten."
+              : "Selecciona un archivo con datos de empresas para comenzar."}
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={importando}
+              onClick={() => handleClose(false)}
+            >
+              Cerrar
+            </Button>
+            <Button
+              type="button"
+              disabled={filasValidas.length === 0 || importando}
+              onClick={() => setConfirmando(true)}
+            >
+              {importando ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} />
+                  Importando...
+                </>
+              ) : (
+                <>
                   <Upload size={16} />
-                )}
-                {importar.isPending
-                  ? "Importando..."
-                  : `Importar ${filasValidas.length > 0 ? `${filasValidas.length} ` : ""}embajadores`}
-              </Button>
-            </>
-          )}
+                  Importar {filasValidas.length > 0 ? `${filasValidas.length} ` : ""}
+                  empresas
+                </>
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function ResumenItem({
-  etiqueta,
-  valor,
-  destacado = false,
-}: {
-  etiqueta: string
-  valor: number
-  destacado?: boolean
-}) {
-  return (
-    <div
-      className={
-        destacado
-          ? "rounded-lg border border-primary/30 bg-primary/5 px-3 py-2"
-          : "rounded-lg border border-border px-3 py-2"
-      }
-    >
-      <p className="text-xs text-muted-foreground">{etiqueta}</p>
-      <p className="text-xl font-semibold text-foreground">{valor}</p>
-    </div>
   )
 }

@@ -25,16 +25,23 @@ import { usePlantillas } from "@/features/plantillas/hooks/usePlantillas"
 interface Props {
   plantillaId: string
   onChange: (id: string) => void
-  /** Nombre del influencer para la vista previa (opcional). */
+  /** Nombre del influencer o destinatario para la vista previa (opcional). */
   nombreInfluencer?: string
   disabled?: boolean
 }
 
 function vistaPrevia(texto: string, nombreInfluencer?: string) {
+  const nombre = nombreInfluencer ?? "[nombre]"
   return texto
-    .replaceAll("{{nombre_influencer}}", nombreInfluencer ?? "[nombre del embajador]")
+    .replaceAll("{{nombre_influencer}}", nombre)
+    .replaceAll("{{nombre}}", nombre)
+    .replaceAll("{nombre}", nombre)
+    .replaceAll("{{empresa}}", "[empresa]")
+    .replaceAll("{empresa}", "[empresa]")
     .replaceAll("{{nombre_voluntario}}", "[tu nombre]")
+    .replaceAll("{voluntario_nombre}", "[tu nombre]")
     .replaceAll("{{link_agendamiento}}", "[link de agendamiento]")
+    .replaceAll("{link_reunion}", "[link de agendamiento]")
 }
 
 export function SelectorPlantillaCorreo({

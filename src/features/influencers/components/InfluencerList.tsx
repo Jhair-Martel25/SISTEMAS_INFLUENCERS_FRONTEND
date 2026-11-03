@@ -1,11 +1,11 @@
-﻿"use client"
+"use client"
 
 // Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
 // Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Building2, Eye, MessagesSquare, Pencil, Plus, Search, Send, Trash2, Upload, Users, X } from "lucide-react"
+import { Building2, Eye, Mail, MessagesSquare, Pencil, Plus, Search, Send, Trash2, Upload, UserRound, Users, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -91,7 +91,7 @@ function iniciales(nombre: string) {
     .toUpperCase()
 }
 
-export function InfluencerList() {
+export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: boolean } = {}) {
   const { isAdmin } = usePermission()
 
   const [page, setPage] = useState(1)
@@ -116,6 +116,9 @@ export function InfluencerList() {
   const [contactoMasivo, setContactoMasivo] = useState(false)
   // Modo "mensaje masivo": muestra las casillas de seleccion en la tabla.
   const [modoSeleccion, setModoSeleccion] = useState(false)
+  const [accionSeleccion, setAccionSeleccion] = useState<"mensaje" | "eliminar">("mensaje")
+  const [eliminacionMasiva, setEliminacionMasiva] = useState(false)
+  const [eliminandoMasivo, setEliminandoMasivo] = useState(false)
 
   function salirModoSeleccion() {
     setModoSeleccion(false)
@@ -142,6 +145,34 @@ export function InfluencerList() {
     })
   }
 
+  async function eliminarSeleccionados() {
+    const ids = [...seleccionados.keys()]
+    if (ids.length === 0) return
+    setEliminandoMasivo(true)
+    let eliminados = 0
+    const fallidos: string[] = []
+    for (const id of ids) {
+      try {
+        await eliminar.mutateAsync(id)
+        eliminados++
+      } catch {
+        fallidos.push(seleccionados.get(id)?.nombre ?? id)
+      }
+    }
+    setEliminandoMasivo(false)
+    setEliminacionMasiva(false)
+    salirModoSeleccion()
+    if (eliminados > 0) {
+      toast.success(`Se eliminaron ${eliminados} embajador(es) correctamente.`)
+    }
+    if (fallidos.length > 0) {
+      toast.error(
+        `No se pudieron eliminar ${fallidos.length}: ${fallidos.slice(0, 3).join(", ")}`,
+      )
+    }
+  }
+
+
   const { data: categorias } = useCategorias(TIPO_CATEGORIA.TEMATICA)
   const tematicas = [...(categorias?.TEMATICA ?? [])].sort(
     (a, b) => a.orden - b.orden,
@@ -155,9 +186,9 @@ export function InfluencerList() {
   const { data, isLoading, isError, error } = useInfluencers({
     page: filtroLocalActivo ? 1 : page,
     limit: filtroLocalActivo ? LIMITE_CON_BUSQUEDA : LIMITE,
-    estadoValidacion: estadoValidacion || undefined,
+    estadoValidacion: soloInfluencers ? ESTADO_VALIDACION.VALIDADO : estadoValidacion || undefined,
     estadoContacto: estadoContacto || undefined,
-    tipoEmbajador: tipoEmbajador || undefined,
+    tipoEmbajador: soloInfluencers ? TIPO_EMBAJADOR.INFLUENCER : tipoEmbajador || undefined,
     tematica: tematica || undefined,
   })
   const eliminar = useEliminarInfluencer()
@@ -193,7 +224,7 @@ export function InfluencerList() {
   const mensajeVacio = busquedaActiva
     ? "No hay resultados para esa busqueda en los registros cargados."
     : sinInfluencersEnElSistema
-      ? "Todavia no hay embajadores registrados en el sistema."
+      ? soloInfluencers ? "Todavia no hay influencers registrados en el sistema." : "Todavia no hay embajadores registrados en el sistema."
       : "No hay resultados para los filtros seleccionados."
 
   const seleccionadosEnPagina = influencers.filter((i) => seleccionados.has(i.id)).length
@@ -235,22 +266,9 @@ export function InfluencerList() {
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="font-medium text-foreground">
-                {influencer.nombre}
-              </span>
-              <Badge
-                variant={
-                  influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
-                    ? "secondary"
-                    : "outline"
-                }
-              >
-                {influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
-                  ? "Empresa"
-                  : "Influencer"}
-              </Badge>
-            </div>
+            <span className="block font-medium text-foreground">
+              {influencer.nombre}
+            </span>
             {influencer.empresaRegistrada && (
               <Link
                 href={`/empresas/${influencer.empresaRegistrada.id}`}
@@ -265,40 +283,123 @@ export function InfluencerList() {
       ),
     },
     {
-      id: "instagram",
-      header: "Instagram",
-      cell: (influencer) => (
-        <a href={influencer.linkIg}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-muted-foreground transition-colors hover:text-primary"
-        >
-          @{influencer.usuarioIg}
-        </a>
-      ),
+      id: "tipoEmbajador",
+      header: "Tipo",
+      cell: (influencer) => {
+        const esEmpresa = influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+        return (
+          <Badge
+            variant={esEmpresa ? "secondary" : "outline"}
+            className="gap-1 font-medium"
+          >
+            {esEmpresa ? (
+              <>
+                <Building2 size={12} className="text-primary" />
+                Empresa
+              </>
+            ) : (
+              <>
+                <UserRound size={12} className="text-muted-foreground" />
+                Influencer
+              </>
+            )}
+          </Badge>
+        )
+      },
+    },
+    {
+      id: "contacto",
+      header: "Contacto",
+      cell: (influencer) => {
+        const esEmpresa = influencer.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+        if (esEmpresa) {
+          const correo = influencer.email?.trim()
+          return correo ? (
+            <a
+              href={`mailto:${correo}`}
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-primary max-w-[200px]"
+              title={correo}
+            >
+              <Mail size={13} className="shrink-0 text-muted-foreground" />
+              <span className="truncate">{correo}</span>
+            </a>
+          ) : (
+            <span className="text-xs text-muted-foreground">-</span>
+          )
+        }
+
+        const handle = influencer.usuarioIg?.trim()
+        return handle ? (
+          <a
+            href={influencer.linkIg || `https://instagram.com/${handle}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-muted-foreground transition-colors hover:text-primary"
+          >
+            @{handle}
+          </a>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
+        )
+      },
+    },
+    {
+      id: "ruc",
+      header: "RUC",
+      cell: (influencer) => {
+        const ruc = influencer.ruc?.trim() || influencer.empresaRegistrada?.ruc?.trim()
+        return ruc ? (
+          <span className="font-mono text-xs font-medium text-foreground">
+            {ruc}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
+        )
+      },
+    },
+    {
+      id: "ciiu",
+      header: "CIIU",
+      cell: (influencer) => {
+        const ciiu = influencer.ciiu?.trim() || influencer.empresaRegistrada?.ciiu?.trim()
+        return ciiu ? (
+          <span className="font-mono text-xs font-medium text-foreground">
+            {ciiu}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
+        )
+      },
     },
     {
       id: "seguidores",
       header: "Seguidores",
-      cell: (influencer) => influencer.seguidores ?? "-",
+      cell: (influencer) => {
+        const seg = influencer.seguidores?.trim()
+        return seg ? (
+          <span className="text-xs text-foreground">{seg}</span>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
+        )
+      },
     },
     {
       id: "publicaciones",
       header: "Publicaciones",
-      cell: (influencer) => influencer.cantidad_post ?? "-",
+      cell: (influencer) => {
+        const posts = influencer.cantidad_post?.trim()
+        return posts ? (
+          <span className="text-xs text-foreground">{posts}</span>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
+        )
+      },
     },
     {
       id: "validacion",
       header: "Validacion",
       cell: (influencer) => (
         <EstadoBadge estado={influencer.estadoValidacion} tipo="validacion" />
-      ),
-    },
-    {
-      id: "contacto",
-      header: "Contacto",
-      cell: (influencer) => (
-        <EstadoBadge estado={influencer.estadoContacto} tipo="contacto" />
       ),
     },
     {
@@ -354,14 +455,15 @@ export function InfluencerList() {
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <PageHeader
-        title="Gestión de Embajadores"
-        description="Administra, consulta y valida los embajadores registrados en el sistema."
+        title={soloInfluencers ? "Gestión de Influencers" : "Gestión de Embajadores"}
+        description={soloInfluencers ? "Consulta, contacta y administra los influencers registrados como embajadores." : "Administra, consulta y valida los embajadores registrados en el sistema."}
         backHref="/dashboard"
-        actions={
+        actions={(
           <div className="flex flex-wrap gap-2">
+            {!soloInfluencers && (<>
             <Button variant="outline" onClick={() => setImportando(true)}>
               <Upload size={16} />
-              Importar embajadores
+              Importar empresas
             </Button>
             {/* Boton "Importar influencers" (CSV/Excel) oculto temporalmente.
             <Button variant="outline" onClick={() => setImportando(true)}>
@@ -380,23 +482,45 @@ export function InfluencerList() {
               </Link>
             </Button>
 
+            </>)}
+            {!soloInfluencers && (
             <Button
-              variant={modoSeleccion ? "secondary" : "outline"}
-              onClick={() =>
-                modoSeleccion ? salirModoSeleccion() : setModoSeleccion(true)
-              }
+              variant={modoSeleccion && accionSeleccion === "mensaje" ? "secondary" : "outline"}
+              onClick={() => {
+                if (modoSeleccion && accionSeleccion === "mensaje") salirModoSeleccion()
+                else {
+                  setAccionSeleccion("mensaje")
+                  setModoSeleccion(true)
+                }
+              }}
             >
-              {modoSeleccion ? <X size={16} /> : <MessagesSquare size={16} />}
-              {modoSeleccion ? "Cancelar mensaje masivo" : "Mensaje masivo"}
+              {modoSeleccion && accionSeleccion === "mensaje" ? <X size={16} /> : <MessagesSquare size={16} />}
+              {modoSeleccion && accionSeleccion === "mensaje" ? "Cancelar mensaje masivo" : "Mensaje masivo"}
             </Button>
-            <Button asChild>
-              <Link href="/influencers/nuevo">
-                <Plus size={16} />
-                Nuevo Embajador
-              </Link>
+            )}
+            <Button
+              variant={modoSeleccion && accionSeleccion === "eliminar" ? "secondary" : "outline"}
+              onClick={() => {
+                if (modoSeleccion && accionSeleccion === "eliminar") salirModoSeleccion()
+                else {
+                  setAccionSeleccion("eliminar")
+                  setModoSeleccion(true)
+                }
+              }}
+            >
+              {modoSeleccion && accionSeleccion === "eliminar" ? <X size={16} /> : <Trash2 size={16} />}
+              {modoSeleccion && accionSeleccion === "eliminar" ? "Cancelar eliminación" : "Eliminar varios"}
             </Button>
+            {!soloInfluencers && (
+              <Button asChild>
+                <Link href="/influencers/nuevo">
+                  <Plus size={16} />
+                  Nuevo Embajador
+                </Link>
+              </Button>
+            )}
           </div>
-        }
+        )}
       />
 
       <DataTableToolbar>
@@ -424,7 +548,7 @@ export function InfluencerList() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Select
+          {!soloInfluencers && <Select
             value={tipoEmbajador || TODOS}
             onValueChange={(valor) => {
               setTipoEmbajador(
@@ -443,7 +567,7 @@ export function InfluencerList() {
                 Influencer
               </SelectItem>
             </SelectContent>
-          </Select>
+          </Select>}
           <Select
             value={redFiltro || TODOS}
             onValueChange={(valor) =>
@@ -462,6 +586,7 @@ export function InfluencerList() {
               ))}
             </SelectContent>
           </Select>
+          {!soloInfluencers && (
           <Select
             value={estadoValidacion || TODOS}
             onValueChange={(valor) => {
@@ -483,6 +608,7 @@ export function InfluencerList() {
               ))}
             </SelectContent>
           </Select>
+          )}
 
           <Select
             value={estadoContacto || TODOS}
@@ -556,7 +682,7 @@ export function InfluencerList() {
             <div className="text-sm">
               <p className="font-medium">
                 {seleccionados.size === 0
-                  ? "Mensaje masivo: selecciona embajadores"
+                  ? (accionSeleccion === "eliminar" ? "Eliminación masiva: selecciona embajadores" : "Mensaje masivo: selecciona embajadores")
                   : seleccionados.size === 1
                     ? "1 embajador seleccionado"
                     : `${seleccionados.size} embajadores seleccionados`}
@@ -575,14 +701,26 @@ export function InfluencerList() {
                 Quitar seleccion
               </Button>
             )}
-            <Button
-              size="sm"
-              disabled={seleccionados.size === 0}
-              onClick={() => setContactoMasivo(true)}
-            >
-              <Users size={14} />
-              Enviar mensaje
-            </Button>
+            {accionSeleccion === "eliminar" ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={seleccionados.size === 0}
+                onClick={() => setEliminacionMasiva(true)}
+              >
+                <Trash2 size={14} />
+                Eliminar seleccionados
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                disabled={seleccionados.size === 0}
+                onClick={() => setContactoMasivo(true)}
+              >
+                <Users size={14} />
+                Enviar mensaje
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -736,6 +874,17 @@ export function InfluencerList() {
             },
           })
         }}
+      />
+
+      <ConfirmDialog
+        open={eliminacionMasiva}
+        onOpenChange={(open) => !open && setEliminacionMasiva(false)}
+        title="Eliminar embajadores"
+        description={`Seguro que deseas eliminar ${seleccionados.size} embajador(es)? Esta accion no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        destructive
+        isPending={eliminandoMasivo}
+        onConfirm={eliminarSeleccionados}
       />
 
       <ImportarInfluencersModal open={importando} onOpenChange={setImportando} />

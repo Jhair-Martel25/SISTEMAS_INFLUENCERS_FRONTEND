@@ -4,10 +4,10 @@ import { EstadoValidacionEnum, TipoEmbajadorEnum } from './influencers.schema'
 /**
  * Schema de validacion del formulario de influencer/embajador (crear/editar).
  *
- * - `INFLUENCER`: perfil personal. Requiere usuario o link de Instagram
- *   (el backend deriva el que falte).
- * - `EMPRESA`: requiere una empresa seleccionada y, opcionalmente, uno de
- *   sus contactos. El backend completa los datos corporativos.
+ * - `INFLUENCER`: perfil personal. Requiere nombre y usuario o link de Instagram
+ *   (el backend deriva el que falte). No usa campos corporativos.
+ * - `EMPRESA`: embajador corporativo. Requiere datos de empresa o empresa seleccionada.
+ *   No solicita redes ni métricas de influencer personal.
  *
  * `usuarioIg` NO incluye el "@" (se lo quitamos automaticamente).
  */
@@ -39,8 +39,9 @@ export const influencerFormSchema = z
     nombre: z
       .string()
       .trim()
-      .min(1, 'El nombre es obligatorio')
-      .max(120, 'El nombre es demasiado largo (maximo 120 caracteres)'),
+      .max(120, 'El nombre es demasiado largo (maximo 120 caracteres)')
+      .optional()
+      .or(z.literal('')),
     usuarioIg: z
       .string()
       .trim()
@@ -48,13 +49,17 @@ export const influencerFormSchema = z
       .refine((valor) => !valor || USUARIO_IG_REGEX.test(valor), {
         message:
           'Usa solo letras, numeros, puntos y guiones bajos (sin el @, maximo 30 caracteres)',
-      }),
+      })
+      .optional()
+      .or(z.literal('')),
     linkIg: z
       .string()
       .trim()
       .refine((valor) => !valor || z.url().safeParse(valor).success, {
         message: 'Ingresa una URL valida',
-      }),
+      })
+      .optional()
+      .or(z.literal('')),
     empresa: z.string().trim().max(120, 'Maximo 120 caracteres').optional().or(z.literal('')),
     ruc: z.string().trim().max(20, 'Maximo 20 caracteres').optional().or(z.literal('')),
     ciiu: z.string().trim().max(20, 'Maximo 20 caracteres').optional().or(z.literal('')),
@@ -66,7 +71,9 @@ export const influencerFormSchema = z
       .trim()
       .refine((valor) => !valor || z.url().safeParse(valor).success, {
         message: 'Ingresa una URL valida (incluye https://)',
-      }),
+      })
+      .optional()
+      .or(z.literal('')),
     ubigeo: z.string().trim().max(20, 'Maximo 20 caracteres').optional().or(z.literal('')),
     departamento: z.string().trim().max(100, 'Maximo 100 caracteres').optional().or(z.literal('')),
     provincia: z.string().trim().max(100, 'Maximo 100 caracteres').optional().or(z.literal('')),
@@ -85,34 +92,50 @@ export const influencerFormSchema = z
         message:
           'Ingresa un telefono valido (numeros, espacios, +, - y parentesis)',
       }),
-    seguidores: z.string().trim(),
-    cantidad_post: z.string().trim(),
+    seguidores: z.string().trim().optional().or(z.literal('')),
+    cantidad_post: z.string().trim().optional().or(z.literal('')),
     biografia: z
       .string()
       .trim()
-      .max(500, 'Maximo 500 caracteres'),
+      .max(500, 'Maximo 500 caracteres')
+      .optional()
+      .or(z.literal('')),
     mensajePersonalizado: z
       .string()
       .trim()
-      .max(1000, 'Maximo 1000 caracteres'),
+      .max(1000, 'Maximo 1000 caracteres')
+      .optional()
+      .or(z.literal('')),
     estadoValidacion: EstadoValidacionEnum,
   })
   .superRefine((valores, ctx) => {
-    if (!valores.usuarioIg && !valores.linkIg) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['usuarioIg'],
-        message:
-          'Indica el usuario de Instagram o el link del perfil (al menos uno)',
-      })
+    if (valores.tipoEmbajador === 'INFLUENCER') {
+      if (!valores.nombre || valores.nombre.trim().length === 0) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['nombre'],
+          message: 'El nombre del embajador es obligatorio',
+        })
+      }
+
+      if (!valores.usuarioIg && !valores.linkIg) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['usuarioIg'],
+          message:
+            'Indica el usuario de Instagram o el link del perfil (al menos uno)',
+        })
+      }
     }
 
-    if (valores.tipoEmbajador === 'EMPRESA' && !valores.empresaId) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['empresaId'],
-        message: 'Selecciona la empresa del embajador',
-      })
+    if (valores.tipoEmbajador === 'EMPRESA') {
+      if (!valores.empresaId && (!valores.empresa || valores.empresa.trim().length === 0)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['empresa'],
+          message: 'Ingresa el nombre de la empresa',
+        })
+      }
     }
   })
 
