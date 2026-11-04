@@ -824,16 +824,36 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
       </Dialog>
 
       <Dialog open={Boolean(editando)} onOpenChange={(open) => !open && setEditando(null)}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Editar embajador</DialogTitle>
-            <DialogDescription>
-              Actualiza los datos del embajador.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="flex max-h-[90vh] w-[95vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+          <div className="flex shrink-0 items-center gap-3 border-b border-border px-6 py-4 pr-12">
+            <Avatar size="lg">
+              <AvatarFallback className="bg-primary/10 font-medium text-primary">
+                {iniciales(editando?.nombre ?? "?")}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="text-base">Editar embajador</DialogTitle>
+              <DialogDescription className="truncate">
+                {editando?.nombre}
+                {editando?.usuarioIg
+                  ? ` · @${editando.usuarioIg}`
+                  : editando?.email
+                    ? ` · ${editando.email}`
+                    : ""}
+              </DialogDescription>
+            </div>
+            {editando && (
+              <Badge variant="outline" className="shrink-0">
+                {editando.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+                  ? "Empresa"
+                  : "Influencer"}
+              </Badge>
+            )}
+          </div>
           {editando && (
             <InfluencerForm
               influencer={editando}
+              enDialogo
               onSuccess={() => setEditando(null)}
               onCancel={() => setEditando(null)}
             />

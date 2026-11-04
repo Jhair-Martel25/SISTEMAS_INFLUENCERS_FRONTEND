@@ -14,7 +14,7 @@ export function Sidebar() {
   const items = NAVEGACION.filter((item) => puede(item.recurso))
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
+    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col self-start bg-sidebar text-sidebar-foreground">
       <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

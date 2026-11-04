@@ -3,7 +3,7 @@
 // Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
 // Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -72,6 +72,41 @@ import { UbigeoAutocomplete } from "./UbigeoAutocomplete"
 const BIOGRAFIA_MAX = 500
 const MENSAJE_MAX = 1000
 const SIN_CONTACTO = "sin-contacto"
+
+function FormSection({
+  titulo,
+  descripcion,
+  children,
+}: {
+  titulo: string
+  descripcion?: string
+  children: ReactNode
+}) {
+  return (
+    <section className="space-y-4">
+      <div className="space-y-0.5">
+        <h3 className="text-sm font-semibold text-foreground">{titulo}</h3>
+        {descripcion && (
+          <p className="text-xs text-muted-foreground">{descripcion}</p>
+        )}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function Contador({ valor, maximo }: { valor: number; maximo: number }) {
+  return (
+    <span
+      className={cn(
+        "text-xs tabular-nums",
+        valor > maximo ? "text-destructive" : "text-muted-foreground",
+      )}
+    >
+      {valor}/{maximo}
+    </span>
+  )
+}
 
 function valoresIniciales(
   influencer?: Influencer | null,
@@ -149,6 +184,8 @@ interface InfluencerFormProps {
   empresaInicialId?: string
   /** Tipo preseleccionado (por ejemplo desde /influencers/nuevo?tipo=EMPRESA). */
   tipoInicial?: TipoEmbajador
+  /** Ajusta el scroll y el pie de acciones para mostrarse dentro de un diálogo. */
+  enDialogo?: boolean
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -157,6 +194,7 @@ export function InfluencerForm({
   influencer,
   empresaInicialId,
   tipoInicial,
+  enDialogo = false,
   onSuccess,
   onCancel,
 }: InfluencerFormProps) {
@@ -400,12 +438,20 @@ export function InfluencerForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleSubmit)}
-        className="space-y-5"
+        className={cn("flex min-h-0 flex-col", enDialogo && "flex-1")}
         noValidate
       >
+        <div
+          className={cn(
+            "space-y-6",
+            enDialogo && "min-h-0 flex-1 overflow-y-auto px-6 py-5",
+          )}
+        >
         {!esEdicion && (
-          <section className="space-y-2">
-            <FormLabel>Tipo de embajador</FormLabel>
+          <FormSection
+            titulo="Tipo de embajador"
+            descripcion="Elige si el embajador es un perfil personal o una empresa."
+          >
             <div className="grid gap-2 sm:grid-cols-2">
               {tipos.map((tipo) => {
                 const activo = tipoEmbajador === tipo.valor
@@ -444,7 +490,7 @@ export function InfluencerForm({
                 )
               })}
             </div>
-          </section>
+          </FormSection>
         )}
 
         {/* ========================================================================= */}
@@ -578,6 +624,10 @@ export function InfluencerForm({
             </section>
 
             {/* Datos corporativos de la empresa (Image 2) */}
+            <FormSection
+              titulo="Datos corporativos"
+              descripcion="Completa la información fiscal y de ubicación de la empresa."
+            >
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
@@ -626,9 +676,9 @@ export function InfluencerForm({
                 name="descripcion"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Descripcion</FormLabel>
+                    <FormLabel>Descripción</FormLabel>
                     <FormControl>
-                      <Input placeholder="Exportacion madera" {...field} />
+                      <Input placeholder="Exportación de madera" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -655,7 +705,7 @@ export function InfluencerForm({
                 name="area"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Area</FormLabel>
+                    <FormLabel>Área</FormLabel>
                     <FormControl>
                       <Input placeholder="Resp. Social" {...field} />
                     </FormControl>
@@ -669,6 +719,7 @@ export function InfluencerForm({
             <div className="rounded-lg border border-border/60 bg-muted/10 p-3.5">
               <UbigeoAutocomplete form={form} disabled={pendiente} />
             </div>
+            </FormSection>
           </>
         )}
 
@@ -676,7 +727,10 @@ export function InfluencerForm({
         {/* CAMPOS EXCLUSIVOS DE INFLUENCER                                           */}
         {/* ========================================================================= */}
         {!esEmpresa && (
-          <>
+          <FormSection
+            titulo="Perfil público"
+            descripcion="Datos de la cuenta de Instagram y métricas del embajador."
+          >
             <FormField
               control={form.control}
               name="nombre"
@@ -686,7 +740,7 @@ export function InfluencerForm({
                     Nombre del embajador <span className="text-destructive">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input placeholder="Alejandro Tripoli Bolsa" {...field} />
+                    <Input placeholder="Ej. María Fernanda Ríos" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -701,10 +755,10 @@ export function InfluencerForm({
                   <FormItem>
                     <FormLabel>Usuario de Instagram</FormLabel>
                     <FormControl>
-                      <Input placeholder="andreapaz" {...field} />
+                      <Input placeholder="ej. maria.rios" {...field} />
                     </FormControl>
                     <p className="text-xs text-muted-foreground">
-                      Sin el @. Solo letras, numeros, puntos y guiones bajos.
+                      Sin el @. Solo letras, números, puntos y guiones bajos.
                     </p>
                     <FormMessage />
                   </FormItem>
@@ -717,10 +771,10 @@ export function InfluencerForm({
                   <FormItem>
                     <FormLabel>Link del perfil</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://instagram.com/..." {...field} />
+                      <Input placeholder="https://instagram.com/maria.rios" {...field} />
                     </FormControl>
                     <p className="text-xs text-muted-foreground">
-                      Puedes enviar solo uno: el sistema genera el otro.
+                      Puedes completar solo uno: el sistema genera el otro.
                     </p>
                     <FormMessage />
                   </FormItem>
@@ -738,6 +792,9 @@ export function InfluencerForm({
                     <FormControl>
                       <Input placeholder="150k" {...field} />
                     </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Puedes usar 150k o 150000.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -751,6 +808,9 @@ export function InfluencerForm({
                     <FormControl>
                       <Input placeholder="120" {...field} />
                     </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Cantidad aproximada de publicaciones.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -763,41 +823,81 @@ export function InfluencerForm({
               render={({ field }) => (
                 <FormItem>
                   <div className="flex items-baseline justify-between">
-                    <FormLabel>Biografia</FormLabel>
-                    <span
-                      className={`text-xs ${
-                        biografiaValor.length > BIOGRAFIA_MAX
-                          ? "text-destructive"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {biografiaValor.length}/{BIOGRAFIA_MAX}
-                    </span>
+                    <FormLabel>Biografía</FormLabel>
+                    <Contador valor={biografiaValor.length} maximo={BIOGRAFIA_MAX} />
                   </div>
                   <FormControl>
-                    <Textarea rows={3} {...field} />
+                    <Textarea
+                      rows={4}
+                      placeholder="Describe el contenido, nicho y alcance del embajador."
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </>
+          </FormSection>
         )}
 
         {/* ========================================================================= */}
         {/* CAMPOS COMUNES (Contacto, Mensaje, Validación)                           */}
         {/* ========================================================================= */}
-        <div className="grid gap-4 sm:grid-cols-2">
+        <FormSection
+          titulo="Datos de contacto"
+          descripcion="Se usan para enviar correos y coordinar el seguimiento."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Correo electrónico</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="correo@ejemplo.com"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Teléfono</FormLabel>
+                  <FormControl>
+                    <Input placeholder="+51 999 999 999" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </FormSection>
+
+        <FormSection
+          titulo="Seguimiento"
+          descripcion="Mensaje base y estado de validación dentro del embudo."
+        >
           <FormField
             control={form.control}
-            name="email"
+            name="mensajePersonalizado"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Correo electronico</FormLabel>
+                <div className="flex items-baseline justify-between">
+                  <FormLabel>Mensaje personalizado</FormLabel>
+                  <Contador valor={mensajeValor.length} maximo={MENSAJE_MAX} />
+                </div>
                 <FormControl>
-                  <Input
-                    type="email"
-                    placeholder="correo@ejemplo.com"
+                  <Textarea
+                    rows={4}
+                    placeholder="Hola {nombre}, te escribimos de Sembrando Perú porque..."
                     {...field}
                   />
                 </FormControl>
@@ -805,72 +905,45 @@ export function InfluencerForm({
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Telefono</FormLabel>
-                <FormControl>
-                  <Input placeholder="+51 999 999 999" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
+          <div className="sm:max-w-60">
+            <FormField
+              control={form.control}
+              name="estadoValidacion"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estado de validación</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecciona un estado" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.values(ESTADO_VALIDACION).map((estado) => (
+                        <SelectItem key={estado} value={estado}>
+                          {etiquetaEstado(estado, "validacion")}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </FormSection>
+
         </div>
 
-        <FormField
-          control={form.control}
-          name="mensajePersonalizado"
-          render={({ field }) => (
-            <FormItem>
-              <div className="flex items-baseline justify-between">
-                <FormLabel>Mensaje personalizado</FormLabel>
-                <span
-                  className={`text-xs ${
-                    mensajeValor.length > MENSAJE_MAX
-                      ? "text-destructive"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {mensajeValor.length}/{MENSAJE_MAX}
-                </span>
-              </div>
-              <FormControl>
-                <Textarea rows={3} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+        <div
+          className={cn(
+            "flex justify-end gap-2",
+            enDialogo
+              ? "shrink-0 border-t border-border bg-card px-6 py-4"
+              : "pt-4",
           )}
-        />
-
-        <FormField
-          control={form.control}
-          name="estadoValidacion"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Estado de validacion</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecciona un estado" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Object.values(ESTADO_VALIDACION).map((estado) => (
-                    <SelectItem key={estado} value={estado}>
-                      {etiquetaEstado(estado, "validacion")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end gap-2 pt-2">
+        >
           <Button
             type="button"
             variant="outline"
