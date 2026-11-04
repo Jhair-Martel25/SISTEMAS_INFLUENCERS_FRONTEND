@@ -8,7 +8,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { Building2, ExternalLink, Loader2, UserRound, Users } from "lucide-react"
+import { AtSign, Building2, ExternalLink, Loader2, Mail, MessagesSquare, Sparkles, UserRound, Users, type LucideIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -73,22 +73,64 @@ const BIOGRAFIA_MAX = 500
 const MENSAJE_MAX = 1000
 const SIN_CONTACTO = "sin-contacto"
 
+const TONOS_SECCION = {
+  mint: {
+    panel: "border-mint/25 bg-mint/5",
+    icono: "bg-mint/15 text-primary",
+  },
+  sky: {
+    panel: "border-sky-200/70 bg-sky-50/50 dark:border-sky-500/20 dark:bg-sky-500/5",
+    icono: "bg-sky-500/10 text-sky-600 dark:text-sky-300",
+  },
+  violet: {
+    panel:
+      "border-violet-200/70 bg-violet-50/50 dark:border-violet-500/20 dark:bg-violet-500/5",
+    icono: "bg-violet-500/10 text-violet-600 dark:text-violet-300",
+  },
+  amber: {
+    panel:
+      "border-amber-200/70 bg-amber-50/50 dark:border-amber-500/20 dark:bg-amber-500/5",
+    icono: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  },
+} as const
+
 function FormSection({
   titulo,
   descripcion,
+  icono: Icono,
+  tono = "mint",
   children,
 }: {
   titulo: string
   descripcion?: string
+  icono?: LucideIcon
+  tono?: keyof typeof TONOS_SECCION
   children: ReactNode
 }) {
   return (
-    <section className="space-y-4">
-      <div className="space-y-0.5">
-        <h3 className="text-sm font-semibold text-foreground">{titulo}</h3>
-        {descripcion && (
-          <p className="text-xs text-muted-foreground">{descripcion}</p>
+    <section
+      className={cn(
+        "space-y-4 rounded-2xl border p-4 [&_input]:bg-card [&_textarea]:bg-card [&_[data-slot=select-trigger]]:bg-card",
+        TONOS_SECCION[tono].panel,
+      )}
+    >
+      <div className="flex items-start gap-3">
+        {Icono && (
+          <span
+            className={cn(
+              "flex size-8 shrink-0 items-center justify-center rounded-lg",
+              TONOS_SECCION[tono].icono,
+            )}
+          >
+            <Icono size={16} />
+          </span>
         )}
+        <div className="space-y-0.5">
+          <h3 className="text-sm font-semibold text-foreground">{titulo}</h3>
+          {descripcion && (
+            <p className="text-xs text-muted-foreground">{descripcion}</p>
+          )}
+        </div>
       </div>
       {children}
     </section>
@@ -451,6 +493,8 @@ export function InfluencerForm({
           <FormSection
             titulo="Tipo de embajador"
             descripcion="Elige si el embajador es un perfil personal o una empresa."
+            icono={Sparkles}
+            tono="violet"
           >
             <div className="grid gap-2 sm:grid-cols-2">
               {tipos.map((tipo) => {
@@ -498,16 +542,21 @@ export function InfluencerForm({
         {/* ========================================================================= */}
         {esEmpresa && (
           <>
-            <section className="space-y-4 rounded-lg border border-border/60 bg-muted/10 p-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">
-                  Empresa del embajador
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  {empresaBloqueada
-                    ? "El tipo y la empresa no se pueden cambiar al editar un embajador corporativo."
-                    : "Busca la empresa en la base corporativa o completa los datos en los campos a continuación."}
-                </p>
+            <section className="space-y-4 rounded-2xl border border-mint/25 bg-mint/5 p-4 [&_input]:bg-card [&_[data-slot=select-trigger]]:bg-card">
+              <div className="flex items-start gap-3">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-mint/15 text-primary">
+                  <Building2 size={16} />
+                </span>
+                <div className="space-y-0.5">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Empresa del embajador
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {empresaBloqueada
+                      ? "El tipo y la empresa no se pueden cambiar al editar un embajador corporativo."
+                      : "Busca la empresa en la base corporativa o completa los datos en los campos a continuación."}
+                  </p>
+                </div>
               </div>
 
               {empresaBloqueada ? (
@@ -627,6 +676,8 @@ export function InfluencerForm({
             <FormSection
               titulo="Datos corporativos"
               descripcion="Completa la información fiscal y de ubicación de la empresa."
+              icono={Building2}
+              tono="sky"
             >
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
@@ -716,7 +767,7 @@ export function InfluencerForm({
             </div>
 
             {/* Ubigeo con autocompletado y campos derivados */}
-            <div className="rounded-lg border border-border/60 bg-muted/10 p-3.5">
+            <div className="rounded-xl border border-border/60 bg-background/60 p-3.5">
               <UbigeoAutocomplete form={form} disabled={pendiente} />
             </div>
             </FormSection>
@@ -730,6 +781,8 @@ export function InfluencerForm({
           <FormSection
             titulo="Perfil público"
             descripcion="Datos de la cuenta de Instagram y métricas del embajador."
+            icono={AtSign}
+            tono="mint"
           >
             <FormField
               control={form.control}
@@ -846,6 +899,8 @@ export function InfluencerForm({
         <FormSection
           titulo="Datos de contacto"
           descripcion="Se usan para enviar correos y coordinar el seguimiento."
+          icono={Mail}
+          tono="sky"
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField
@@ -884,6 +939,8 @@ export function InfluencerForm({
         <FormSection
           titulo="Seguimiento"
           descripcion="Mensaje base y estado de validación dentro del embudo."
+          icono={MessagesSquare}
+          tono="amber"
         >
           <FormField
             control={form.control}
@@ -940,7 +997,7 @@ export function InfluencerForm({
           className={cn(
             "flex justify-end gap-2",
             enDialogo
-              ? "shrink-0 border-t border-border bg-card px-6 py-4"
+              ? "shrink-0 border-t border-border bg-gradient-to-r from-mint/5 via-card to-card px-6 py-4"
               : "pt-4",
           )}
         >

@@ -5,7 +5,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Building2, Eye, Mail, MessagesSquare, Pencil, Plus, Search, Send, Trash2, Upload, UserRound, Users, X } from "lucide-react"
+import { Building2, Eye, Mail, MessagesSquare, Pencil, Plus, Search, Send, Trash2, Upload, UserRound, Users, X, AtSign, Camera, Link2, Phone, Quote, type LucideIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -17,7 +17,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
@@ -48,6 +47,7 @@ import { TIPO_CATEGORIA } from "@/types/categoria"
 import type { Influencer } from "@/types/influencer"
 import { TIPO_EMBAJADOR, type TipoEmbajador } from "@/types/empresa"
 import { etiquetaEstado } from "@/lib/utils/format"
+import { cn } from "@/lib/utils"
 import { useCategorias } from "../../categorias/hooks/useCategorias"
 import {
   useEliminarInfluencer,
@@ -89,6 +89,83 @@ function iniciales(nombre: string) {
     .slice(0, 2)
     .join("")
     .toUpperCase()
+}
+
+const TONOS_DATO = {
+  mint: "bg-mint/15 text-primary dark:bg-mint/20 dark:text-mint",
+  sky: "bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-300",
+  amber: "bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300",
+  violet:
+    "bg-violet-500/10 text-violet-600 dark:bg-violet-500/20 dark:text-violet-300",
+} as const
+
+function DatoContacto({
+  icono: Icono,
+  etiqueta,
+  valor,
+  href,
+  tono = "mint",
+  className,
+}: {
+  icono: LucideIcon
+  etiqueta: string
+  valor?: string | null
+  href?: string
+  tono?: keyof typeof TONOS_DATO
+  className?: string
+}) {
+  const interno = href?.startsWith("/")
+  const externo = href?.startsWith("http")
+
+  return (
+    <div
+      className={cn(
+        "flex min-w-0 items-center gap-3 rounded-xl border border-border/70 bg-card px-3 py-2.5",
+        className,
+      )}
+    >
+      <span
+        className={cn(
+          "flex size-8 shrink-0 items-center justify-center rounded-lg",
+          TONOS_DATO[tono],
+        )}
+      >
+        <Icono size={15} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          {etiqueta}
+        </p>
+        {valor ? (
+          href ? (
+            interno ? (
+              <Link
+                href={href}
+                className="block truncate text-sm font-medium text-foreground transition-colors hover:text-primary hover:underline"
+              >
+                {valor}
+              </Link>
+            ) : (
+              <a
+                href={href}
+                target={externo ? "_blank" : undefined}
+                rel={externo ? "noopener noreferrer" : undefined}
+                className="block truncate text-sm font-medium text-foreground transition-colors hover:text-primary hover:underline"
+              >
+                {valor}
+              </a>
+            )
+          ) : (
+            <p className="truncate text-sm font-medium text-foreground">
+              {valor}
+            </p>
+          )
+        ) : (
+          <p className="text-sm text-muted-foreground">No registrado</p>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: boolean } = {}) {
@@ -452,6 +529,8 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
     ? [columnaSeleccion, ...columnasBase]
     : columnasBase
 
+  const viendoEsEmpresa = viendo?.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <PageHeader
@@ -743,112 +822,207 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
       )}
 
       <Dialog open={Boolean(viendo)} onOpenChange={(open) => !open && setViendo(null)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{viendo?.nombre}</DialogTitle>
-            <DialogDescription>@{viendo?.usuarioIg}</DialogDescription>
-          </DialogHeader>
+        <DialogContent className="flex max-h-[90vh] w-[95vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
           {viendo && (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="col-span-2">
-                <p className="text-muted-foreground">Tipo</p>
-                <p className="font-medium">
-                  {viendo.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
-                    ? "Empresa"
-                    : "Influencer"}
-                </p>
-              </div>
-              {viendo.empresaRegistrada && (
-                <div className="col-span-2">
-                  <p className="text-muted-foreground">Empresa</p>
-                  <Link
-                    href={`/empresas/${viendo.empresaRegistrada.id}`}
-                    className="font-medium text-primary underline"
-                  >
-                    {viendo.empresaRegistrada.nombre}
-                  </Link>
+            <>
+              <div className="relative shrink-0 overflow-hidden border-b border-border bg-gradient-to-br from-mint/20 via-primary/5 to-card px-6 pb-5 pt-6 pr-14">
+                <div className="pointer-events-none absolute -right-12 -top-16 size-40 rounded-full bg-mint/30 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-14 left-10 size-32 rounded-full bg-sky-400/10 blur-2xl" />
+                <div className="relative flex items-start gap-4">
+                  <Avatar className="size-14 shadow-sm ring-2 ring-white/70">
+                    <AvatarFallback className="bg-primary text-lg font-semibold text-white">
+                      {iniciales(viendo.nombre)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <DialogTitle className="truncate text-lg font-semibold leading-tight">
+                      {viendo.nombre}
+                    </DialogTitle>
+                    <DialogDescription className="flex items-center gap-1.5 text-sm">
+                      <AtSign size={14} className="shrink-0 text-primary" />
+                      <span className="truncate">
+                        {viendo.usuarioIg || "Sin usuario"}
+                      </span>
+                    </DialogDescription>
+                    <Badge
+                      className={cn(
+                        "gap-1 border-0 text-[11px] font-medium",
+                        viendoEsEmpresa
+                          ? "bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                          : "bg-mint/15 text-primary dark:text-mint",
+                      )}
+                    >
+                      {viendoEsEmpresa ? (
+                        <Building2 size={12} />
+                      ) : (
+                        <UserRound size={12} />
+                      )}
+                      {viendoEsEmpresa ? "Empresa" : "Influencer"}
+                    </Badge>
+                  </div>
                 </div>
-              )}
-              <div>
-                <p className="text-muted-foreground">Correo</p>
-                <p className="font-medium">{viendo.email || "-"}</p>
               </div>
-              <div>
-                <p className="text-muted-foreground">Telefono</p>
-                <p className="font-medium">{viendo.phone || "-"}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Seguidores</p>
-                <p className="font-medium">{viendo.seguidores || "-"}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Publicaciones</p>
-                <p className="font-medium">{viendo.cantidad_post || "-"}</p>
-              </div>
-              <div className="col-span-2">
-                <p className="text-muted-foreground">Link de perfil</p>
-                <a href={viendo.linkIg}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-primary underline break-all"
-                >
-                  {viendo.linkIg}
-                </a>
-              </div>
-              {viendo.biografia && (
-                <div className="col-span-2">
-                  <p className="text-muted-foreground">Biografia</p>
-                  <p className="font-medium">{viendo.biografia}</p>
+
+              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-mint/30 bg-mint/10 p-3">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                      <Users size={14} />
+                      Seguidores
+                    </div>
+                    <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
+                      {viendo.seguidores || "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 dark:border-sky-500/20 dark:bg-sky-500/10">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-sky-700 dark:text-sky-300">
+                      <Camera size={14} />
+                      Publicaciones
+                    </div>
+                    <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
+                      {viendo.cantidad_post || "—"}
+                    </p>
+                  </div>
                 </div>
-              )}
-              {viendo.mensajePersonalizado && (
-                <div className="col-span-2">
-                  <p className="text-muted-foreground">Mensaje personalizado</p>
-                  <p className="font-medium">{viendo.mensajePersonalizado}</p>
+
+                <div className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Contacto
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <DatoContacto
+                      icono={Mail}
+                      etiqueta="Correo"
+                      valor={viendo.email}
+                      href={viendo.email ? `mailto:${viendo.email}` : undefined}
+                      tono="sky"
+                    />
+                    <DatoContacto
+                      icono={Phone}
+                      etiqueta="Teléfono"
+                      valor={viendo.phone}
+                      href={viendo.phone ? `tel:${viendo.phone}` : undefined}
+                      tono="amber"
+                    />
+                  </div>
+                  <DatoContacto
+                    icono={Link2}
+                    etiqueta="Link del perfil"
+                    valor={viendo.linkIg}
+                    href={viendo.linkIg || undefined}
+                    tono="violet"
+                  />
+                  {viendo.empresaRegistrada && (
+                    <DatoContacto
+                      icono={Building2}
+                      etiqueta="Empresa"
+                      valor={viendo.empresaRegistrada.nombre}
+                      href={`/empresas/${viendo.empresaRegistrada.id}`}
+                      tono="mint"
+                    />
+                  )}
                 </div>
-              )}
-              <div>
-                <p className="text-muted-foreground">Validacion</p>
-                <EstadoBadge
-                  estado={viendo.estadoValidacion}
-                  tipo="validacion"
-                />
+
+                {viendo.biografia && (
+                  <div className="rounded-xl border border-mint/30 bg-mint/5 p-3.5">
+                    <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+                      <Quote size={12} />
+                      Biografía
+                    </p>
+                    <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+                      {viendo.biografia}
+                    </p>
+                  </div>
+                )}
+
+                {viendo.mensajePersonalizado && (
+                  <div className="rounded-xl border border-amber-200/70 bg-amber-50/70 p-3.5 dark:border-amber-500/20 dark:bg-amber-500/10">
+                    <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                      <MessagesSquare size={12} />
+                      Mensaje personalizado
+                    </p>
+                    <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+                      {viendo.mensajePersonalizado}
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-xl border border-border/70 bg-secondary/40 px-3 py-2.5">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Validación
+                    </p>
+                    <div className="mt-1.5">
+                      <EstadoBadge
+                        estado={viendo.estadoValidacion}
+                        tipo="validacion"
+                      />
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-border/70 bg-secondary/40 px-3 py-2.5">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Contacto
+                    </p>
+                    <div className="mt-1.5">
+                      <EstadoBadge
+                        estado={viendo.estadoContacto}
+                        tipo="contacto"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-muted-foreground">Contacto</p>
-                <EstadoBadge estado={viendo.estadoContacto} tipo="contacto" />
-              </div>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
 
       <Dialog open={Boolean(editando)} onOpenChange={(open) => !open && setEditando(null)}>
         <DialogContent className="flex max-h-[90vh] w-[95vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
-          <div className="flex shrink-0 items-center gap-3 border-b border-border px-6 py-4 pr-12">
-            <Avatar size="lg">
-              <AvatarFallback className="bg-primary/10 font-medium text-primary">
-                {iniciales(editando?.nombre ?? "?")}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <DialogTitle className="text-base">Editar embajador</DialogTitle>
-              <DialogDescription className="truncate">
-                {editando?.nombre}
-                {editando?.usuarioIg
-                  ? ` · @${editando.usuarioIg}`
-                  : editando?.email
-                    ? ` · ${editando.email}`
-                    : ""}
-              </DialogDescription>
+          <div className="relative shrink-0 overflow-hidden border-b border-border bg-gradient-to-br from-mint/20 via-primary/5 to-card px-6 py-5 pr-14">
+            <div className="pointer-events-none absolute -right-12 -top-16 size-40 rounded-full bg-mint/30 blur-2xl" />
+            <div className="pointer-events-none absolute -bottom-14 left-10 size-32 rounded-full bg-sky-400/10 blur-2xl" />
+            <div className="relative flex items-start gap-4">
+              <Avatar className="size-14 shadow-sm ring-2 ring-white/70">
+                <AvatarFallback className="bg-primary text-lg font-semibold text-white">
+                  {iniciales(editando?.nombre ?? "?")}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <DialogTitle className="text-base font-semibold">
+                  Editar embajador
+                </DialogTitle>
+                <DialogDescription className="truncate">
+                  {editando?.nombre}
+                  {editando?.usuarioIg
+                    ? ` · @${editando.usuarioIg}`
+                    : editando?.email
+                      ? ` · ${editando.email}`
+                      : ""}
+                </DialogDescription>
+                {editando && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge
+                      className={cn(
+                        "gap-1 border-0 text-[11px] font-medium",
+                        editando.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+                          ? "bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                          : "bg-mint/15 text-primary dark:text-mint",
+                      )}
+                    >
+                      {editando.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA ? (
+                        <Building2 size={12} />
+                      ) : (
+                        <UserRound size={12} />
+                      )}
+                      {editando.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+                        ? "Empresa"
+                        : "Influencer"}
+                    </Badge>
+                  </div>
+                )}
+              </div>
             </div>
-            {editando && (
-              <Badge variant="outline" className="shrink-0">
-                {editando.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
-                  ? "Empresa"
-                  : "Influencer"}
-              </Badge>
-            )}
           </div>
           {editando && (
             <InfluencerForm
