@@ -19,6 +19,9 @@ export const HorarioSchema = z.object({
   horaInicio: z.string(),
   horaFin: z.string(),
   voluntarioId: z.string().optional(),
+  voluntario: z.object({
+    nombre: z.string(),
+  }).optional(),
 })
 
 export const HorarioListaSchema = z.object({
