@@ -38,8 +38,8 @@ export const NAVEGACION: ItemNavegacion[] = [
   {
     recurso: 'empresas',
     href: '/empresas',
-    label: 'Empresas',
-    desc: 'Base corporativa y contactos',
+    label: 'Influencers',
+    desc: 'Consulta y administra influencers registrados',
   },
   {
     recurso: 'horarios',
@@ -80,7 +80,7 @@ export const NAVEGACION: ItemNavegacion[] = [
    {
     recurso: 'empresas-contactos',
     href: '/empresas-contactos',
-    label: 'Gestión de Empresas y Contactos',
+    label: 'Empresas y Contactos',
     desc: 'Administra empresas y sus personas de contacto',
   },
   {

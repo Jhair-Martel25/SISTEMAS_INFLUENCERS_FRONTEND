@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "generate:types": "openapi-typescript src/types/generated/openapi.json -o src/types/generated/dto.ts"
+    "generate:types": "openapi-typescript src/types/generated/openapi.json -o src/types/generated/dto.ts",
+    "predev": "node scripts/ensure-backend.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.8.0",
