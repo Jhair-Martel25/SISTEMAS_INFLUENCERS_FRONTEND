@@ -83,6 +83,12 @@ export const NAVEGACION: ItemNavegacion[] = [
     label: 'Perfil',
     desc: 'Actualiza tu correo, contraseña y foto',
   },
+  {
+    recurso: 'manual',
+    href: '/manual',
+    label: 'Manual',
+    desc: 'Guías de uso de cada módulo',
+  },
 ]
 
 /**

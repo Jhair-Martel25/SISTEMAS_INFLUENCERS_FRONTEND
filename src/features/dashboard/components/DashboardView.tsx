@@ -1,45 +1,41 @@
 "use client"
 
-// Nota: en la interfaz, los "influencers" ahora se muestran como "embajadores".
+// Nota: en la interfaz, los "influencers" se muestran como "embajadores".
 // Solo cambia el texto visible; nombres de código, rutas, API y BD siguen como "influencer".
 
-import {
-  Calendar,
-  CalendarDays,
-  CalendarRange,
-  CheckCircle2,
-  Clock,
-  Mail,
-  UserX,
-  Users,
-  Video,
-  XCircle,
-  type LucideIcon,
-} from "lucide-react"
+import { useMemo, useState } from "react"
+import { Building2, Mail, Users, Video } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageHeader } from "@/components/shared/page-header"
 
 import { useDashboard } from "../hooks/useDashboard"
-import { ChartBarras } from "./ChartBarras"
+import { MESES, rangoMes } from "../utils/periodo"
+import { ChartApiladoDiario, LIMITE_DIARIO_EQUIPO, TODOS_LOS_USUARIOS } from "./ChartApiladoDiario"
+import { ChartColumnas } from "./ChartColumnas"
 import { KpiCard } from "./KpiCard"
 
-interface KpiDef {
-  icon: LucideIcon
-  label: string
-  value: number
+const ANIO_INICIO = 2025
+
+function SinDatos() {
+  return (
+    <div className="flex h-56 items-center justify-center rounded-lg border border-dashed border-border px-4 text-center text-sm text-muted-foreground">
+      Aún no hay datos para este gráfico.
+    </div>
+  )
 }
 
 export function DashboardView() {
-  const { data, isLoading, isError, error, refetch, isFetching } = useDashboard()
+  const hoy = new Date()
+  const [anio, setAnio] = useState(hoy.getFullYear())
+  const [mes, setMes] = useState(hoy.getMonth() + 1)
+  const [usuario, setUsuario] = useState(TODOS_LOS_USUARIOS)
+
+  const filtros = useMemo(() => rangoMes(anio, mes), [anio, mes])
+  const { data, isLoading, isError, error, refetch, isFetching } = useDashboard(filtros)
 
   const errorMessage = isError
     ? error instanceof Error
@@ -49,44 +45,56 @@ export function DashboardView() {
 
   const kpis = data?.kpis
   const charts = data?.charts
+  const anios = Array.from(
+    { length: hoy.getFullYear() - ANIO_INICIO + 1 },
+    (_, i) => ANIO_INICIO + i,
+  )
 
-  const seccionInfluencers: KpiDef[] = kpis
-    ? [
-        { icon: Users, label: "Total embajadores", value: kpis.totalInfluencers },
-        { icon: Clock, label: "Pendientes", value: kpis.pendientes },
-        { icon: CheckCircle2, label: "Validados", value: kpis.validados },
-        { icon: XCircle, label: "Rechazados", value: kpis.rechazados },
-      ]
-    : []
+  // Correos por usuario y por día (un dataset por persona).
+  const porUsuario = charts?.correosPorUsuarioDia
+  const usuarios = porUsuario?.datasets.map((d) => d.label) ?? []
+  const totalesPorUsuario = Object.fromEntries(
+    (porUsuario?.datasets ?? []).map((d) => [d.label, d.data.reduce((a, b) => a + b, 0)]),
+  )
+  const totalEquipo = Object.values(totalesPorUsuario).reduce((a, b) => a + b, 0)
+  const contactados = charts?.contactados
+  const empresas = contactados?.labels.indexOf("Empresas") ?? -1
+  const influencers = contactados?.labels.indexOf("Influencers") ?? -1
 
-  const seccionContacto: KpiDef[] = kpis
-    ? [
-        { icon: UserX, label: "Sin contactar", value: kpis.sinContactar },
-        { icon: Mail, label: "Correo enviado", value: kpis.correoEnviado },
-        { icon: Video, label: "Reunión agendada", value: kpis.reunionAgendada },
-      ]
-    : []
+  // Resumen de la persona elegida (o del equipo).
+  const perfil = (() => {
+    if (!porUsuario) return null
+    const datasets = usuario === TODOS_LOS_USUARIOS
+      ? porUsuario.datasets
+      : porUsuario.datasets.filter((d) => d.label === usuario)
+    const diarios = porUsuario.labels.map((_, i) =>
+      datasets.reduce((s, d) => s + (d.data[i] ?? 0), 0),
+    )
+    const total = diarios.reduce((a, b) => a + b, 0)
+    const diasActivos = diarios.filter((v) => v > 0).length
+    return {
+      total,
+      promedio: diasActivos ? Math.round(total / diasActivos) : 0,
+      maximo: Math.max(0, ...diarios),
+      diasActivos,
+    }
+  })()
 
-  const seccionReuniones: KpiDef[] = kpis
-    ? [
-        { icon: CalendarDays, label: "Hoy", value: kpis.reunionesHoy },
-        { icon: CalendarRange, label: "Semana", value: kpis.reunionesSemana },
-        { icon: Calendar, label: "Mes", value: kpis.reunionesMes },
-      ]
-    : []
+  const weekly = charts?.correosPorSemana
+  const reunionesSemana = charts?.reunionesPorSemana
+  // El KPI reunionesMes del backend usa siempre el mes actual; la serie sí respeta el filtro.
+  const reunionesDelPeriodo = reunionesSemana
+    ? reunionesSemana.datasets[0]?.data.reduce((a, b) => a + b, 0) ?? 0
+    : kpis?.reunionesMes ?? 0
 
-  function renderSeccion(titulo: string, definiciones: KpiDef[], accent: "primary" | "mint") {
+  function renderSeccion(titulo: string, descripcion: string, contenido: React.ReactNode) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>{titulo}</CardTitle>
-          <CardDescription>Resumen del estado actual del sistema.</CardDescription>
+          <CardDescription>{descripcion}</CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-4">
-          {definiciones.map((kpi) => (
-            <KpiCard key={kpi.label} {...kpi} accent={accent} />
-          ))}
-        </CardContent>
+        <CardContent>{contenido}</CardContent>
       </Card>
     )
   }
@@ -94,93 +102,200 @@ export function DashboardView() {
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <PageHeader
-        title="Panel de Administración"
-        description="KPIs y gráficos del embudo de conversión."
+        title="Estado del sistema de embajadores"
+        description="Solo embajadores validados. Usa los filtros de mes y año para cambiar el periodo."
+        actions={
+          <>
+            <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MESES.map((m, i) => (
+                  <SelectItem key={m} value={String(i + 1)}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={String(anio)} onValueChange={(v) => setAnio(Number(v))}>
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {anios.map((a) => (
+                  <SelectItem key={a} value={String(a)}>
+                    {a}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        }
       />
 
       {isLoading ? (
         <>
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-5 w-40" />
-              </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {Array.from({ length: 4 }).map((_, j) => (
-                  <Skeleton key={j} className="h-20 rounded-xl" />
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-12 rounded-xl" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, j) => (
+              <Skeleton key={j} className="h-20 rounded-xl" />
+            ))}
+          </div>
+          <Skeleton className="h-80 rounded-xl" />
         </>
       ) : errorMessage ? (
         <Card>
           <CardContent className="flex flex-col items-start gap-3 py-8">
             <p className="text-sm text-destructive">{errorMessage}</p>
-            <Button
-              variant="outline"
-              onClick={() => refetch()}
-              disabled={isFetching}
-            >
+            <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
               {isFetching ? "Cargando..." : "Reintentar"}
             </Button>
           </CardContent>
         </Card>
-      ) : charts && kpis ? (
+      ) : kpis && charts ? (
         <>
-          {renderSeccion("Embajadores", seccionInfluencers, "primary")}
-          {renderSeccion("Contacto", seccionContacto, "mint")}
-          {renderSeccion("Reuniones", seccionReuniones, "primary")}
+          <p className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-foreground dark:bg-amber-950/30">
+            <span className="font-semibold">
+              {kpis.validados} {kpis.validados === 1 ? "embajador validado" : "embajadores validados"}.
+            </span>{" "}
+            Según el estado de contacto actual: {kpis.correoEnviado} con correo enviado y {kpis.reunionAgendada} con reunión agendada.
+          </p>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{charts.embudo.title}</CardTitle>
-              <CardDescription>
-                Progreso de los embajadores a través del embudo de contacto.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartBarras
-                chart={charts.embudo}
-                gradientId="grad-embudo"
-              />
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <KpiCard
+              icon={Mail}
+              label="Correos enviados del mes"
+              value={porUsuario ? totalEquipo.toLocaleString("es-PE") : "—"}
+            />
+            <KpiCard icon={Video} label="Reuniones agendadas" value={reunionesDelPeriodo} accent="mint" />
+            <KpiCard
+              icon={Building2}
+              label="Empresas contactadas"
+              value={empresas >= 0 ? contactados!.datasets[0].data[empresas] : "—"}
+              accent="mint"
+            />
+            <KpiCard
+              icon={Users}
+              label="Influencers contactados"
+              value={influencers >= 0 ? contactados!.datasets[0].data[influencers] : "—"}
+              accent="mint"
+            />
+          </div>
 
-          <div
-            className={
-              charts.usoPlantillas ? "grid gap-6 lg:grid-cols-2" : "grid gap-6"
-            }
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle>{charts.topVoluntarios.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartBarras
-                  chart={charts.topVoluntarios}
-                  gradientId="grad-voluntarios"
+          {renderSeccion(
+            "¿Cuántos correos envía cada usuario por día?",
+            "Cada barra es un día del mes. Los colores muestran cuántos correos envió cada persona. La suma de todos nunca pasa de 300 por día.",
+            porUsuario ? (
+              <div className="flex flex-col gap-4">
+                {totalEquipo === 0 && (
+                  <p className="rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+                    No hay correos registrados en este periodo. Solo se cuentan los correos enviados desde que se activó el registro.
+                  </p>
+                )}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">Usuario:</span>
+                  <Select value={usuario} onValueChange={setUsuario}>
+                    <SelectTrigger className="w-64">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={TODOS_LOS_USUARIOS}>{TODOS_LOS_USUARIOS}</SelectItem>
+                      {usuarios.map((u) => (
+                        <SelectItem key={u} value={u}>
+                          {u}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <ChartApiladoDiario chart={porUsuario} usuario={usuario} />
+
+                {perfil && (
+                  <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/50 p-3 sm:grid-cols-4">
+                    <Dato etiqueta="Correos del mes" valor={perfil.total.toLocaleString("es-PE")} />
+                    <Dato etiqueta="Promedio por día con envíos" valor={String(perfil.promedio)} />
+                    <Dato etiqueta="Día con más envíos" valor={String(perfil.maximo)} />
+                    <Dato etiqueta="Días con envíos" valor={String(perfil.diasActivos)} />
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  El límite de {LIMITE_DIARIO_EQUIPO} se aplica al total de todos los usuarios de cada día, no a cada persona.
+                </p>
+              </div>
+            ) : (
+              <SinDatos />
+            ),
+          )}
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            {renderSeccion(
+              "¿Cuántos correos enviamos por día, en promedio por semana?",
+              "Promedio diario de cada semana del mes, frente al límite de 300.",
+              weekly ? (
+                <ChartColumnas
+                  chart={weekly}
+                  color="var(--primary)"
+                  referencia={{ valor: LIMITE_DIARIO_EQUIPO, etiqueta: "Límite 300 por día" }}
                 />
-              </CardContent>
-            </Card>
+              ) : (
+                <SinDatos />
+              ),
+            )}
 
-            {charts.usoPlantillas && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{charts.usoPlantillas.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ChartBarras
-                    chart={charts.usoPlantillas}
-                    gradientId="grad-plantillas"
-                  />
-                </CardContent>
-              </Card>
+            {renderSeccion(
+              "¿Cuántas reuniones agendamos por semana?",
+              "Reuniones agendadas en el mes elegido.",
+              reunionesSemana ? (
+                <ChartColumnas chart={reunionesSemana} color="var(--mint)" />
+              ) : (
+                <SinDatos />
+              ),
             )}
           </div>
+
+          {renderSeccion(
+            "¿Cuántos validados avanzan hasta la reunión?",
+            "Embajadores validados que llegan a cada etapa.",
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Etapa valor={kpis.validados} etiqueta="Validados" />
+                <span className="text-muted-foreground">→</span>
+                <Etapa valor={kpis.correoEnviado} etiqueta="Con correo" />
+                <span className="text-muted-foreground">→</span>
+                <Etapa valor={kpis.reunionAgendada} etiqueta="Con reunión" />
+              </div>
+              <p className="text-center text-xs text-muted-foreground">
+                Cifras según el estado de contacto actual de todos los embajadores.
+              </p>
+              {kpis.correoEnviado > 0 && (
+                <p className="text-center text-sm text-muted-foreground">
+                  De cada 5 embajadores que reciben correo, {Math.round((kpis.reunionAgendada / kpis.correoEnviado) * 5)} agenda reunión.
+                </p>
+              )}
+            </div>,
+          )}
         </>
       ) : null}
+    </div>
+  )
+}
+
+function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
+  return (
+    <div className="text-center">
+      <p className="font-heading text-xl font-semibold text-foreground">{valor}</p>
+      <p className="text-xs text-muted-foreground">{etiqueta}</p>
+    </div>
+  )
+}
+
+function Etapa({ valor, etiqueta }: { valor: number; etiqueta: string }) {
+  return (
+    <div className="flex flex-1 flex-col items-center rounded-xl bg-mint/10 p-4 text-center">
+      <span className="font-heading text-2xl font-semibold text-foreground">{valor}</span>
+      <span className="text-xs text-muted-foreground">{etiqueta}</span>
     </div>
   )
 }

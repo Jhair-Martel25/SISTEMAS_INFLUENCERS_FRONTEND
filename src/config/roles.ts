@@ -24,6 +24,7 @@ export const RECURSOS = {
   EMAIL: 'email',
   PERFIL: 'perfil',
   EMPRESAS_CONTACTOS: 'empresas-contactos',
+  MANUAL: 'manual',
 } as const
 
 export type Recurso = (typeof RECURSOS)[keyof typeof RECURSOS]
@@ -40,6 +41,7 @@ const PERMISOS_POR_ROL: Record<Role, Recurso[]> = {
     RECURSOS.EMAIL,
     RECURSOS.PERFIL, // ← ADMIN puede modificar su correo y contraseña
     RECURSOS.EMPRESAS_CONTACTOS,
+    RECURSOS.MANUAL,
   ],
   VOLUNTARIO: [
     RECURSOS.INFLUENCERS,
@@ -50,6 +52,7 @@ const PERMISOS_POR_ROL: Record<Role, Recurso[]> = {
     RECURSOS.PLANTILLAS,
     RECURSOS.PERFIL, // ← VOLUNTARIO puede modificar su correo y contraseña
     RECURSOS.EMPRESAS_CONTACTOS,
+    RECURSOS.MANUAL,
   ],
 }
 

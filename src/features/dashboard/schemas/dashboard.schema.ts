@@ -2,9 +2,7 @@ import { z } from 'zod'
 
 /**
  * Schemas Zod de la feature `dashboard`.
- *
- * Validan la respuesta del backend en runtime (contrato) antes de cachearla
- * con TanStack Query. Ver CONTEXTO_FRONTEND.md §3.10.
+ * Validan la respuesta del backend antes de cachearla con TanStack Query.
  */
 
 export const DashboardKpisSchema = z.object({
@@ -34,8 +32,10 @@ export const ChartDataSchema = z.object({
 export const DashboardChartsSchema = z.object({
   embudo: ChartDataSchema,
   topVoluntarios: ChartDataSchema,
-  // Opcional: la version actual del backend ya no envia este grafico.
-  usoPlantillas: ChartDataSchema.optional(),
+  correosPorSemana: ChartDataSchema.optional(),
+  correosPorUsuarioDia: ChartDataSchema.optional(),
+  contactados: ChartDataSchema.optional(),
+  reunionesPorSemana: ChartDataSchema.optional(),
 })
 
 export const DashboardDataSchema = z.object({

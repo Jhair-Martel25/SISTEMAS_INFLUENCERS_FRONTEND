@@ -1,8 +1,8 @@
 /**
  * Dashboard (solo ADMIN)
  * ----------------------
- * Ver CONTEXTO_FRONTEND.md §3.10. GET /dashboard con filtros opcionales
- * `fechaInicio` y `fechaFin` en formato YYYY-MM-DD.
+ * GET /dashboard con filtros opcionales `fechaInicio` y `fechaFin` (YYYY-MM-DD).
+ * Los gráficos opcionales aún no los envía el backend; la UI muestra un estado vacío.
  */
 
 export interface DashboardKpis {
@@ -33,8 +33,17 @@ export interface ChartData {
 export interface DashboardCharts {
   embudo: ChartData
   topVoluntarios: ChartData
-  /** Puede no venir (el backend en Render ya no lo envía). */
-  usoPlantillas?: ChartData
+  /** Promedio diario de correos por semana. labels: "Semana 1", "Semana 2"... */
+  correosPorSemana?: ChartData
+  /**
+   * Correos por día del mes. labels: días ("1", "2"...), un dataset por usuario.
+   * La suma de todos los datasets de un día no debe pasar de 300.
+   */
+  correosPorUsuarioDia?: ChartData
+  /** labels: "Empresas", "Influencers". */
+  contactados?: ChartData
+  /** Reuniones agendadas por semana del mes. labels: "Semana 1"... */
+  reunionesPorSemana?: ChartData
 }
 
 export interface DashboardData {

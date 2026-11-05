@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 interface KpiCardProps {
   icon: LucideIcon
   label: string
-  value: number
+  value: number | string
   accent?: "primary" | "mint"
 }
 

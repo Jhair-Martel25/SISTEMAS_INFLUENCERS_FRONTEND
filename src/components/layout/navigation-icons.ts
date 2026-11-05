@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   Building2,
   CalendarCheck,
   CalendarClock,
@@ -30,5 +31,6 @@ export const ICONO_POR_RECURSO: Record<Recurso, LucideIcon> = {
   plantillas: FileText,
   email: Mail,
   perfil: UserCog,
+  manual: BookOpen,
    'empresas-contactos': Building2,
 }
