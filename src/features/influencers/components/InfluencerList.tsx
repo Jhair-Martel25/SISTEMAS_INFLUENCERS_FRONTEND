@@ -43,11 +43,9 @@ import {
   ESTADO_VALIDACION,
   type EstadoContacto,
 } from "@/types/api"
-import { TIPO_CATEGORIA } from "@/types/categoria"
 import type { Influencer } from "@/types/influencer"
 import { TIPO_EMBAJADOR, type TipoEmbajador } from "@/types/empresa"
 import { etiquetaEstado } from "@/lib/utils/format"
-import { useCategorias } from "../../categorias/hooks/useCategorias"
 import {
   useEliminarInfluencer,
   useInfluencers,
@@ -95,7 +93,6 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
 
   const [page, setPage] = useState(1)
   const [estadoContacto, setEstadoContacto] = useState<EstadoContacto | "">("")
-  const [tematica, setTematica] = useState("")
   const [tipoEmbajador, setTipoEmbajador] = useState<TipoEmbajador | "">("")
   const [busqueda, setBusqueda] = useState("")
 
@@ -169,11 +166,6 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
   }
 
 
-  const { data: categorias } = useCategorias(TIPO_CATEGORIA.TEMATICA)
-  const tematicas = [...(categorias?.TEMATICA ?? [])].sort(
-    (a, b) => a.orden - b.orden,
-  )
-
   const busquedaActiva = busqueda.trim().length > 0
   const [redFiltro, setRedFiltro] = useState<FiltroRed>("")
   // Busqueda por texto o filtro de red: se cargan mas registros y se filtra aqui.
@@ -185,7 +177,6 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
     estadoValidacion: ESTADO_VALIDACION.VALIDADO,
     estadoContacto: estadoContacto || undefined,
     tipoEmbajador: soloInfluencers ? TIPO_EMBAJADOR.INFLUENCER : tipoEmbajador || undefined,
-    tematica: tematica || undefined,
   })
   const eliminar = useEliminarInfluencer()
 
@@ -212,7 +203,7 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
     : null
 
   const hayFiltrosActivos = Boolean(
-    estadoContacto || tematica || redFiltro || tipoEmbajador,
+    estadoContacto || redFiltro || tipoEmbajador,
   )
   const sinInfluencersEnElSistema =
     !busquedaActiva && !hayFiltrosActivos && (data?.meta.total ?? 0) === 0
@@ -605,25 +596,6 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
             </SelectContent>
           </Select>
 
-          <Select
-            value={tematica || TODOS}
-            onValueChange={(valor) => {
-              setTematica(valor === TODOS ? "" : valor)
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-44">
-              <SelectValue placeholder="Tematica" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={TODOS}>Todas las tematicas</SelectItem>
-              {tematicas.map((t) => (
-                <SelectItem key={t.valor} value={t.valor}>
-                  {t.etiqueta}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       </DataTableToolbar>
 
