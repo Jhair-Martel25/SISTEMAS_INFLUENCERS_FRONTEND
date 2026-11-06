@@ -75,19 +75,20 @@ export function HorarioList() {
   const columnas: Columna<Horario>[] = [
     ...(isAdmin
       ? [
-          {
-            id: "voluntario",
-            header: "Voluntario",
-            cell: (horario: Horario) => (
-              <span
-                title={horario.voluntarioId}
-                className="text-muted-foreground"
-              >
-                {horario.voluntarioId ? idCorto(horario.voluntarioId) : "—"}
-              </span>
-            ),
-          },
-        ]
+        {
+          id: "voluntario",
+          header: "Voluntario",
+          cell: (horario: Horario) => (
+            <span
+              title={horario.voluntarioId}
+              className="text-muted-foreground"
+            >
+              {horario.voluntario?.nombre ||
+                (horario.voluntarioId ? idCorto(horario.voluntarioId) : "—")}
+            </span>
+          ),
+        },
+      ]
       : []),
     {
       id: "diaSemana",
@@ -111,32 +112,32 @@ export function HorarioList() {
     ...(isAdmin
       ? []
       : [
-          {
-            id: "acciones",
-            header: "Acciones",
-            className: "text-right",
-            cell: (horario: Horario) => (
-              <div className="flex justify-end gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Editar"
-                  onClick={() => setEditando(horario)}
-                >
-                  <Pencil size={16} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Eliminar"
-                  onClick={() => setEliminando(horario)}
-                >
-                  <Trash2 size={16} className="text-destructive" />
-                </Button>
-              </div>
-            ),
-          },
-        ]),
+        {
+          id: "acciones",
+          header: "Acciones",
+          className: "text-right",
+          cell: (horario: Horario) => (
+            <div className="flex justify-end gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Editar"
+                onClick={() => setEditando(horario)}
+              >
+                <Pencil size={16} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Eliminar"
+                onClick={() => setEliminando(horario)}
+              >
+                <Trash2 size={16} className="text-destructive" />
+              </Button>
+            </div>
+          ),
+        },
+      ]),
   ]
 
   return (

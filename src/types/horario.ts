@@ -14,6 +14,9 @@ export interface Horario {
   horaFin: string
   /** Presente en GET /horarios (ADMIN); ausente en GET /horarios/mis-horarios. */
   voluntarioId?: string
+  voluntario?: {
+    nombre: string
+  }
 }
 
 /** Body de POST /horarios. */

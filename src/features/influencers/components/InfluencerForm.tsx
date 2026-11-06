@@ -661,7 +661,7 @@ export function InfluencerForm({
                     </div>
                   ) : contactos.length === 0 ? (
                     <p className="text-xs text-amber-600 dark:text-amber-400">
-                      Esta empresa no tiene contactos registrados.
+                      Esta empresa no tiene contactos. Agrega uno para identificar a la persona embajadora.
                     </p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
