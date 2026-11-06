@@ -44,6 +44,7 @@ const PERMISOS_POR_ROL: Record<Role, Recurso[]> = {
     RECURSOS.MANUAL,
   ],
   VOLUNTARIO: [
+    RECURSOS.DASHBOARD,
     RECURSOS.INFLUENCERS,
     RECURSOS.EMPRESAS,
     RECURSOS.HORARIOS,
@@ -70,5 +71,5 @@ export function esAdmin(role: Role | undefined): boolean {
 
 /** Ruta inicial a la que redirigir según el rol. */
 export function homeSegunRol(role: Role | undefined): string {
-  return esAdmin(role) ? '/dashboard' : '/influencers'
+  return role ? '/dashboard' : '/login'
 }

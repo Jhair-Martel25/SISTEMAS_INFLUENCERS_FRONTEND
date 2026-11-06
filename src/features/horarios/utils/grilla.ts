@@ -81,3 +81,26 @@ export function mismaSeleccion(a: SeleccionGrilla, b: SeleccionGrilla) {
   for (const k of a) if (!b.has(k)) return false
   return true
 }
+
+const DIA_POR_NOMBRE: Record<string, DiaSemana> = {
+  lunes: 'LUNES', martes: 'MARTES', miercoles: 'MIERCOLES', jueves: 'JUEVES', viernes: 'VIERNES', sabado: 'SABADO', domingo: 'DOMINGO',
+}
+
+/** Celdas (día|minuto, hora de Perú) que ocupa una reunión. */
+export function celdasDeReunion(fechaHora: string, duracionMinutos: number): string[] {
+  const partes = new Intl.DateTimeFormat('es-PE', {
+    timeZone: 'America/Lima',
+    weekday: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(fechaHora))
+  const v = (t: string) => partes.find((p) => p.type === t)?.value ?? ''
+  const dia = DIA_POR_NOMBRE[v('weekday').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()]
+  if (!dia) return []
+  const inicio = Number(v('hour')) * 60 + Number(v('minute'))
+  const desde = Math.floor(inicio / GRILLA_PASO_MIN) * GRILLA_PASO_MIN
+  const celdas: string[] = []
+  for (let m = desde; m < inicio + (duracionMinutos || 30); m += GRILLA_PASO_MIN) celdas.push(clave(dia, m))
+  return celdas
+}

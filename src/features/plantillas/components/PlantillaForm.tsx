@@ -24,6 +24,7 @@ import {
   DISENOS_CORREO,
   DISENO_CORREO_INFO,
   normalizarDiseno,
+  tipoPreviaDeDiseno,
   type Plantilla,
 } from "@/types/plantilla"
 import { MiniaturaDiseno } from "@/features/influencers/components/SelectorPlantillaCorreo"
@@ -78,7 +79,7 @@ export function PlantillaForm({
     diseno,
     asunto,
     cuerpo,
-    tipo: diseno === "REFORESTA" ? "EMPRESA" : "INFLUENCER",
+    tipo: tipoPreviaDeDiseno(diseno),
   })
 
   function handleSubmit(values: PlantillaFormValues) {

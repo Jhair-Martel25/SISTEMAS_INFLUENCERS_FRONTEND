@@ -29,11 +29,11 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { PageHeader } from "@/components/shared/page-header"
 import { cn } from "@/lib/utils"
 
-import { usePermission } from "@/hooks/usePermission"
 import {
   DISENOS_CORREO,
   DISENO_CORREO_INFO,
   normalizarDiseno,
+  tipoPreviaDeDiseno,
   type DisenoCorreo,
   type Plantilla,
 } from "@/types/plantilla"
@@ -88,12 +88,23 @@ function PortadaPlantilla({ plantilla }: { plantilla: Plantilla }) {
     <div className="flex h-full w-full items-start justify-center bg-[#F1F6EF] px-6 pt-4">
       <div className="w-full max-w-[260px] overflow-hidden rounded-t-lg bg-white shadow-md transition-transform duration-500 group-hover:-translate-y-1">
         <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
-          <span className="font-serif text-[9px] font-bold tracking-wider text-[#1B4332]">SEMBRANDO PERÚ</span>
-          <span className="font-serif text-[6px] text-[#2D6A4F] italic">Alianzas que generan impacto</span>
+          <span className="flex items-center gap-1.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/logo.png" alt="" className="size-4 object-contain" />
+            <span className="leading-none">
+              <span className="block text-[5px] font-bold tracking-[0.2em] text-[#2D6A4F]">ONGD</span>
+              <span className="block text-[9px] font-black text-[#1B4332]" style={{ fontFamily: "'Arial Black', Arial, sans-serif" }}>
+                SEMBRANDO PERÚ
+              </span>
+            </span>
+          </span>
+          <span className="rounded-full bg-[#E7F1E2] px-1.5 py-0.5 text-[5px] font-bold text-[#2D6A4F]">Alianzas que generan impacto</span>
         </div>
         <div className="space-y-1.5 bg-[#1B4332] px-3 py-3">
           <span className="block text-[6px] font-bold tracking-[0.2em] text-[#8CC63F]">SEMBRANDO PERÚ</span>
-          <p className="line-clamp-2 font-serif text-[11px] leading-tight font-bold text-white">{plantilla.asunto}</p>
+          <p className="line-clamp-2 text-[11px] leading-tight font-black text-white" style={{ fontFamily: "'Arial Black', Arial, sans-serif" }}>
+            {plantilla.asunto}
+          </p>
           <span className="inline-block rounded-full bg-[#8CC63F] px-2 py-0.5 text-[6px] font-bold text-[#1B4332]">
             Agendar reunión →
           </span>
@@ -112,7 +123,7 @@ function DialogoVistaPrevia({ plantilla, onClose }: { plantilla: Plantilla; onCl
   const diseno = normalizarDiseno(plantilla.diseno)
   const vista = useVistaPreviaCorreo({
     plantillaId: plantilla.id,
-    tipo: diseno === "REFORESTA" ? "EMPRESA" : "INFLUENCER",
+    tipo: tipoPreviaDeDiseno(diseno),
   })
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -135,7 +146,6 @@ function DialogoVistaPrevia({ plantilla, onClose }: { plantilla: Plantilla; onCl
 }
 
 export function PlantillaList() {
-  const { isAdmin } = usePermission()
 
   const [creando, setCreando] = useState(false)
   const [editando, setEditando] = useState<Plantilla | null>(null)
@@ -150,9 +160,9 @@ export function PlantillaList() {
 
   const plantillas = useMemo(() => data ?? [], [data])
   const porDiseno = useMemo(() => {
-    const c: Record<DisenoCorreo, number> = { CLASICO: 0, REFORESTA: 0 }
-    for (const p of plantillas) c[normalizarDiseno(p.diseno)]++
-    return c
+    let clasicas = 0
+    for (const p of plantillas) if (normalizarDiseno(p.diseno) === "CLASICO") clasicas++
+    return { CLASICO: clasicas, CAMPANAS: plantillas.length - clasicas }
   }, [plantillas])
 
   const filtradas = useMemo(() => {
@@ -219,8 +229,8 @@ export function PlantillaList() {
         </div>
         <div className="flex items-center justify-between rounded-2xl border bg-card p-4">
           <div>
-            <p className="text-xs font-medium text-muted-foreground">{DISENO_CORREO_INFO.REFORESTA.label}</p>
-            <p className="mt-1 text-2xl font-bold">{porDiseno.REFORESTA}</p>
+            <p className="text-xs font-medium text-muted-foreground">Diseños de campaña (con imagen)</p>
+            <p className="mt-1 text-2xl font-bold">{porDiseno.CAMPANAS}</p>
           </div>
           <span className="flex size-11 items-center justify-center rounded-xl border bg-muted text-muted-foreground">
             <ImageIcon size={20} />
@@ -230,7 +240,7 @@ export function PlantillaList() {
 
       {/* Filtros */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex w-fit gap-1 rounded-xl bg-muted/70 p-1 text-sm">
+        <div className="flex w-fit flex-wrap gap-1 rounded-xl bg-muted/70 p-1 text-sm">
           {(["TODOS", ...DISENOS_CORREO] as FiltroDiseno[]).map((d) => (
             <button
               key={d}
@@ -290,7 +300,7 @@ export function PlantillaList() {
                   <span
                     className={cn(
                       "absolute top-3 left-3 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide shadow-sm",
-                      diseno === "REFORESTA" ? "bg-[#8CC63F] text-[#1B4332]" : "bg-[#1B4332] text-white",
+                      diseno === "CLASICO" ? "bg-[#1B4332] text-white" : "bg-[#8CC63F] text-[#1B4332]",
                     )}
                   >
                     {DISENO_CORREO_INFO[diseno].label}
@@ -332,18 +342,16 @@ export function PlantillaList() {
                     >
                       <Copy size={14} />
                     </Button>
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        title="Eliminar"
-                        aria-label="Eliminar"
-                        onClick={() => setEliminando(p)}
-                      >
-                        <Trash2 size={14} className="text-destructive" />
-                      </Button>
-                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      title="Eliminar plantilla"
+                      aria-label="Eliminar"
+                      onClick={() => setEliminando(p)}
+                    >
+                      <Trash2 size={14} /> Borrar
+                    </Button>
                   </div>
                 </div>
               </article>
@@ -389,6 +397,22 @@ export function PlantillaList() {
           </DialogHeader>
           {editando && (
             <PlantillaForm plantilla={editando} onSuccess={() => setEditando(null)} onCancel={() => setEditando(null)} />
+          )}
+          {editando && (
+            <div className="flex justify-start border-t pt-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => {
+                  setEliminando(editando)
+                  setEditando(null)
+                }}
+              >
+                <Trash2 size={14} /> Borrar esta plantilla
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>

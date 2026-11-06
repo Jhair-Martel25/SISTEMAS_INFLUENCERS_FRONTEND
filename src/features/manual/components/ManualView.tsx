@@ -107,7 +107,7 @@ const SECCIONES: Seccion[] = [
       <div className="flex gap-3 rounded-xl border border-border bg-muted/30 p-4 text-sm">
         <Mail size={18} className="mt-0.5 shrink-0 text-primary" />
         <p className="text-muted-foreground">
-          <span className="font-semibold text-foreground">Gestión de correos:</span> desde esta sección se abre la página de correos empresariales, donde envías un correo personalizado o con plantilla a varias empresas y contactos a la vez. Cada destinatario muestra si ya recibió el correo (Enviado) o no (Pendiente).
+          <span className="font-semibold text-foreground">Envío de mensajes:</span> desde esta sección se abre la página de correos empresariales, donde envías un correo personalizado o con plantilla a varias empresas y contactos a la vez. Cada destinatario muestra si ya recibió el correo (Enviado) o no (Pendiente).
         </p>
       </div>
     ),

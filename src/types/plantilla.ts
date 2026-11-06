@@ -7,7 +7,7 @@
  */
 
 /** Diseños visuales disponibles (deben coincidir con DISENOS_CORREO del backend). */
-export const DISENOS_CORREO = ['CLASICO', 'REFORESTA'] as const
+export const DISENOS_CORREO = ['CLASICO', 'REFORESTA', 'SELVA_CENTRAL', 'REFORESTA_EDUCA'] as const
 export type DisenoCorreo = (typeof DISENOS_CORREO)[number]
 
 export const DISENO_CORREO_INFO: Record<
@@ -23,6 +23,21 @@ export const DISENO_CORREO_INFO: Record<
     descripcion: 'Pieza gráfica del Reto 300 + texto editable + botón "Agenda tu cita".',
     miniatura: '/images/plantillas/reforesta-con-nosotros.jpg',
   },
+  SELVA_CENTRAL: {
+    label: 'Selva central · Reto 300',
+    descripcion: 'Diseño en HTML: titular, cifras de aporte, foto de campo y "Agenda tu cita".',
+    miniatura: '/images/plantillas/selva-central.jpg',
+  },
+  REFORESTA_EDUCA: {
+    label: 'Reforesta y educa',
+    descripcion: 'Diseño en HTML: reforestación + educación, aporte desde S/ 6,000 y certificado de donación.',
+    miniatura: '/images/plantillas/reforesta-educa.jpg',
+  },
+}
+
+/** Los diseños de campaña están pensados para empresas (vista previa con {empresa}). */
+export function tipoPreviaDeDiseno(diseno: DisenoCorreo): 'INFLUENCER' | 'EMPRESA' {
+  return diseno === 'CLASICO' ? 'INFLUENCER' : 'EMPRESA'
 }
 
 export function normalizarDiseno(valor?: string | null): DisenoCorreo {

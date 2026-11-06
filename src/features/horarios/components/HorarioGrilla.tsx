@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { Lock } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import type { DiaSemana } from "@/types/api"
@@ -11,6 +12,10 @@ interface Props {
   seleccion: SeleccionGrilla
   /** Si se pasa, la grilla es editable (clic o arrastre para marcar). */
   onChange?: (seleccion: SeleccionGrilla) => void
+  /** Celdas con reunión agendada: no se pueden desmarcar. */
+  bloqueadas?: Set<string>
+  /** Se llama cuando se intenta quitar una celda bloqueada. */
+  onBloqueada?: (clave: string) => void
   className?: string
 }
 
@@ -21,7 +26,7 @@ interface Props {
  * celdas con el mismo modo. Clic en el nombre del día o en la hora alterna
  * la columna o la fila completa.
  */
-export function HorarioGrilla({ seleccion, onChange, className }: Props) {
+export function HorarioGrilla({ seleccion, onChange, bloqueadas, onBloqueada, className }: Props) {
   const editable = Boolean(onChange)
   const arrastre = useRef<{ modo: "marcar" | "desmarcar"; sel: SeleccionGrilla } | null>(null)
 
@@ -45,8 +50,14 @@ export function HorarioGrilla({ seleccion, onChange, className }: Props) {
     return nueva
   }
 
+  const esBloqueada = (k: string) => Boolean(bloqueadas?.has(k))
+
   function iniciar(k: string) {
     if (!onChange) return
+    if (seleccion.has(k) && esBloqueada(k)) {
+      onBloqueada?.(k)
+      return
+    }
     const modo = seleccion.has(k) ? "desmarcar" : "marcar"
     const nueva = aplicar(k, modo, seleccion)
     arrastre.current = { modo, sel: nueva }
@@ -57,6 +68,7 @@ export function HorarioGrilla({ seleccion, onChange, className }: Props) {
     if (!onChange || !arrastre.current) return
     const { modo, sel } = arrastre.current
     if ((modo === "marcar") === sel.has(k)) return
+    if (modo === "desmarcar" && esBloqueada(k)) return
     const nueva = aplicar(k, modo, sel)
     arrastre.current = { modo, sel: nueva }
     onChange(nueva)
@@ -66,11 +78,15 @@ export function HorarioGrilla({ seleccion, onChange, className }: Props) {
     if (!onChange) return
     const todas = claves.every((k) => seleccion.has(k))
     const nueva = new Set(seleccion)
+    let protegida: string | null = null
     for (const k of claves) {
-      if (todas) nueva.delete(k)
-      else nueva.add(k)
+      if (todas) {
+        if (esBloqueada(k)) protegida = k
+        else nueva.delete(k)
+      } else nueva.add(k)
     }
     onChange(nueva)
+    if (protegida) onBloqueada?.(protegida)
   }
 
   const columnas = "grid-cols-[92px_repeat(6,minmax(96px,1fr))]"
@@ -149,6 +165,7 @@ export function HorarioGrilla({ seleccion, onChange, className }: Props) {
                   dia={dia.value}
                   fila={fila}
                   marcada={seleccion.has(clave(dia.value, fila))}
+                  bloqueada={esBloqueada(clave(dia.value, fila))}
                   editable={editable}
                   onIniciar={iniciar}
                   onContinuar={continuar}
@@ -166,6 +183,7 @@ function Celda({
   dia,
   fila,
   marcada,
+  bloqueada,
   editable,
   onIniciar,
   onContinuar,
@@ -173,6 +191,7 @@ function Celda({
   dia: DiaSemana
   fila: number
   marcada: boolean
+  bloqueada: boolean
   editable: boolean
   onIniciar: (k: string) => void
   onContinuar: (k: string) => void
@@ -203,15 +222,20 @@ function Celda({
       )}
     >
       <div
+        title={bloqueada ? "Reunión agendada en este horario" : undefined}
         className={cn(
-          "h-full w-full rounded-md transition-colors",
-          marcada
-            ? "border-l-[5px] border-slate-500 bg-slate-800 shadow-sm dark:border-slate-400 dark:bg-slate-700"
-            : editable
-              ? "hover:bg-emerald-100/70 dark:hover:bg-emerald-900/30"
-              : "",
+          "flex h-full w-full items-center justify-center rounded-md transition-colors",
+          marcada && bloqueada
+            ? "border-l-[5px] border-amber-300 bg-amber-600 text-white shadow-sm dark:bg-amber-700"
+            : marcada
+              ? "border-l-[5px] border-slate-500 bg-slate-800 shadow-sm dark:border-slate-400 dark:bg-slate-700"
+              : editable
+                ? "hover:bg-emerald-100/70 dark:hover:bg-emerald-900/30"
+                : "",
         )}
-      />
+      >
+        {marcada && bloqueada && <Lock size={13} />}
+      </div>
     </div>
   )
 }

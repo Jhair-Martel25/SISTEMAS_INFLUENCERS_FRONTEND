@@ -1,9 +1,12 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import Link from "next/link"
 import {
   CalendarClock,
+  CalendarX2,
   Clock,
+  Lock,
   Eraser,
   Loader2,
   MousePointerClick,
@@ -14,12 +17,24 @@ import {
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { useAuth } from "@/hooks/useAuth"
+import { ApiError } from "@/lib/http"
+import { useReuniones } from "@/features/reuniones/hooks/useReuniones"
 import { PageHeader } from "@/components/shared/page-header"
 import { cn } from "@/lib/utils"
 import { DIAS_GRILLA } from "@/types/horario"
 import { useGuardarMisHorarios, useMisHorarios } from "../hooks/useHorarios"
 import {
   bloquesASeleccion,
+  celdasDeReunion,
   formatearHoras,
   minutosDeBloques,
   mismaSeleccion,
@@ -35,6 +50,28 @@ import { HorarioGrilla } from "./HorarioGrilla"
 export function MiHorarioSemanal({ embebido = false }: { embebido?: boolean } = {}) {
   const { data, isLoading, isError, error } = useMisHorarios({ page: 1, limit: 200 })
   const guardar = useGuardarMisHorarios()
+  const { user } = useAuth()
+  const { data: reuniones } = useReuniones()
+
+  // Reuniones programadas (futuras) de este usuario → celdas que no se pueden quitar.
+  const pendientes = useMemo(
+    () =>
+      (reuniones ?? []).filter(
+        (r) =>
+          r.estado === "PENDIENTE" &&
+          r.disponibilidadCita.voluntario.id === user?.id &&
+          new Date(r.fechaHora).getTime() > Date.now(),
+      ),
+    [reuniones, user?.id],
+  )
+  const bloqueadas = useMemo(() => {
+    const m = new Map<string, typeof pendientes>()
+    for (const r of pendientes)
+      for (const k of celdasDeReunion(r.fechaHora, r.duracionMinutos)) m.set(k, [...(m.get(k) ?? []), r])
+    return m
+  }, [pendientes])
+  const clavesBloqueadas = useMemo(() => new Set(bloqueadas.keys()), [bloqueadas])
+  const [aviso, setAviso] = useState<{ reuniones: typeof pendientes; mensaje?: string } | null>(null)
 
   const guardada = useMemo(() => bloquesASeleccion(data?.data ?? []), [data])
   const [borrador, setBorrador] = useState<SeleccionGrilla | null>(null)
@@ -55,8 +92,13 @@ export function MiHorarioSemanal({ embebido = false }: { embebido?: boolean } = 
           toast.success("Horario guardado correctamente.")
           setBorrador(null)
         },
-        onError: (e) =>
-          toast.error(e instanceof Error ? e.message : "No se pudo guardar el horario."),
+        onError: (e) => {
+          if (e instanceof ApiError && e.status === 409) {
+            setAviso({ reuniones: pendientes, mensaje: e.message })
+            return
+          }
+          toast.error(e instanceof Error ? e.message : "No se pudo guardar el horario.")
+        },
       },
     )
   }
@@ -96,7 +138,12 @@ export function MiHorarioSemanal({ embebido = false }: { embebido?: boolean } = 
               </Button>
               <Button
                 variant="ghost"
-                onClick={() => setBorrador(new Set())}
+                onClick={() => {
+                  // Las franjas con reunión agendada se mantienen.
+                  const conservar = new Set([...seleccion].filter((k) => clavesBloqueadas.has(k)))
+                  setBorrador(conservar)
+                  if (conservar.size) setAviso({ reuniones: pendientes })
+                }}
                 disabled={guardar.isPending || seleccion.size === 0}
                 className="text-destructive hover:text-destructive"
               >
@@ -140,6 +187,8 @@ export function MiHorarioSemanal({ embebido = false }: { embebido?: boolean } = 
           )}
           <HorarioGrilla
             seleccion={seleccion}
+            bloqueadas={clavesBloqueadas}
+            onBloqueada={(k) => setAviso({ reuniones: bloqueadas.get(k) ?? pendientes })}
             onChange={editando ? setBorrador : undefined}
             className={cn(editando && "ring-2 ring-emerald-600/30")}
           />
@@ -159,6 +208,60 @@ export function MiHorarioSemanal({ embebido = false }: { embebido?: boolean } = 
           )}
         </>
       )}
+      {clavesBloqueadas.size > 0 && (
+        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="flex size-5 items-center justify-center rounded bg-amber-600 text-white">
+            <Lock size={11} />
+          </span>
+          Franjas con reunión agendada: no se pueden quitar de tu horario hasta que la reunión se realice o se cancele.
+        </p>
+      )}
+
+      <Dialog open={Boolean(aviso)} onOpenChange={(open) => !open && setAviso(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <span className="mb-1 flex size-12 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+              <CalendarX2 size={22} />
+            </span>
+            <DialogTitle>Cambio de horario no posible</DialogTitle>
+            <DialogDescription>
+              Ya tienes reuniones agendadas en ese horario. Para quitarlo, primero cancela o reprograma la reunión.
+            </DialogDescription>
+          </DialogHeader>
+          {aviso && aviso.reuniones.length > 0 ? (
+            <ul className="flex flex-col gap-2">
+              {aviso.reuniones.map((r) => (
+                <li key={r.id} className="flex items-center gap-3 rounded-xl border bg-muted/40 px-3 py-2 text-sm">
+                  <Lock size={14} className="shrink-0 text-amber-600" />
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{r.influencer.nombre}</p>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {new Intl.DateTimeFormat("es-PE", {
+                        timeZone: "America/Lima",
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hourCycle: "h23",
+                      }).format(new Date(r.fechaHora))}{" "}
+                      · {r.duracionMinutos} min
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            aviso?.mensaje && <p className="text-sm text-muted-foreground">{aviso.mensaje}</p>
+          )}
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button variant="outline" asChild>
+              <Link href="/reuniones/gestion">Ver mis reuniones</Link>
+            </Button>
+            <Button onClick={() => setAviso(null)}>Entendido</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

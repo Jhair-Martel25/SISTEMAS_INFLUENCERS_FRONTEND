@@ -322,7 +322,7 @@ export function GestionCorreosEmpresariales() {
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-5">
       <PageHeader
-        title="Gestión de correos"
+        title="Envío de mensajes"
         description="Envía correos personalizados, solicita reuniones o utiliza plantillas directo a empresas y contactos."
         backHref="/empresas-contactos"
       />

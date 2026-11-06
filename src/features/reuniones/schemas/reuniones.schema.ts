@@ -25,14 +25,15 @@ export const ReunionSchema = z.object({
     voluntario: z.object({
       id: z.string(),
       nombre: z.string(),
-      email: z.string().optional(),
+      email: z.string().nullable().optional(),
     }),
   }),
   influencer: z.object({
     id: z.string(),
     nombre: z.string(),
     usuarioIg: z.string().nullable().optional(),
-    email: z.string().optional(),
+    // Empresas y algunos embajadores no tienen correo registrado (null).
+    email: z.string().nullable().optional(),
     phone: z.string().nullable().optional(),
   }),
 })

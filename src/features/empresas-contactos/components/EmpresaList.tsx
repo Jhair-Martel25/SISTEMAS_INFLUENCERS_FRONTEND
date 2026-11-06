@@ -368,7 +368,7 @@ export function EmpresaList() {
         />
         <Button onClick={() => router.push('/empresas-contactos/correos')}>
           <Mail size={16} />
-          Gestión de correos
+          Envío de mensajes
         </Button>
       </div>
 

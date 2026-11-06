@@ -75,7 +75,11 @@ export function MiniaturaDiseno({ diseno }: { diseno: DisenoCorreo }) {
     <div className="flex h-full w-full flex-col bg-[#F1F6EF] p-1.5">
       <div className="flex flex-1 flex-col overflow-hidden rounded-md bg-white shadow-sm">
         <div className="flex items-center justify-between px-2 py-1">
-          <span className="h-1.5 w-10 rounded bg-[#1B4332]" />
+          <span className="flex items-center gap-1">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/logo.png" alt="" className="size-2.5 object-contain" />
+            <span className="h-1.5 w-9 rounded bg-[#1B4332]" />
+          </span>
           <span className="h-1 w-6 rounded bg-[#2D6A4F]/50" />
         </div>
         <div className="space-y-1 bg-[#1B4332] px-2 py-2">

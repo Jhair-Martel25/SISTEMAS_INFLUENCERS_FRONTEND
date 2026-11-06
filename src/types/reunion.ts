@@ -13,14 +13,14 @@ import type { EstadoReunion } from './api'
 export interface VoluntarioResumen {
   id: string
   nombre: string
-  email?: string
+  email?: string | null
 }
 
 export interface InfluencerResumen {
   id: string
   nombre: string
   usuarioIg?: string | null
-  email?: string
+  email?: string | null
   phone?: string | null
 }
 

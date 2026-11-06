@@ -5,7 +5,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Building2, Eye, Mail, MessagesSquare, Pencil, Plus, Search, Send, Trash2, Upload, UserRound, Users, X } from "lucide-react"
+import { Building2, Eye, Mail, Pencil, Plus, Search, Send, Trash2, Upload, UserRound, Users, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -46,6 +46,7 @@ import {
 import type { Influencer } from "@/types/influencer"
 import { TIPO_EMBAJADOR, type TipoEmbajador } from "@/types/empresa"
 import { etiquetaEstado } from "@/lib/utils/format"
+import { cn } from "@/lib/utils"
 import {
   useEliminarInfluencer,
   useInfluencers,
@@ -470,20 +471,13 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
             </Button>
 
             </>)}
-            {!soloInfluencers && (
-            <Button
-              variant={modoSeleccion && accionSeleccion === "mensaje" ? "secondary" : "outline"}
-              onClick={() => {
-                if (modoSeleccion && accionSeleccion === "mensaje") salirModoSeleccion()
-                else {
-                  setAccionSeleccion("mensaje")
-                  setModoSeleccion(true)
-                }
-              }}
-            >
-              {modoSeleccion && accionSeleccion === "mensaje" ? <X size={16} /> : <MessagesSquare size={16} />}
-              {modoSeleccion && accionSeleccion === "mensaje" ? "Cancelar mensaje masivo" : "Mensaje masivo"}
-            </Button>
+            {soloInfluencers && (
+              <Button asChild>
+                <Link href="/empresas/mensajes">
+                  <Send size={16} />
+                  Envío de mensajes
+                </Link>
+              </Button>
             )}
             <Button
               variant={modoSeleccion && accionSeleccion === "eliminar" ? "secondary" : "outline"}
@@ -769,16 +763,56 @@ export function InfluencerList({ soloInfluencers = false }: { soloInfluencers?: 
       </Dialog>
 
       <Dialog open={Boolean(editando)} onOpenChange={(open) => !open && setEditando(null)}>
-        <DialogContent className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-3xl overflow-y-auto p-4 sm:w-full sm:p-6">
-          <DialogHeader>
-            <DialogTitle>Editar embajador</DialogTitle>
-            <DialogDescription>
-              Actualiza los datos del embajador.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="flex max-h-[90vh] w-[95vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+          <div className="relative shrink-0 overflow-hidden border-b border-border bg-gradient-to-br from-mint/20 via-primary/5 to-card px-6 py-5 pr-14">
+            <div className="pointer-events-none absolute -right-12 -top-16 size-40 rounded-full bg-mint/30 blur-2xl" />
+            <div className="pointer-events-none absolute -bottom-14 left-10 size-32 rounded-full bg-sky-400/10 blur-2xl" />
+            <div className="relative flex items-start gap-4">
+              <Avatar className="size-14 shadow-sm ring-2 ring-white/70">
+                <AvatarFallback className="bg-primary text-lg font-semibold text-white">
+                  {iniciales(editando?.nombre ?? "?")}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <DialogTitle className="text-base font-semibold">
+                  Editar embajador
+                </DialogTitle>
+                <DialogDescription className="truncate">
+                  {editando?.nombre}
+                  {editando?.usuarioIg
+                    ? ` · @${editando.usuarioIg}`
+                    : editando?.email
+                      ? ` · ${editando.email}`
+                      : ""}
+                </DialogDescription>
+                {editando && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge
+                      className={cn(
+                        "gap-1 border-0 text-[11px] font-medium",
+                        editando.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+                          ? "bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                          : "bg-mint/15 text-primary dark:text-mint",
+                      )}
+                    >
+                      {editando.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA ? (
+                        <Building2 size={12} />
+                      ) : (
+                        <UserRound size={12} />
+                      )}
+                      {editando.tipoEmbajador === TIPO_EMBAJADOR.EMPRESA
+                        ? "Empresa"
+                        : "Influencer"}
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
           {editando && (
             <InfluencerForm
               influencer={editando}
+              enDialogo
               onSuccess={() => setEditando(null)}
               onCancel={() => setEditando(null)}
             />
