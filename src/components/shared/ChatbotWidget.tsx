@@ -139,6 +139,11 @@ export default function ChatbotWidget() {
   ]);
   const [textoInput, setTextoInput] = useState("");
   const finMensajesRef = useRef<HTMLDivElement>(null);
+  const siguienteIdRef = useRef(1);
+
+  function generarId(): number {
+    return siguienteIdRef.current++;
+  }
 
   useEffect(() => {
     finMensajesRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -148,7 +153,7 @@ export default function ChatbotWidget() {
     if (!texto.trim()) return;
 
     const mensajeUsuario: Mensaje = {
-      id: Date.now(),
+      id: generarId(),
       autor: "usuario",
       texto,
     };
@@ -156,7 +161,7 @@ export default function ChatbotWidget() {
     const { respuesta, esFallo } = buscarRespuesta(texto);
 
     const mensajeBotRespuesta: Mensaje = {
-      id: Date.now() + 1,
+      id: generarId(),
       autor: "bot",
       texto: respuesta,
       esFallo,
@@ -164,7 +169,7 @@ export default function ChatbotWidget() {
 
     // Mensaje de seguimiento continuo con el menú de opciones
     const mensajeBotSeguimiento: Mensaje = {
-      id: Date.now() + 2,
+      id: generarId(),
       autor: "bot",
       texto: "¿Deseas consultar algo más? Estamos aquí para ayudarte.",
       opcionesSugeridas: OPCIONES_INICIALES,
@@ -224,11 +229,10 @@ export default function ChatbotWidget() {
               <div key={m.id} className="space-y-2">
                 <div className={`flex ${m.autor === "usuario" ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-line shadow-sm ${
-                      m.autor === "usuario"
+                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-line shadow-sm ${m.autor === "usuario"
                         ? "bg-[#003D2D] text-white rounded-br-none"
                         : "bg-white text-gray-800 border border-gray-200 rounded-bl-none"
-                    }`}
+                      }`}
                   >
                     {m.texto}
                   </div>

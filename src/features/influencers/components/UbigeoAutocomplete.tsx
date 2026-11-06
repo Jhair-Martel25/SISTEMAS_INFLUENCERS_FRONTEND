@@ -49,7 +49,12 @@ export function UbigeoAutocomplete({ form, disabled }: UbigeoAutocompleteProps) 
       // Si ya tiene departamento y provincia, construimos una etiqueta inicial
       if (currentDep && currentProv) {
         const distTexto = currentDist ? `${currentDist} - ` : ""
-        setTextoBusqueda(`${distTexto}${currentProv}, ${currentDep} (${currentUbigeo})`)
+
+        queueMicrotask(() => {
+          setTextoBusqueda(
+            `${distTexto}${currentProv}, ${currentDep} (${currentUbigeo})`
+          )
+        })
       } else {
         // Consultar el backend para obtener etiqueta y autocompletar departamento y provincia
         ubigeoService
@@ -98,7 +103,6 @@ export function UbigeoAutocomplete({ form, disabled }: UbigeoAutocompleteProps) 
       termino.length < 2 ||
       (currentUbigeo && textoBusqueda.includes(`(${currentUbigeo})`))
     ) {
-      setSugerencias([])
       return
     }
 
@@ -266,10 +270,11 @@ export function UbigeoAutocomplete({ form, disabled }: UbigeoAutocompleteProps) 
                     className={cn(
                       "pl-9 pr-16 h-9 transition-colors",
                       tieneUbicacionSeleccionada &&
-                        "border-emerald-500/50 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20",
+                      "border-emerald-500/50 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20",
                     )}
                     onChange={(e) => {
                       setTextoBusqueda(e.target.value)
+                      setSugerencias([])
                       setMostrarDropdown(true)
                     }}
                     onFocus={() => {

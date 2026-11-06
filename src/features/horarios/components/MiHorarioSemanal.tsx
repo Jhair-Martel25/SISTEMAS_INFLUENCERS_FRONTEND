@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import {
   CalendarClock,
@@ -53,6 +53,16 @@ export function MiHorarioSemanal({ embebido = false }: { embebido?: boolean } = 
   const { user } = useAuth()
   const { data: reuniones } = useReuniones()
 
+  const [ahora, setAhora] = useState(() => Date.now())
+
+  useEffect(() => {
+    const intervalo = window.setInterval(() => {
+      setAhora(Date.now())
+    }, 60_000)
+
+    return () => window.clearInterval(intervalo)
+  }, [])
+
   // Reuniones programadas (futuras) de este usuario → celdas que no se pueden quitar.
   const pendientes = useMemo(
     () =>
@@ -60,9 +70,9 @@ export function MiHorarioSemanal({ embebido = false }: { embebido?: boolean } = 
         (r) =>
           r.estado === "PENDIENTE" &&
           r.disponibilidadCita.voluntario.id === user?.id &&
-          new Date(r.fechaHora).getTime() > Date.now(),
+          new Date(r.fechaHora).getTime() > ahora,
       ),
-    [reuniones, user?.id],
+    [reuniones, user?.id, ahora],
   )
   const bloqueadas = useMemo(() => {
     const m = new Map<string, typeof pendientes>()
