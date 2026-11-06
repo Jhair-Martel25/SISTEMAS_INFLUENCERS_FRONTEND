@@ -13,7 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { PageHeader } from "@/components/shared/page-header"
 
 import { useDashboard } from "../hooks/useDashboard"
-import { MESES, rangoMes } from "../utils/periodo"
+import { MESES, filtrosDeDias, rangoMes, rangoPrimerosDias, recortarDias } from "../utils/periodo"
+import { FiltroRangoDias, type RangoDias } from "./FiltroRangoDias"
 import { ChartApiladoDiario, LIMITE_DIARIO_EQUIPO, TODOS_LOS_USUARIOS } from "./ChartApiladoDiario"
 import { ChartColumnas } from "./ChartColumnas"
 import { KpiCard } from "./KpiCard"
@@ -33,6 +34,9 @@ export function DashboardView() {
   const [anio, setAnio] = useState(hoy.getFullYear())
   const [mes, setMes] = useState(hoy.getMonth() + 1)
   const [usuario, setUsuario] = useState(TODOS_LOS_USUARIOS)
+  const [rango, setRango] = useState<RangoDias>(() => rangoPrimerosDias(hoy.getFullYear(), hoy.getMonth() + 1))
+  const filtrosRango = useMemo(() => filtrosDeDias(rango.desde, rango.hasta), [rango])
+  const { data: datosRango } = useDashboard(filtrosRango)
 
   const filtros = useMemo(() => rangoMes(anio, mes), [anio, mes])
   const { data, isLoading, isError, error, refetch, isFetching } = useDashboard(filtros)
@@ -53,6 +57,8 @@ export function DashboardView() {
   // Correos por usuario y por día (un dataset por persona).
   const porUsuario = charts?.correosPorUsuarioDia
   const usuarios = porUsuario?.datasets.map((d) => d.label) ?? []
+  const correosRango = recortarDias(datosRango?.charts.correosPorUsuarioDia, rango.desde, rango.hasta)
+  const totalRango = correosRango?.datasets.reduce((acc, d) => acc + d.data.reduce((a, b) => a + b, 0), 0) ?? 0
   const totalesPorUsuario = Object.fromEntries(
     (porUsuario?.datasets ?? []).map((d) => [d.label, d.data.reduce((a, b) => a + b, 0)]),
   )
@@ -63,11 +69,11 @@ export function DashboardView() {
 
   // Resumen de la persona elegida (o del equipo).
   const perfil = (() => {
-    if (!porUsuario) return null
+    if (!correosRango) return null
     const datasets = usuario === TODOS_LOS_USUARIOS
-      ? porUsuario.datasets
-      : porUsuario.datasets.filter((d) => d.label === usuario)
-    const diarios = porUsuario.labels.map((_, i) =>
+      ? correosRango.datasets
+      : correosRango.datasets.filter((d) => d.label === usuario)
+    const diarios = correosRango.labels.map((_, i) =>
       datasets.reduce((s, d) => s + (d.data[i] ?? 0), 0),
     )
     const total = diarios.reduce((a, b) => a + b, 0)
@@ -106,7 +112,7 @@ export function DashboardView() {
         description="Solo embajadores validados. Usa los filtros de mes y año para cambiar el periodo."
         actions={
           <>
-            <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}>
+            <Select value={String(mes)} onValueChange={(v) => { const n = Number(v); setMes(n); setRango(rangoPrimerosDias(anio, n)) }}>
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
@@ -118,7 +124,7 @@ export function DashboardView() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={String(anio)} onValueChange={(v) => setAnio(Number(v))}>
+            <Select value={String(anio)} onValueChange={(v) => { const n = Number(v); setAnio(n); setRango(rangoPrimerosDias(n, mes)) }}>
               <SelectTrigger className="w-28">
                 <SelectValue />
               </SelectTrigger>
@@ -185,10 +191,11 @@ export function DashboardView() {
 
           {renderSeccion(
             "¿Cuántos correos envía cada usuario por día?",
-            "Cada barra es un día del mes. Los colores muestran cuántos correos envió cada persona. La suma de todos nunca pasa de 300 por día.",
-            porUsuario ? (
+            "Elige un rango de hasta 7 días. Cada barra es un día; los colores muestran cuántos correos envió cada persona. La suma de todos nunca pasa de 300 por día.",
+            correosRango ? (
               <div className="flex flex-col gap-4">
-                {totalEquipo === 0 && (
+                <FiltroRangoDias valor={rango} onChange={setRango} />
+                {totalRango === 0 && (
                   <p className="rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
                     No hay correos registrados en este periodo. Solo se cuentan los correos enviados desde que se activó el registro.
                   </p>
@@ -210,11 +217,11 @@ export function DashboardView() {
                   </Select>
                 </div>
 
-                <ChartApiladoDiario chart={porUsuario} usuario={usuario} />
+                <ChartApiladoDiario chart={correosRango!} usuario={usuario} />
 
                 {perfil && (
                   <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/50 p-3 sm:grid-cols-4">
-                    <Dato etiqueta="Correos del mes" valor={perfil.total.toLocaleString("es-PE")} />
+                    <Dato etiqueta="Correos del rango" valor={perfil.total.toLocaleString("es-PE")} />
                     <Dato etiqueta="Promedio por día con envíos" valor={String(perfil.promedio)} />
                     <Dato etiqueta="Día con más envíos" valor={String(perfil.maximo)} />
                     <Dato etiqueta="Días con envíos" valor={String(perfil.diasActivos)} />
