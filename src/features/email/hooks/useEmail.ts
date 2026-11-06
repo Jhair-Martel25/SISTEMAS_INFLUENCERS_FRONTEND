@@ -16,7 +16,7 @@ import type {
  * cambia el `estadoContacto` del influencer a CORREO_ENVIADO.
  */
 
-/** Enviar correo de contacto a un influencer (solo ADMIN). */
+/** Enviar correo de contacto a un influencer (ADMIN y VOLUNTARIO). */
 export function useEnviarEmail() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -32,7 +32,7 @@ export function useEnviarEmail() {
   })
 }
 
-/** Enviar correo a varios influencers (solo ADMIN). Cada item trae `exitoso`. */
+/** Enviar correo a varios influencers (ADMIN y VOLUNTARIO). Cada item trae `exitoso`. */
 export function useEnviarEmailMasivo() {
   const queryClient = useQueryClient()
   return useMutation({

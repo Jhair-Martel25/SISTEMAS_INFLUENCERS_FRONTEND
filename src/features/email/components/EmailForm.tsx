@@ -44,7 +44,7 @@ import { iniciales } from "@/features/mensajes-dm/utils/dm"
 import { useEnviarEmailMasivo } from "../hooks/useEmail"
 
 /**
- * Pantalla exclusiva de correos (solo ADMIN).
+ * Pantalla de correos (ADMIN y VOLUNTARIO).
  *
  * Lista los embajadores VALIDADOS que tienen correo (el backend solo envia a
  * validados), permite seleccionar varios y enviarles una plantilla con
@@ -72,6 +72,8 @@ export function EmailForm() {
   const [pagina, setPagina] = useState(1)
   const [seleccion, setSeleccion] = useState<Set<string>>(new Set())
   const [plantillaId, setPlantillaId] = useState("")
+  const [asunto, setAsunto] = useState("")
+  const [cuerpo, setCuerpo] = useState("")
   const [confirmar, setConfirmar] = useState(false)
   const [resultado, setResultado] = useState<Resultado | null>(null)
 
@@ -141,6 +143,8 @@ export function EmailForm() {
       const resultados = await enviarMasivo.mutateAsync({
         influencerIds: seleccionados.map((i) => i.id),
         plantillaId,
+        asunto: asunto.trim(),
+        cuerpo: cuerpo.trim(),
       })
       const enviados = resultados.filter((r) => r.exitoso).length
       const fallidos = resultados
@@ -218,11 +222,11 @@ export function EmailForm() {
     <div className="mx-auto flex max-w-[1600px] flex-col gap-6">
       <PageHeader
         title="Correos"
-        description="Envía correos con una plantilla a los embajadores validados que tienen email. Solo administradores."
+        description="Envía correos con una plantilla a los embajadores validados que tienen email. Disponible para administradores y voluntarios."
         backHref="/dashboard"
       />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {/* ---------- Lista ---------- */}
         <div className="flex min-w-0 flex-col gap-4">
           <DataTableToolbar>
@@ -310,14 +314,28 @@ export function EmailForm() {
             <CardContent className="flex flex-col gap-4">
               <SelectorPlantillaCorreo
                 plantillaId={plantillaId}
-                onChange={setPlantillaId}
-                nombreInfluencer={seleccionados[0]?.nombre}
+                onChange={(id) => setPlantillaId(id)}
+                asunto={asunto}
+                onAsuntoChange={setAsunto}
+                cuerpo={cuerpo}
+                onCuerpoChange={setCuerpo}
+                tipo="INFLUENCER"
+                destinatario={{
+                  nombre: seleccionados[0]?.nombre,
+                  empresa: seleccionados[0]?.empresa ?? undefined,
+                }}
                 disabled={enviando}
               />
               <Button
                 type="button"
                 onClick={() => setConfirmar(true)}
-                disabled={enviando || seleccionados.length === 0 || !plantillaId}
+                disabled={
+                  enviando ||
+                  seleccionados.length === 0 ||
+                  !plantillaId ||
+                  !asunto.trim() ||
+                  !cuerpo.trim()
+                }
               >
                 {enviando ? (
                   <Loader2 size={16} className="animate-spin" />

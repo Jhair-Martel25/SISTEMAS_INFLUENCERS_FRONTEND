@@ -34,7 +34,7 @@ const ACCIONES_ESTADO: {
   },
   {
     estado: ESTADO_REUNION.NO_ASISTIO,
-    label: "Marcar no asistió",
+    label: "Marcar como no realizada",
     color: "bg-yellow-500 hover:bg-yellow-600",
   },
   {

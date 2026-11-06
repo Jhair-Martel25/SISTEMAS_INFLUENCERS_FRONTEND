@@ -18,6 +18,7 @@ export const DisponibilidadCitaSchema = z.object({
   id: z.string(),
   fechaHora: z.string(),
   disponible: z.boolean().optional(),
+  reservado: z.boolean().optional(),
   voluntarioId: z.string().optional(),
   voluntarioNombre: z.string().optional(),
   voluntario: VoluntarioDisponibilidadSchema.optional(),

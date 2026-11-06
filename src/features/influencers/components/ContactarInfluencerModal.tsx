@@ -30,7 +30,6 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import { usePermission } from "@/hooks/usePermission"
 import { useEnviarEmail } from "@/features/email/hooks/useEmail"
 import type { Influencer } from "@/types/influencer"
 
@@ -41,7 +40,7 @@ import { SelectorPlantillaCorreo } from "./SelectorPlantillaCorreo"
  * Modal para contactar a un influencer por correo o por DM.
  *
  * - Correo: se envía de verdad con POST /email/enviar usando una plantilla
- *   (solo ADMIN; el backend exige que el influencer esté VALIDADO).
+ *   (ADMIN y VOLUNTARIO; el backend exige que el influencer esté VALIDADO).
  * - DM: "Copiar y abrir chat" funciona; "Marcar como enviado" todavía no
  *   llama al backend (falta el endpoint de mensajes). Queda marcado con TODO.
  *
@@ -111,10 +110,11 @@ function ContenidoContactar({
   const [chatAbierto, setChatAbierto] = useState(false)
   const [enviado, setEnviado] = useState(false)
   const [plantillaId, setPlantillaId] = useState("")
+  const [asuntoCorreo, setAsuntoCorreo] = useState("")
+  const [cuerpoCorreo, setCuerpoCorreo] = useState("")
   const [errorCorreo, setErrorCorreo] = useState<string | null>(null)
   const [correoDestino, setCorreoDestino] = useState("")
 
-  const { isAdmin } = usePermission()
   const enviarEmail = useEnviarEmail()
   const enviandoCorreo = enviarEmail.isPending
   const noValidado = influencer.estadoValidacion !== "VALIDADO"
@@ -163,11 +163,17 @@ function ContenidoContactar({
       toast.error("Elige una plantilla de correo.")
       return
     }
+    if (!asuntoCorreo.trim() || !cuerpoCorreo.trim()) {
+      toast.error("Completa el asunto y el mensaje del correo.")
+      return
+    }
     setErrorCorreo(null)
     try {
       const resultado = await enviarEmail.mutateAsync({
         influencerId: influencer.id,
         plantillaId,
+        asunto: asuntoCorreo.trim(),
+        cuerpo: cuerpoCorreo.trim(),
       })
       if (!resultado.exitoso) {
         throw new Error(resultado.error ?? "No se pudo enviar el correo.")
@@ -308,23 +314,25 @@ function ContenidoContactar({
 
         {/* Correo: plantilla */}
         {!esDM && (
-          <section className="flex flex-col gap-3">
+          <section data-modo-correo className="flex flex-col gap-3">
             <SelectorPlantillaCorreo
               plantillaId={plantillaId}
               onChange={(id) => {
                 setPlantillaId(id)
                 setErrorCorreo(null)
               }}
-              nombreInfluencer={influencer.nombre}
+              asunto={asuntoCorreo}
+              onAsuntoChange={setAsuntoCorreo}
+              cuerpo={cuerpoCorreo}
+              onCuerpoChange={setCuerpoCorreo}
+              tipo="INFLUENCER"
+              destinatario={{
+                nombre: influencer.nombre,
+                empresa: influencer.empresa ?? undefined,
+              }}
               disabled={enviandoCorreo}
             />
-            {!isAdmin && (
-              <p className="flex items-start gap-2 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-                <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-                Solo un ADMIN puede enviar correos desde el sistema.
-              </p>
-            )}
-            {isAdmin && noValidado && (
+            {noValidado && (
               <p className="flex items-start gap-2 rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
                 <AlertTriangle size={14} className="mt-0.5 shrink-0" />
                 Este embajador aún no está validado. El backend solo envía
@@ -447,7 +455,7 @@ function ContenidoContactar({
             <Button
               type="button"
               onClick={enviarCorreo}
-              disabled={!plantillaId || !isAdmin || enviandoCorreo}
+              disabled={!plantillaId || enviandoCorreo}
             >
               {enviandoCorreo ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -470,7 +478,7 @@ function etiquetaCanal(canal: Canal) {
 export function ContactarInfluencerModal({ influencer, onOpenChange }: Props) {
   return (
     <Dialog open={Boolean(influencer)} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl [&>*]:min-w-0">
+      <DialogContent className="max-h-[94vh] overflow-y-auto sm:max-w-xl sm:has-[[data-modo-correo]]:max-w-5xl [&>*]:min-w-0">
         <DialogHeader>
           <div className="flex items-start gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">

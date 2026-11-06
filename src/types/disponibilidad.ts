@@ -18,6 +18,8 @@ export interface DisponibilidadCita {
   fechaHora: string
   /** Presente en mis-bloques; ausente en /disponibles (público). */
   disponible?: boolean
+  /** Presente en mis-bloques: true si una reunión ocupa el bloque. */
+  reservado?: boolean
   /** Presente en GET /horarios (ADMIN); ausente en mis-bloques/disponibles. */
   voluntarioId?: string
   voluntarioNombre?: string

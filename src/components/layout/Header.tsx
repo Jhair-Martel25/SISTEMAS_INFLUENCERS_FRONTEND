@@ -2,6 +2,7 @@
 
 import { LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { ThemeToggle } from '@/components/shared/ThemeToggle'
 
 export function Header() {
   const { user, logout } = useAuth()
@@ -15,6 +16,7 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-4">
+        <ThemeToggle />
         <span className="text-sm text-muted-foreground">{user?.nombre}</span>
         <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-primary">
           {user?.role}

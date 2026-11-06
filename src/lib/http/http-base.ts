@@ -50,9 +50,22 @@ export interface RequestOptions {
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
-function buildHeaders(token: string | null, custom?: HeadersInit): HeadersInit {
+/** Opciones internas para cuerpos/respuestas que no son JSON. */
+interface RequestConfig {
+  /** Devolver la respuesta como Blob (descargas de archivos). */
+  blob?: boolean
+  /** Tiempo máximo en ms (las subidas de archivos pueden tardar más). */
+  timeoutMs?: number
+}
+
+function buildHeaders(
+  token: string | null,
+  custom?: HeadersInit,
+  esJson = true,
+): HeadersInit {
   return {
-    'Content-Type': 'application/json',
+    // Con FormData NO se fija Content-Type: el navegador agrega el boundary.
+    ...(esJson ? { 'Content-Type': 'application/json' } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...custom,
   }
@@ -116,17 +129,32 @@ export class HttpBase {
     return this.request<T>(path, 'DELETE', undefined, options)
   }
 
+  /** POST multipart/form-data (subida de archivos). Timeout ampliado a 2 min. */
+  postForm<T>(path: string, formData: FormData, options?: RequestOptions): Promise<T> {
+    return this.request<T>(path, 'POST', formData, options, { timeoutMs: 120000 })
+  }
+
+  /** GET que devuelve el archivo como Blob (descargas). */
+  getBlob(path: string, options?: RequestOptions): Promise<Blob> {
+    return this.request<Blob>(path, 'GET', undefined, options, { blob: true, timeoutMs: 60000 })
+  }
+
   private async request<T>(
     path: string,
     method: HttpMethod,
     body?: unknown,
     options: RequestOptions = {},
+    config: RequestConfig = {},
   ): Promise<T> {
     const { params, headers, signal, skipAuth = false } = options
     const url = `${this.baseUrl}${path}${buildQueryString(params)}`
+    const esFormData = typeof FormData !== 'undefined' && body instanceof FormData
 
     const controller = new AbortController()
-    const timerId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS)
+    const timerId = setTimeout(
+      () => controller.abort(),
+      config.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    )
 
     if (signal) {
       signal.addEventListener('abort', () => controller.abort(), { once: true })
@@ -136,8 +164,13 @@ export class HttpBase {
       try {
         return await fetch(url, {
           method,
-          headers: buildHeaders(token, headers),
-          body: body !== undefined ? JSON.stringify(body) : undefined,
+          headers: buildHeaders(token, headers, !esFormData),
+          body:
+            body === undefined
+              ? undefined
+              : esFormData
+                ? (body as FormData)
+                : JSON.stringify(body),
           signal: controller.signal,
         })
       } catch (err: unknown) {
@@ -186,6 +219,9 @@ export class HttpBase {
       clearTimeout(timerId)
     }
 
+    if (config.blob && response.ok) {
+      return (await response.blob()) as T
+    }
     return handleResponse<T>(response)
   }
 

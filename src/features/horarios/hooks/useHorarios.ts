@@ -1,11 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { horariosService } from '../services/horarios.service'
-import { HorarioListaSchema } from '../schemas/horarios.schema'
+import {
+  HorarioListaSchema,
+  HorarioResumenListaSchema,
+} from '../schemas/horarios.schema'
 import type {
   ActualizarHorarioInput,
   CrearHorarioInput,
+  GuardarMisHorariosInput,
   Horario,
   HorarioFiltros,
+  HorarioResumenUsuario,
 } from '@/types/horario'
 import type { DataPaginated } from '@/types/api'
 
@@ -44,6 +49,28 @@ export function useMisHorarios(
       return HorarioListaSchema.parse(data)
     },
     enabled: options?.enabled,
+  })
+}
+
+/** ADMIN: horario semanal de todos los usuarios. */
+export function useResumenHorarios(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['horarios', 'resumen'],
+    queryFn: async (): Promise<HorarioResumenUsuario[]> =>
+      HorarioResumenListaSchema.parse(await horariosService.resumen()),
+    enabled: options?.enabled,
+  })
+}
+
+/** Guarda la cuadrícula completa (reemplaza el horario semanal). */
+export function useGuardarMisHorarios() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: GuardarMisHorariosInput) =>
+      horariosService.guardarMisHorarios(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horarios'] })
+    },
   })
 }
 

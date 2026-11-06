@@ -36,7 +36,7 @@ export const ETIQUETAS_REUNION: Record<EstadoReunion, string> = {
   [ESTADO_REUNION.PENDIENTE]: 'Pendiente',
   [ESTADO_REUNION.REALIZADA]: 'Realizada',
   [ESTADO_REUNION.CANCELADA]: 'Cancelada',
-  [ESTADO_REUNION.NO_ASISTIO]: 'No asistió',
+  [ESTADO_REUNION.NO_ASISTIO]: 'No realizada',
 }
 
 export const ETIQUETAS_USUARIO: Record<EstadoUsuario, string> = {

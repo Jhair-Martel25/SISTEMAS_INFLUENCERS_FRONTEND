@@ -36,6 +36,16 @@ export const usuariosService = {
     return apiClient.patch<Usuario>(`${BASE_PATH}/${id}/desactivar`)
   },
 
+  /** Reactivar un usuario desactivado → estado = ACTIVO. */
+  async reactivar(id: string): Promise<Usuario> {
+    return apiClient.patch<Usuario>(`${BASE_PATH}/${id}/reactivar`)
+  },
+
+  /** Restablece la contraseña a la predeterminada y cierra sus sesiones. */
+  async restablecerPassword(id: string): Promise<{ mensaje: string }> {
+    return apiClient.patch<{ mensaje: string }>(`${BASE_PATH}/${id}/restablecer-password`)
+  },
+
   /**
    * Actualiza correo y/o contraseña del propio usuario logueado
    * (autoservicio, disponible para ADMIN y VOLUNTARIO). Si se cambia la

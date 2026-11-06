@@ -87,6 +87,57 @@
   --sidebar-ring: #20d18f;
 }
 
+/* ------------------------------------------------------------------ */
+/* Modo oscuro                                                         */
+/* ------------------------------------------------------------------ */
+.dark {
+  color-scheme: dark;
+  --background: #0a1310;
+  --foreground: #e4ede8;
+  --card: #111c18;
+  --card-foreground: #e4ede8;
+  --popover: #13201b;
+  --popover-foreground: #e4ede8;
+  --primary: #1f9e70;
+  --primary-foreground: #ffffff;
+  --secondary: #1a2722;
+  --secondary-foreground: #e4ede8;
+  --muted: #18241f;
+  --muted-foreground: #95a59e;
+  --accent: #15322a;
+  --accent-foreground: #7fe3bb;
+  --destructive: #f05252;
+  --border: #23342d;
+  --input: #2a3c34;
+  --ring: #20d18f;
+  --chart-4: #95a59e;
+  --chart-5: #2a3c34;
+  --sidebar: #031f17;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+}
+
+/*
+ * Algunas pantallas usan colores fijos (bg-white, text-gray-…). En modo
+ * oscuro se reasignan a los colores del tema para que todo sea legible.
+ */
+.dark .bg-white { background-color: var(--card); }
+.dark .bg-gray-50, .dark .bg-gray-100, .dark .bg-slate-100 { background-color: var(--muted); }
+.dark .bg-gray-200, .dark .bg-slate-200 { background-color: var(--input); }
+.dark .text-gray-900, .dark .text-gray-800, .dark .text-gray-700, .dark .text-slate-700 { color: var(--foreground); }
+.dark .text-gray-500, .dark .text-gray-400 { color: var(--muted-foreground); }
+.dark .text-gray-300 { color: #5d6e67; }
+.dark .border-gray-100, .dark .border-gray-200, .dark .border-gray-300 { border-color: var(--border); }
+.dark .from-emerald-50 { --tw-gradient-from: #0c1a15; }
+.dark .via-white, .dark .to-white { --tw-gradient-via: var(--background); --tw-gradient-to: var(--background); }
+.dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.12); }
+.dark .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.2); }
+.dark .border-emerald-200, .dark .border-emerald-300 { border-color: rgba(16, 185, 129, 0.35); }
+.dark .text-emerald-700, .dark .text-emerald-800, .dark .text-emerald-900 { color: #6ee7b7; }
+.dark .text-\[\#003D2D\] { color: #8fe9c4; }
+.dark .bg-red-50 { background-color: rgba(239, 68, 68, 0.12); }
+.dark .border-red-200 { border-color: rgba(239, 68, 68, 0.35); }
+.dark .text-red-700, .dark .text-red-600 { color: #fca5a5; }
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

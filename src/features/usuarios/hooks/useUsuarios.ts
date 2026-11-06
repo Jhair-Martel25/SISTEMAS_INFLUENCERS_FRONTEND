@@ -68,6 +68,24 @@ export function useDesactivarUsuario() {
   })
 }
 
+/** Reactivar un usuario (INACTIVO → ACTIVO). Solo ADMIN. */
+export function useReactivarUsuario() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => usuariosService.reactivar(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['usuarios'] })
+    },
+  })
+}
+
+/** Restablecer la contraseña a la predeterminada. Solo ADMIN. */
+export function useRestablecerPassword() {
+  return useMutation({
+    mutationFn: (id: string) => usuariosService.restablecerPassword(id),
+  })
+}
+
 /** Actualizar el perfil propio (correo y/o contraseña). ADMIN y VOLUNTARIO. */
 export function useActualizarPerfil() {
   const queryClient = useQueryClient()

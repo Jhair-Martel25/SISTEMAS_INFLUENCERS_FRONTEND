@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { Loader2 } from "lucide-react"
+import { useForm, useWatch } from "react-hook-form"
+import { Check, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -19,7 +19,16 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 
-import type { Plantilla } from "@/types/plantilla"
+import { cn } from "@/lib/utils"
+import {
+  DISENOS_CORREO,
+  DISENO_CORREO_INFO,
+  normalizarDiseno,
+  type Plantilla,
+} from "@/types/plantilla"
+import { MiniaturaDiseno } from "@/features/influencers/components/SelectorPlantillaCorreo"
+import { VistaPreviaCorreo } from "@/features/email/components/VistaPreviaCorreo"
+import { useVistaPreviaCorreo } from "@/features/email/hooks/useVistaPreviaCorreo"
 import {
   useActualizarPlantilla,
   useCrearPlantilla,
@@ -35,6 +44,7 @@ function valoresIniciales(plantilla?: Plantilla | null): PlantillaFormValues {
     descripcion: plantilla?.descripcion ?? "",
     asunto: plantilla?.asunto ?? "",
     cuerpo: plantilla?.cuerpo ?? "",
+    diseno: normalizarDiseno(plantilla?.diseno),
   }
 }
 
@@ -60,12 +70,24 @@ export function PlantillaForm({
     defaultValues: valoresIniciales(plantilla),
   })
 
+  const [diseno, asunto, cuerpo] = useWatch({
+    control: form.control,
+    name: ["diseno", "asunto", "cuerpo"],
+  })
+  const vista = useVistaPreviaCorreo({
+    diseno,
+    asunto,
+    cuerpo,
+    tipo: diseno === "REFORESTA" ? "EMPRESA" : "INFLUENCER",
+  })
+
   function handleSubmit(values: PlantillaFormValues) {
     const payload = {
       nombre: values.nombre,
       descripcion: values.descripcion.trim() || undefined,
       asunto: values.asunto,
       cuerpo: values.cuerpo,
+      diseno: values.diseno,
     }
 
     if (esEdicion && plantilla) {
@@ -107,9 +129,56 @@ export function PlantillaForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleSubmit)}
-        className="space-y-4"
+        className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]"
         noValidate
       >
+        <div className="min-w-0 space-y-4">
+        <FormField
+          control={form.control}
+          name="diseno"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Diseño del correo</FormLabel>
+              <div className="grid grid-cols-2 gap-3" role="radiogroup">
+                {DISENOS_CORREO.map((d) => {
+                  const activo = field.value === d
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      role="radio"
+                      aria-checked={activo}
+                      onClick={() => field.onChange(d)}
+                      className={cn(
+                        "relative flex flex-col overflow-hidden rounded-xl border text-left transition-all",
+                        activo
+                          ? "border-primary ring-2 ring-primary/40"
+                          : "hover:border-primary/50",
+                      )}
+                    >
+                      <div className="h-20 overflow-hidden border-b bg-muted">
+                        <MiniaturaDiseno diseno={d} />
+                      </div>
+                      <div className="p-2">
+                        <p className="text-xs font-semibold">{DISENO_CORREO_INFO[d].label}</p>
+                        <p className="line-clamp-2 text-[11px] text-muted-foreground">
+                          {DISENO_CORREO_INFO[d].descripcion}
+                        </p>
+                      </div>
+                      {activo && (
+                        <span className="absolute top-1.5 right-1.5 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                          <Check size={12} />
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="nombre"
@@ -160,21 +229,34 @@ export function PlantillaForm({
               <FormLabel>Contenido</FormLabel>
               <FormControl>
                 <Textarea
-                  rows={6}
-                  placeholder="Hola {{nombre_influencer}}..."
+                  rows={8}
+                  placeholder="Hola {nombre}..."
+                  className="max-h-80 min-h-40 [field-sizing:fixed]"
                   {...field}
                 />
               </FormControl>
               <FormDescription>
-                Puedes usar los placeholders: {"{{nombre_influencer}}, "}
-                {"{{nombre_voluntario}}"} y {"{{link_agendamiento}}"}.
+                Variables: {"{nombre}"}, {"{empresa}"}, {"{{nombre_voluntario}}"} y{" "}
+                {"{{link_agendamiento}}"}. El botón de agendar lo añade el diseño.
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="flex justify-end gap-2 pt-2">
+        </div>
+
+        <div className="min-w-0 space-y-2">
+          <p className="text-sm font-medium">Vista previa</p>
+          <VistaPreviaCorreo
+            html={vista.data?.html}
+            asunto={vista.data?.asunto ?? asunto}
+            isLoading={vista.isFetching}
+            error={vista.error}
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 pt-2 lg:col-span-2">
           <Button
             type="button"
             variant="outline"

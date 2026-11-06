@@ -17,6 +17,13 @@ import {
   Plus,
   Minus,
   Video,
+  Globe,
+  MailCheck,
+  MailWarning,
+  MapPin,
+  Phone,
+  UserRound,
+  Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -24,7 +31,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PageHeader } from '@/components/shared/page-header'
 import { usePermission } from '@/hooks/usePermission'
-import { SelectorPlantillaCorreo } from '@/features/influencers/components/SelectorPlantillaCorreo'
+import {
+  SelectorPlantillaCorreo,
+  SelectorPlantillaGaleria,
+} from '@/features/influencers/components/SelectorPlantillaCorreo'
 import { usePlantillas } from '@/features/plantillas/hooks/usePlantillas'
 import type { ContactoEmpresa, Empresa } from '@/types/empresa-contacto'
 import { useActualizarEmpresa, useCrearContacto, useEliminarContacto, useEmpresas, useEnviarCorreoContacto } from '../hooks/useEmpresasContactos'
@@ -55,6 +65,8 @@ interface DestinoCorreoModal {
   nombre: string
   email: string
   empresa?: string
+  /** Empresa/embajador destinatario: el enlace de agendamiento se asocia a él. */
+  influencerId?: string
 }
 
 function obtenerDiaSemana(fechaStr: string): string {
@@ -82,6 +94,19 @@ function formatearHora(horaStr: string): string {
   const ampm = h >= 12 ? 'PM' : 'AM'
   const h12 = h % 12 || 12
   return `${h12}:${minutos} ${ampm}`
+}
+
+type FiltroEmpresa = 'TODAS' | 'PENDIENTE' | 'ENVIADO' | 'SIN_CONTACTOS'
+
+function inicialesEmpresa(nombre: string) {
+  return nombre
+    .replace(/\b(S\.?A\.?C?|E\.?I\.?R\.?L|S\.?R\.?L)\.?\b/gi, '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
 }
 
 const HORAS_SUGERIDAS = ['09:00', '10:00', '11:00', '15:00', '16:00', '17:00']
@@ -131,6 +156,64 @@ export function EmpresaList() {
 
   const empresas = useMemo(() => data ?? [], [data])
   const empresaSeleccionada = empresas.find((e) => e.id === seleccionId) ?? null
+
+  // Filtros y vista de tarjetas
+  const [filtroEmpresa, setFiltroEmpresa] = useState<FiltroEmpresa>('TODAS')
+  const [filtroSector, setFiltroSector] = useState('')
+  const [expandidas, setExpandidas] = useState<string[]>([])
+
+  const resumen = useMemo(() => {
+    let contactos = 0
+    let enviados = 0
+    let sinCorreo = 0
+    for (const e of empresas) {
+      contactos += e.contactos?.length ?? 0
+      if (e.estadoCorreo === 'ENVIADO') enviados++
+      if (!e.email?.trim()) sinCorreo++
+      for (const c of e.contactos ?? []) if (c.estadoCorreo === 'ENVIADO') enviados++
+    }
+    return { contactos, enviados, sinCorreo }
+  }, [empresas])
+
+  const empresasVisibles = useMemo(
+    () =>
+      empresas.filter((e) => {
+        if (filtroSector && e.sector !== filtroSector) return false
+        if (filtroEmpresa === 'ENVIADO') return e.estadoCorreo === 'ENVIADO'
+        if (filtroEmpresa === 'PENDIENTE') return e.estadoCorreo !== 'ENVIADO'
+        if (filtroEmpresa === 'SIN_CONTACTOS') return (e.contactos?.length ?? 0) === 0
+        return true
+      }),
+    [empresas, filtroEmpresa, filtroSector],
+  )
+
+  function abrirDatos(empresa: Empresa, sinCorreo = false) {
+    setEditando(empresa)
+    setEmpresaForm({
+      nombre: empresa.nombre,
+      email: sinCorreo ? '' : empresa.email || '',
+      ruc: empresa.ruc || '',
+      sector: empresa.sector || '',
+      direccion: empresa.direccion || '',
+      sitioWeb: empresa.sitioWeb || '',
+      descripcion: empresa.descripcion || '',
+    })
+    setMostrarDatos(true)
+  }
+
+  function correoEmpresa(empresa: Empresa) {
+    if (!empresa.email) {
+      toast.info('Para escribir a la empresa, primero registra su correo en Datos.')
+      abrirDatos(empresa, true)
+      return
+    }
+    abrirModalCorreo({
+      nombre: empresa.nombre,
+      email: empresa.email,
+      empresa: empresa.nombre,
+      influencerId: empresa.id,
+    })
+  }
 
   function construirMsgReunion(f: string, d: string, h: string, m: string, dest: DestinoCorreoModal) {
     const diaTexto = d || obtenerDiaSemana(f) || 'Día a coordinar'
@@ -260,6 +343,9 @@ export function EmpresaList() {
         nombreDestino: destinoCorreo.nombre,
         asunto: correoForm.asunto,
         mensaje: correoForm.mensaje,
+        plantillaId: modoModal === 'PLANTILLA' ? plantillaModalId || undefined : undefined,
+        empresa: destinoCorreo.empresa,
+        influencerId: destinoCorreo.influencerId,
       })
       toast.success(
         `Correo ${modoModal === 'REUNION' ? 'con solicitud de reunión ' : ''}enviado a ${destinoCorreo.email}`
@@ -277,208 +363,324 @@ export function EmpresaList() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader
           title="Empresas y Contactos"
-          description="Solo se muestran los embajadores registrados como empresa; administra sus datos y contactos."
+          description="Embajadores registrados como empresa: sus datos, personas de contacto y correos."
           backHref="/dashboard"
         />
-        {isAdmin && (
-          <Button onClick={() => router.push('/empresas-contactos/correos')}>
-            <Mail size={16} />
-            Gestión de correos
-          </Button>
-        )}
+        <Button onClick={() => router.push('/empresas-contactos/correos')}>
+          <Mail size={16} />
+          Gestión de correos
+        </Button>
       </div>
 
-      <div className="relative max-w-xl">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-        <Input
-          value={buscar}
-          onChange={(e) => setBuscar(e.target.value)}
-          placeholder="Buscar empresa, embajador, correo o RUC..."
-          className="pl-9"
-        />
+      {/* Indicadores */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="flex items-center justify-between rounded-2xl bg-gradient-to-br from-[#003D2D] to-emerald-800 p-4 text-white shadow-sm">
+          <div>
+            <p className="text-xs font-medium text-emerald-100">Empresas</p>
+            <p className="mt-1 text-3xl font-bold">{empresas.length}</p>
+          </div>
+          <span className="flex size-11 items-center justify-center rounded-xl bg-white/10">
+            <Building2 size={20} />
+          </span>
+        </div>
+        {(
+          [
+            ['Contactos', resumen.contactos, <Users key="u" size={18} />, 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300'],
+            ['Correos enviados', resumen.enviados, <MailCheck key="m" size={18} />, 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300'],
+            ['Empresas sin correo', resumen.sinCorreo, <MailWarning key="w" size={18} />, 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300'],
+          ] as [string, number, React.ReactNode, string][]
+        ).map(([titulo, valor, icono, tono]) => (
+          <div key={titulo} className="flex items-center justify-between rounded-2xl border bg-card p-4">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">{titulo}</p>
+              <p className="mt-1 text-2xl font-bold tabular-nums">{valor}</p>
+            </div>
+            <span className={`flex size-10 items-center justify-center rounded-xl border ${tono}`}>{icono}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-col gap-3 rounded-2xl border bg-card p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative lg:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+          <Input
+            value={buscar}
+            onChange={(e) => setBuscar(e.target.value)}
+            placeholder="Buscar empresa, embajador, correo o RUC..."
+            className="h-9 pl-9"
+          />
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex flex-wrap gap-1 rounded-xl bg-muted/70 p-1 text-xs">
+            {(
+              [
+                ['TODAS', 'Todas'],
+                ['PENDIENTE', 'Correo pendiente'],
+                ['ENVIADO', 'Correo enviado'],
+                ['SIN_CONTACTOS', 'Sin contactos'],
+              ] as [FiltroEmpresa, string][]
+            ).map(([valor, label]) => (
+              <button
+                key={valor}
+                type="button"
+                onClick={() => setFiltroEmpresa(valor)}
+                className={`rounded-lg px-3 py-1.5 font-medium transition-colors ${
+                  filtroEmpresa === valor ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <select
+            className="h-9 rounded-lg border bg-background px-3 text-sm"
+            value={filtroSector}
+            onChange={(e) => setFiltroSector(e.target.value)}
+          >
+            <option value="">Todos los sectores</option>
+            {SECTORES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="rounded-xl border p-8 text-center text-muted-foreground">Cargando empresas…</div>
+        <div className="rounded-2xl border p-8 text-center text-muted-foreground">Cargando empresas…</div>
       ) : isError ? (
-        <div className="rounded-xl border border-destructive/40 p-6 text-sm text-destructive">
+        <div className="rounded-2xl border border-destructive/40 p-6 text-sm text-destructive">
           {error instanceof Error ? error.message : 'No se pudieron cargar las empresas.'}
         </div>
-      ) : empresas.length === 0 ? (
-        <div className="rounded-xl border border-dashed p-10 text-center">
+      ) : empresasVisibles.length === 0 ? (
+        <div className="rounded-2xl border border-dashed p-10 text-center">
           <Building2 className="mx-auto mb-3 text-muted-foreground" size={32} />
-          <p className="font-medium">No hay empresas registradas</p>
+          <p className="font-medium">{empresas.length === 0 ? 'No hay empresas registradas' : 'Ninguna empresa coincide con los filtros'}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            En Embajadores, registra o edita un perfil y selecciónalo como tipo Empresa.
+            {empresas.length === 0
+              ? 'En Embajadores, registra o edita un perfil y selecciónalo como tipo Empresa.'
+              : 'Prueba con otra búsqueda o quita los filtros.'}
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {empresas.map((empresa) => (
-            <section
-              key={empresa.id}
-              className={`rounded-xl border bg-card p-5 shadow-sm transition-all ${
-                seleccionId === empresa.id ? 'border-primary ring-1 ring-primary/20' : ''
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-primary/10 p-3 text-primary">
-                  <Building2 size={22} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="font-semibold text-base">{empresa.nombre}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Embajador: {empresa.nombreEmbajador || empresa.nombre}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {empresa.sector || 'Sector no indicado'}
-                    {empresa.ruc ? ` · RUC ${empresa.ruc}` : ''}
-                  </p>
-                  {empresa.email ? (
-                    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
-                      <Mail size={12} className="text-primary shrink-0" />
-                      <span className="truncate">{empresa.email}</span>
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-[11px] italic text-muted-foreground/80">
-                      Sin correo corporativo
-                    </p>
-                  )}
-                  {empresa.sitioWeb && (
-                    <a
-                      className="mt-1 block text-sm text-primary underline truncate"
-                      href={empresa.sitioWeb}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {empresa.sitioWeb}
-                    </a>
-                  )}
-                </div>
-                <div className="flex shrink-0 gap-1.5">
-                  {isAdmin && (
+        <div className="grid gap-5 lg:grid-cols-2">
+          {empresasVisibles.map((empresa) => {
+            const contactos = empresa.contactos || []
+            const expandida = expandidas.includes(empresa.id)
+            const visibles = expandida ? contactos : contactos.slice(0, 2)
+            const enviado = empresa.estadoCorreo === 'ENVIADO'
+            return (
+              <section
+                key={empresa.id}
+                className={`flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-all hover:shadow-md ${
+                  seleccionId === empresa.id ? 'border-primary ring-1 ring-primary/30' : ''
+                }`}
+              >
+                {/* Cabecera */}
+                <div className="relative bg-gradient-to-br from-emerald-50 via-card to-card p-5 dark:from-emerald-950/30">
+                  <div className="flex items-start gap-4">
+                    <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#003D2D] text-lg font-bold text-white shadow-sm">
+                      {inicialesEmpresa(empresa.nombre)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="truncate text-lg font-bold">{empresa.nombre}</h2>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        <span className="rounded-full border bg-background px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                          {empresa.sector || 'Sector no indicado'}
+                        </span>
+                        {empresa.ruc && (
+                          <span className="rounded-full border bg-background px-2.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                            RUC {empresa.ruc}
+                          </span>
+                        )}
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
+                            !empresa.email
+                              ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300'
+                              : enviado
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                : 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300'
+                          }`}
+                        >
+                          {!empresa.email ? <MailWarning size={11} /> : enviado ? <MailCheck size={11} /> : <Clock size={11} />}
+                          {!empresa.email ? 'Sin correo' : enviado ? 'Correo enviado' : 'Correo pendiente'}
+                        </span>
+                      </div>
+                    </div>
                     <Button
-                      variant="outline"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 shrink-0"
+                      title="Editar datos de la empresa"
+                      aria-label="Editar datos"
+                      onClick={() => abrirDatos(empresa)}
+                    >
+                      <Pencil size={15} />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Datos */}
+                <div className="grid gap-2 px-5 pb-4 text-sm sm:grid-cols-2">
+                  <p className="flex min-w-0 items-center gap-2 text-muted-foreground">
+                    <UserRound size={14} className="shrink-0 text-primary" />
+                    <span className="truncate">Embajador: <span className="text-foreground">{empresa.nombreEmbajador || empresa.nombre}</span></span>
+                  </p>
+                  <p className="flex min-w-0 items-center gap-2 text-muted-foreground">
+                    <Mail size={14} className="shrink-0 text-primary" />
+                    {empresa.email ? (
+                      <span className="truncate font-mono text-xs text-foreground">{empresa.email}</span>
+                    ) : (
+                      <span className="text-xs italic">Sin correo corporativo</span>
+                    )}
+                  </p>
+                  <p className="flex min-w-0 items-center gap-2 text-muted-foreground">
+                    <MapPin size={14} className="shrink-0 text-primary" />
+                    <span className="truncate">{empresa.direccion || 'Sin dirección registrada'}</span>
+                  </p>
+                  <p className="flex min-w-0 items-center gap-2 text-muted-foreground">
+                    <Globe size={14} className="shrink-0 text-primary" />
+                    {empresa.sitioWeb ? (
+                      <a className="truncate text-primary hover:underline" href={empresa.sitioWeb} target="_blank" rel="noreferrer">
+                        {empresa.sitioWeb.replace(/^https?:\/\//, '')}
+                      </a>
+                    ) : (
+                      <span className="text-xs italic">Sin sitio web</span>
+                    )}
+                  </p>
+                  {empresa.descripcion && (
+                    <p className="line-clamp-2 rounded-xl bg-muted/50 px-3 py-2 text-xs leading-relaxed text-muted-foreground sm:col-span-2">
+                      {empresa.descripcion}
+                    </p>
+                  )}
+                </div>
+
+                {/* Contactos */}
+                <div className="flex flex-1 flex-col gap-2 border-t bg-muted/20 px-5 py-4">
+                  <div className="flex items-center justify-between">
+                    <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                      <Users size={13} /> Contactos ({contactos.length})
+                    </p>
+                    <Button
                       size="sm"
-                      title={
-                        empresa.email
-                          ? `Enviar correo a ${empresa.nombre}`
-                          : 'Registra un correo en Datos para poder escribirle a la empresa'
-                      }
+                      variant="ghost"
+                      className="h-7 gap-1 text-xs text-primary"
                       onClick={() => {
-                        if (!empresa.email) {
-                          toast.info('Para escribir a la empresa, primero registra su correo en Datos.')
-                          setEditando(empresa)
-                          setEmpresaForm({
-                            nombre: empresa.nombre,
-                            email: '',
-                            ruc: empresa.ruc || '',
-                            sector: empresa.sector || '',
-                            direccion: empresa.direccion || '',
-                            sitioWeb: empresa.sitioWeb || '',
-                            descripcion: empresa.descripcion || '',
-                          })
-                          setMostrarDatos(true)
-                          return
-                        }
-                        abrirModalCorreo({
-                          nombre: empresa.nombre,
-                          email: empresa.email,
-                          empresa: empresa.nombre,
-                        })
+                        setSeleccionId(empresa.id)
+                        setMostrarContacto(true)
                       }}
                     >
-                      <Mail size={14} /> Correo
+                      <UserRoundPlus size={14} /> Añadir
                     </Button>
+                  </div>
+                  {contactos.length === 0 ? (
+                    <p className="rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground">
+                      Aún no hay personas de contacto en esta empresa.
+                    </p>
+                  ) : (
+                    visibles.map((c) => {
+                      const telefonos = (c.telefonos?.length ? c.telefonos : [c.telefono]).filter(Boolean)
+                      return (
+                        <div key={c.id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
+                          <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                            {inicialesEmpresa(`${c.nombres} ${c.apellidos ?? ''}`)}
+                            <span
+                              className={`absolute -right-0.5 -bottom-0.5 size-3 rounded-full border-2 border-card ${
+                                c.estadoCorreo === 'ENVIADO' ? 'bg-emerald-500' : 'bg-slate-300'
+                              }`}
+                              title={c.estadoCorreo === 'ENVIADO' ? 'Correo enviado' : 'Correo pendiente'}
+                            />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold">
+                              {c.nombres} {c.apellidos}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">{c.cargo || 'Sin cargo'}</p>
+                            <div className="mt-0.5 flex flex-wrap gap-x-3 text-[11px] text-muted-foreground">
+                              {c.email && <span className="truncate font-mono">{c.email}</span>}
+                              {telefonos.length > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <Phone size={10} /> {telefonos.join(' · ')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 gap-1">
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              className="size-8"
+                              aria-label="Enviar correo"
+                              title={c.email ? `Enviar correo a ${c.nombres}` : 'Este contacto no tiene correo'}
+                              onClick={() => {
+                                if (!c.email) {
+                                  toast.error('Este contacto no tiene correo registrado.')
+                                  return
+                                }
+                                abrirModalCorreo({
+                                  nombre: `${c.nombres} ${c.apellidos || ''}`.trim(),
+                                  email: c.email,
+                                  empresa: empresa.nombre,
+                                  influencerId: c.influencerId ?? empresa.id,
+                                })
+                              }}
+                            >
+                              <Mail size={14} />
+                            </Button>
+                            {isAdmin && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-8"
+                                aria-label="Eliminar contacto"
+                                onClick={() => void borrarContacto(c)}
+                              >
+                                <Trash2 size={14} className="text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })
                   )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditando(empresa)
-                      setEmpresaForm({
-                        nombre: empresa.nombre,
-                        email: empresa.email || '',
-                        ruc: empresa.ruc || '',
-                        sector: empresa.sector || '',
-                        direccion: empresa.direccion || '',
-                        sitioWeb: empresa.sitioWeb || '',
-                        descripcion: empresa.descripcion || '',
-                      })
-                      setMostrarDatos(true)
-                    }}
-                  >
+                  {contactos.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandidas((v) => (expandida ? v.filter((x) => x !== empresa.id) : [...v, empresa.id]))
+                      }
+                      className="self-center text-xs font-medium text-primary hover:underline"
+                    >
+                      {expandida ? 'Ver menos' : `Ver los ${contactos.length} contactos`}
+                    </button>
+                  )}
+                </div>
+
+                {/* Acciones */}
+                <div className="flex items-center gap-2 border-t px-5 py-3">
+                  <Button size="sm" className="flex-1 gap-1.5" onClick={() => correoEmpresa(empresa)}>
+                    <Send size={14} /> Enviar correo
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => abrirDatos(empresa)}>
                     <Pencil size={14} /> Datos
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() => {
+                      setSeleccionId(empresa.id)
+                      setMostrarContacto(true)
+                    }}
+                  >
+                    <UserRoundPlus size={14} /> Contacto
+                  </Button>
                 </div>
-              </div>
-
-              <p className="mt-3 text-sm text-muted-foreground">
-                {empresa.direccion || 'Sin dirección registrada'}
-              </p>
-              {empresa.descripcion && <p className="mt-2 text-sm">{empresa.descripcion}</p>}
-
-              <div className="mt-4 flex items-center justify-between border-t pt-3">
-                <span className="text-sm text-muted-foreground">{empresa.contactos?.length ?? 0} contactos</span>
-                <Button
-                  size="sm"
-                  variant={seleccionId === empresa.id ? 'default' : 'outline'}
-                  onClick={() => {
-                    setSeleccionId(empresa.id)
-                    setMostrarContacto(true)
-                  }}
-                >
-                  <UserRoundPlus size={15} /> Añadir contacto
-                </Button>
-              </div>
-
-              {(empresa.contactos || []).map((c) => (
-                <div key={c.id} className="mt-3 flex items-start justify-between gap-3 rounded-lg bg-muted/50 p-3">
-                  <div className="min-w-0">
-                    <p className="font-medium">
-                      {c.nombres} {c.apellidos}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{c.cargo}</p>
-                    <p className="text-sm font-mono text-muted-foreground">{c.email}</p>
-                    <p className="text-sm text-muted-foreground">Tel. {c.telefono}</p>
-                  </div>
-                  <div className="flex shrink-0 gap-1">
-                    {isAdmin && (
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        aria-label="Enviar correo"
-                        title="Enviar correo"
-                        onClick={() => {
-                          if (!c.email) {
-                            toast.error('Este contacto no tiene correo registrado.')
-                            return
-                          }
-                          abrirModalCorreo({
-                            nombre: `${c.nombres} ${c.apellidos || ''}`.trim(),
-                            email: c.email,
-                            empresa: empresa.nombre,
-                          })
-                        }}
-                      >
-                        <Mail size={15} />
-                      </Button>
-                    )}
-                    {isAdmin && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        aria-label="Eliminar contacto"
-                        onClick={() => void borrarContacto(c)}
-                      >
-                        <Trash2 size={15} className="text-destructive" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </section>
-          ))}
+              </section>
+            )
+          })}
         </div>
       )}
 
@@ -691,7 +893,7 @@ export function EmpresaList() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <form
             onSubmit={(e) => void enviarCorreoIndividual(e)}
-            className="w-full max-w-xl space-y-4 rounded-xl bg-background p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-5xl space-y-4 rounded-xl bg-background p-6 shadow-xl max-h-[92vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -735,10 +937,9 @@ export function EmpresaList() {
 
             {modoModal === 'PLANTILLA' && (
               <div className="rounded-lg border bg-muted/20 p-3">
-                <SelectorPlantillaCorreo
+                <SelectorPlantillaGaleria
                   plantillaId={plantillaModalId}
                   onChange={alElegirPlantilla}
-                  nombreInfluencer={destinoCorreo.nombre}
                   disabled={enviarCorreo.isPending}
                 />
               </div>
@@ -817,31 +1018,26 @@ export function EmpresaList() {
               </div>
             )}
 
-            <label className="block space-y-1 text-sm font-medium">
-              Asunto
-              <Input
-                required
-                maxLength={200}
-                value={correoForm.asunto}
-                onChange={(e) => setCorreoForm((v) => ({ ...v, asunto: e.target.value }))}
-              />
-            </label>
-            <label className="block space-y-1 text-sm font-medium">
-              Mensaje
-              <textarea
-                required
-                maxLength={10000}
-                rows={7}
-                className="w-full rounded-lg border border-input bg-transparent p-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                value={correoForm.mensaje}
-                onChange={(e) => setCorreoForm((v) => ({ ...v, mensaje: e.target.value }))}
-              />
-            </label>
+            <SelectorPlantillaCorreo
+              plantillaId={modoModal === 'PLANTILLA' ? plantillaModalId : ''}
+              onChange={alElegirPlantilla}
+              asunto={correoForm.asunto}
+              onAsuntoChange={(asunto) => setCorreoForm((v) => ({ ...v, asunto }))}
+              cuerpo={correoForm.mensaje}
+              onCuerpoChange={(mensaje) => setCorreoForm((v) => ({ ...v, mensaje }))}
+              tipo="EMPRESA"
+              destinatario={{ nombre: destinoCorreo.nombre, empresa: destinoCorreo.empresa }}
+              disabled={enviarCorreo.isPending}
+              ocultarSelector
+            />
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setDestinoCorreo(null)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={enviarCorreo.isPending}>
+              <Button
+                type="submit"
+                disabled={enviarCorreo.isPending || !correoForm.asunto.trim() || !correoForm.mensaje.trim()}
+              >
                 <Send size={15} />
                 {enviarCorreo.isPending
                   ? 'Enviando…'

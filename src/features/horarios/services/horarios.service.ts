@@ -3,8 +3,10 @@ import type { DataPaginated } from '@/types/api'
 import type {
   ActualizarHorarioInput,
   CrearHorarioInput,
+  GuardarMisHorariosInput,
   Horario,
   HorarioFiltros,
+  HorarioResumenUsuario,
 } from '@/types/horario'
 
 const BASE_PATH = '/horarios'
@@ -24,6 +26,18 @@ export const horariosService = {
     return apiClient.get<DataPaginated<Horario>>(`${BASE_PATH}/mis-horarios`, {
       params: filtros,
     })
+  },
+
+  /** Reemplaza el horario semanal completo del usuario autenticado. */
+  async guardarMisHorarios(
+    input: GuardarMisHorariosInput,
+  ): Promise<DataPaginated<Horario>> {
+    return apiClient.put<DataPaginated<Horario>>(`${BASE_PATH}/mis-horarios`, input)
+  },
+
+  /** ADMIN: todos los usuarios con su horario semanal y total de horas. */
+  async resumen(): Promise<HorarioResumenUsuario[]> {
+    return apiClient.get<HorarioResumenUsuario[]>(`${BASE_PATH}/resumen`)
   },
 
   async crear(input: CrearHorarioInput): Promise<Horario> {

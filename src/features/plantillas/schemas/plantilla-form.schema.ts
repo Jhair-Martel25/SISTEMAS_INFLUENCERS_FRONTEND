@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { DISENOS_CORREO } from '@/types/plantilla'
 
 /**
  * Schema de validación del formulario de plantilla (crear/editar).
@@ -11,6 +12,7 @@ export const plantillaFormSchema = z.object({
   descripcion: z.string(),
   asunto: z.string().trim().min(1, 'El asunto es obligatorio'),
   cuerpo: z.string().trim().min(1, 'El contenido es obligatorio'),
+  diseno: z.enum(DISENOS_CORREO),
 })
 
 export type PlantillaFormValues = z.infer<typeof plantillaFormSchema>

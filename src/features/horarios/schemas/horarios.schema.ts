@@ -24,6 +24,26 @@ export const HorarioSchema = z.object({
   }).optional(),
 })
 
+export const HorarioResumenUsuarioSchema = z.object({
+  id: z.string(),
+  nombre: z.string(),
+  email: z.string(),
+  foto: z.string().nullable().optional(),
+  estado: z.string(),
+  rol: z.string(),
+  horarios: z.array(
+    z.object({
+      id: z.string(),
+      diaSemana: DiaSemanaEnum,
+      horaInicio: z.string(),
+      horaFin: z.string(),
+    }),
+  ),
+  minutosSemanales: z.number(),
+})
+
+export const HorarioResumenListaSchema = z.array(HorarioResumenUsuarioSchema)
+
 export const HorarioListaSchema = z.object({
   data: z.array(HorarioSchema),
   meta: z.object({

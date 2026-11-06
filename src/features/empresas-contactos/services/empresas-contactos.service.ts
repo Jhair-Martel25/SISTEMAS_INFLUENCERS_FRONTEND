@@ -22,7 +22,7 @@ export const empresasContactosService = {
   eliminarContacto(id: string): Promise<void> {
     return apiClient.delete<void>(`/contactos/${id}`)
   },
-  enviarCorreoContacto(input: { email: string; nombreDestino: string; asunto: string; mensaje: string }): Promise<{ exitoso: boolean; email: string }> {
+  enviarCorreoContacto(input: { email: string; nombreDestino: string; asunto: string; mensaje: string; plantillaId?: string; empresa?: string; influencerId?: string }): Promise<{ exitoso: boolean; email: string }> {
     return apiClient.post('/email/enviar-contacto', input)
   },
   enviarCorreosEmpresariales(input: {

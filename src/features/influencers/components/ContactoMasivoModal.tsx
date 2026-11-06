@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { usePermission } from "@/hooks/usePermission"
 import { useEnviarEmailMasivo } from "@/features/email/hooks/useEmail"
 import type { Influencer } from "@/types/influencer"
 
@@ -43,7 +42,7 @@ import { SelectorPlantillaCorreo } from "./SelectorPlantillaCorreo"
  * varios influencers seleccionados.
  *
  * - Los que tienen correo: se envían todos de una vez con
- *   POST /email/enviar-masivo y la plantilla elegida (solo ADMIN; el backend
+ *   POST /email/enviar-masivo y la plantilla elegida (ADMIN y VOLUNTARIO; el backend
  *   solo envía a influencers VALIDADOS).
  * - Los que no: se recorren en una COLA de DMs asistidos (copiar + abrir chat
  *   + marcar enviado), porque las redes no permiten DMs automáticos.
@@ -117,10 +116,11 @@ export function ContactoMasivoModal({
   const [chatAbierto, setChatAbierto] = useState(false)
   const [resumen, setResumen] = useState({ correos: 0, dms: 0, saltados: 0 })
   const [plantillaId, setPlantillaId] = useState("")
+  const [asuntoCorreo, setAsuntoCorreo] = useState("")
+  const [cuerpoCorreo, setCuerpoCorreo] = useState("")
   const [ventanaLateral, setVentanaLateral] = useState(true)
   const [fallidos, setFallidos] = useState<{ nombre: string; error: string }[]>([])
 
-  const { isAdmin } = usePermission()
   const enviarMasivo = useEnviarEmailMasivo()
   const enviandoCorreos = enviarMasivo.isPending
 
@@ -152,6 +152,8 @@ export function ContactoMasivoModal({
     setChatAbierto(false)
     setResumen({ correos: 0, dms: 0, saltados: 0 })
     setPlantillaId("")
+    setAsuntoCorreo("")
+    setCuerpoCorreo("")
     setFallidos([])
     cerrarVentanaChat()
   }
@@ -175,10 +177,16 @@ export function ContactoMasivoModal({
         toast.error("Elige una plantilla para los correos.")
         return
       }
+      if (!asuntoCorreo.trim() || !cuerpoCorreo.trim()) {
+        toast.error("Completa el asunto y el mensaje del correo.")
+        return
+      }
       try {
         const resultados = await enviarMasivo.mutateAsync({
           influencerIds: porCorreo.map((i) => i.id),
           plantillaId,
+          asunto: asuntoCorreo.trim(),
+          cuerpo: cuerpoCorreo.trim(),
         })
         const ok = resultados.filter((r) => r.exitoso).length
         const errores = resultados
@@ -248,7 +256,7 @@ export function ContactoMasivoModal({
 
   return (
     <Dialog open={open} onOpenChange={cambiarOpen}>
-      <DialogContent className="sm:max-w-xl [&>*]:min-w-0">
+      <DialogContent className="max-h-[94vh] overflow-y-auto sm:max-w-xl sm:has-[[data-modo-correo]]:max-w-5xl [&>*]:min-w-0">
         <DialogHeader>
           <div className="flex items-start gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
@@ -323,22 +331,22 @@ export function ContactoMasivoModal({
               </label>
 
               {porCorreo.length > 0 && (
-                <section className="flex flex-col gap-2">
+                <section data-modo-correo className="flex flex-col gap-2">
                   <SelectorPlantillaCorreo
                     plantillaId={plantillaId}
-                    onChange={setPlantillaId}
-                    nombreInfluencer={porCorreo[0]?.nombre}
+                    onChange={(id) => setPlantillaId(id)}
+                    asunto={asuntoCorreo}
+                    onAsuntoChange={setAsuntoCorreo}
+                    cuerpo={cuerpoCorreo}
+                    onCuerpoChange={setCuerpoCorreo}
+                    tipo="INFLUENCER"
+                    destinatario={{
+                      nombre: porCorreo[0]?.nombre,
+                      empresa: porCorreo[0]?.empresa ?? undefined,
+                    }}
                     disabled={enviandoCorreos}
                   />
-                  {!isAdmin && (
-                    <p className="flex items-start gap-2 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-                      <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-                      Solo un ADMIN puede enviar correos. Desmarca &quot;Usar
-                      correo&quot; para contactarlos por DM.
-                    </p>
-                  )}
-                  {isAdmin &&
-                    porCorreo.some((i) => i.estadoValidacion !== "VALIDADO") && (
+                  {porCorreo.some((i) => i.estadoValidacion !== "VALIDADO") && (
                       <p className="flex items-start gap-2 rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
                         <AlertTriangle size={14} className="mt-0.5 shrink-0" />
                         {
@@ -409,7 +417,7 @@ export function ContactoMasivoModal({
                   disabled={
                     enviandoCorreos ||
                     (porDM.length > 0 && (!plantilla.trim() || excedeLimite)) ||
-                    (porCorreo.length > 0 && (!plantillaId || !isAdmin))
+                    (porCorreo.length > 0 && !plantillaId)
                   }
                 >
                   {enviandoCorreos ? (

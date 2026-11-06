@@ -6,8 +6,6 @@ import {
   Building2,
   Calendar,
   CalendarDays,
-  ChevronDown,
-  ChevronUp,
   Clock,
   Mail,
   RotateCcw,
@@ -23,7 +21,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PageHeader } from '@/components/shared/page-header'
-import { SelectorPlantillaCorreo } from '@/features/influencers/components/SelectorPlantillaCorreo'
+import {
+  SelectorPlantillaCorreo,
+  SelectorPlantillaGaleria,
+} from '@/features/influencers/components/SelectorPlantillaCorreo'
 import { usePlantillas } from '@/features/plantillas/hooks/usePlantillas'
 import { useEmpresas, useEnviarCorreosEmpresariales } from '../hooks/useEmpresasContactos'
 
@@ -82,7 +83,6 @@ export function GestionCorreosEmpresariales() {
   const [contenido, setContenido] = useState(
     'Hola {nombre},\n\nEn Sembrando Perú creemos en el poder de las empresas y líderes para impulsar un cambio positivo. Nos encantará conversar con {empresa} sobre cómo podemos sumar esfuerzos.\n\nSaludos cordiales.'
   )
-  const [mostrarEditorManual, setMostrarEditorManual] = useState(false)
 
   // Datos para Agendar Reunión
   const fechaDefault = useMemo(() => {
@@ -515,10 +515,9 @@ export function GestionCorreosEmpresariales() {
             {/* Modo 1: Selector de Plantilla (Embajadores) */}
             {modoRedaccion === 'PLANTILLA' && (
               <div className="rounded-lg border bg-muted/20 p-3">
-                <SelectorPlantillaCorreo
+                <SelectorPlantillaGaleria
                   plantillaId={plantillaId}
                   onChange={handlePlantillaChange}
-                  nombreInfluencer={primerSeleccionado?.nombre}
                   disabled={enviar.isPending}
                 />
               </div>
@@ -621,76 +620,20 @@ export function GestionCorreosEmpresariales() {
               </div>
             )}
 
-            {/* Alternar edición de asunto y contenido */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setMostrarEditorManual((v) => !v)}
-                className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-              >
-                {mostrarEditorManual ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                {mostrarEditorManual ? 'Ocultar campos de edición' : 'Editar asunto y cuerpo del mensaje'}
-              </button>
-            </div>
-
-            {mostrarEditorManual && (
-              <div className="space-y-3 rounded-lg border bg-background p-3">
-                <label className="block space-y-1 text-sm font-medium">
-                  Asunto
-                  <Input
-                    value={asunto}
-                    maxLength={200}
-                    onChange={(event) => setAsunto(event.target.value)}
-                    placeholder="Asunto del correo"
-                  />
-                </label>
-                <label className="block space-y-1 text-sm font-medium">
-                  Contenido del correo
-                  <textarea
-                    value={contenido}
-                    maxLength={10000}
-                    rows={8}
-                    onChange={(event) => setContenido(event.target.value)}
-                    className="w-full rounded-lg border border-input bg-transparent p-3 text-sm font-normal focus:outline-none focus:ring-1 focus:ring-primary"
-                    placeholder="Escribe el cuerpo del correo..."
-                  />
-                  <span className="block text-[11px] text-muted-foreground">
-                    Variables: <code>{'{nombre}'}</code>, <code>{'{empresa}'}</code>
-                  </span>
-                </label>
-              </div>
-            )}
-
-            {/* Vista previa en vivo */}
-            <div className="rounded-lg border bg-muted/20 p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Vista previa con el destinatario
-                </p>
-                {modoRedaccion === 'REUNION' && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                    <Calendar size={11} /> {diaReunion || 'Día'} · {formatearHora(horaReunion)}
-                  </span>
-                )}
-              </div>
-              <p className="font-semibold text-sm">
-                {asunto
-                  .replace(/\{\{\s*nombre_influencer\s*\}\}/gi, primerSeleccionado?.nombre || '[Nombre]')
-                  .replace(/\{\{\s*nombre\s*\}\}/gi, primerSeleccionado?.nombre || '[Nombre]')
-                  .replace(/\{\s*nombre\s*\}/gi, primerSeleccionado?.nombre || '[Nombre]')
-                  .replace(/\{\{\s*empresa\s*\}\}/gi, primerSeleccionado?.empresa || '[Empresa]')
-                  .replace(/\{\s*empresa\s*\}/gi, primerSeleccionado?.empresa || '[Empresa]') || 'Sin asunto'}
-              </p>
-              <p className="mt-2.5 whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground max-h-52 overflow-y-auto">
-                {contenido
-                  .replace(/\{\{\s*nombre_influencer\s*\}\}/gi, primerSeleccionado?.nombre || '[Nombre]')
-                  .replace(/\{\{\s*nombre\s*\}\}/gi, primerSeleccionado?.nombre || '[Nombre]')
-                  .replace(/\{\s*nombre\s*\}/gi, primerSeleccionado?.nombre || '[Nombre]')
-                  .replace(/\{\{\s*empresa\s*\}\}/gi, primerSeleccionado?.empresa || '[Empresa]')
-                  .replace(/\{\s*empresa\s*\}/gi, primerSeleccionado?.empresa || '[Empresa]')
-                  .replace(/\{\{\s*nombre_voluntario\s*\}\}/gi, '[tu nombre]')
-                  .replace(/\{\{\s*link_agendamiento\s*\}\}/gi, '[link de agendamiento]')}
-              </p>
+            {/* Texto editable + vista previa real del diseño */}
+            <div className="rounded-lg border bg-muted/10 p-3">
+              <SelectorPlantillaCorreo
+                plantillaId={modoRedaccion === 'PLANTILLA' ? plantillaId : ''}
+                onChange={handlePlantillaChange}
+                asunto={asunto}
+                onAsuntoChange={setAsunto}
+                cuerpo={contenido}
+                onCuerpoChange={setContenido}
+                tipo="EMPRESA"
+                destinatario={{ nombre: primerSeleccionado?.nombre, empresa: primerSeleccionado?.empresa }}
+                disabled={enviar.isPending}
+                ocultarSelector
+              />
             </div>
           </div>
 

@@ -4,6 +4,8 @@ import "./globals.css";
 import { AuthBootstrap } from "@/features/auth/components/AuthBootstrap";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeToggleFlotante } from "@/components/shared/ThemeToggle";
+import { SCRIPT_TEMA_INICIAL } from "@/hooks/useTema";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,11 +32,16 @@ export default function RootLayout({
     <html
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA_INICIAL }} />
+      </head>
       <body className="min-h-screen antialiased">
         <Providers>
           <AuthBootstrap />
           {children}
+          <ThemeToggleFlotante />
           <Toaster />
         </Providers>
       </body>

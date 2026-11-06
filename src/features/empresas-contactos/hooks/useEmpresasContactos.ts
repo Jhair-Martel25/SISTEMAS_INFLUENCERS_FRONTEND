@@ -29,7 +29,7 @@ export function useEliminarContacto() {
 }
 
 export function useEnviarCorreoContacto() {
-  return useMutation({ mutationFn: (input: { email: string; nombreDestino: string; asunto: string; mensaje: string }) => empresasContactosService.enviarCorreoContacto(input) })
+  return useMutation({ mutationFn: (input: { email: string; nombreDestino: string; asunto: string; mensaje: string; plantillaId?: string; empresa?: string; influencerId?: string }) => empresasContactosService.enviarCorreoContacto(input) })
 }
 
 export function useEnviarCorreosEmpresariales() {

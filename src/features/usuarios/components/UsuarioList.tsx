@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Pencil, Plus, UserX } from "lucide-react"
+import { KeyRound, Pencil, Plus, UserCheck, UserX } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -35,6 +35,8 @@ import { etiquetaEstado } from "@/lib/utils/format"
 import { formatearFechaUI } from "@/lib/utils/date"
 import {
   useDesactivarUsuario,
+  useReactivarUsuario,
+  useRestablecerPassword,
   useUsuarios,
 } from "../hooks/useUsuarios"
 import { UsuarioForm } from "./UsuarioForm"
@@ -54,6 +56,8 @@ export function UsuarioList() {
   const [creando, setCreando] = useState(false)
   const [editando, setEditando] = useState<Usuario | null>(null)
   const [desactivando, setDesactivando] = useState<Usuario | null>(null)
+  const [reactivando, setReactivando] = useState<Usuario | null>(null)
+  const [restableciendo, setRestableciendo] = useState<Usuario | null>(null)
 
   const { data, isLoading, isError, error } = useUsuarios({
     page,
@@ -62,6 +66,8 @@ export function UsuarioList() {
     roleId: roleId === "" ? undefined : roleId,
   })
   const desactivar = useDesactivarUsuario()
+  const reactivar = useReactivarUsuario()
+  const restablecer = useRestablecerPassword()
 
   const usuarios = data?.data ?? []
   const totalPages = Math.max(1, Math.ceil((data?.meta.total ?? 0) / LIMITE))
@@ -117,14 +123,34 @@ export function UsuarioList() {
           >
             <Pencil size={16} />
           </Button>
-          {usuario.estado === ESTADO_USUARIO.ACTIVO && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Restablecer contraseña"
+            title="Restablecer contraseña a la predeterminada"
+            onClick={() => setRestableciendo(usuario)}
+          >
+            <KeyRound size={16} className="text-amber-600" />
+          </Button>
+          {usuario.estado === ESTADO_USUARIO.ACTIVO ? (
             <Button
               variant="ghost"
               size="icon"
               aria-label="Desactivar"
+              title="Desactivar usuario"
               onClick={() => setDesactivando(usuario)}
             >
               <UserX size={16} className="text-destructive" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Reactivar"
+              title="Reactivar usuario"
+              onClick={() => setReactivando(usuario)}
+            >
+              <UserCheck size={16} className="text-emerald-600" />
             </Button>
           )}
         </div>
@@ -263,6 +289,54 @@ export function UsuarioList() {
                   : "No fue posible desactivar el usuario.",
               )
             },
+          })
+        }}
+      />
+      <ConfirmDialog
+        open={Boolean(reactivando)}
+        onOpenChange={(open) => !open && setReactivando(null)}
+        title="Reactivar usuario"
+        description={
+          reactivando
+            ? `¿Reactivar a ${reactivando.nombre}? Podrá volver a iniciar sesión con su contraseña actual.`
+            : undefined
+        }
+        confirmLabel="Reactivar"
+        isPending={reactivar.isPending}
+        onConfirm={() => {
+          if (!reactivando) return
+          reactivar.mutate(reactivando.id, {
+            onSuccess: () => {
+              toast.success(`${reactivando.nombre} fue reactivado.`)
+              setReactivando(null)
+            },
+            onError: (error) =>
+              toast.error(error instanceof Error ? error.message : "No fue posible reactivar el usuario."),
+          })
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(restableciendo)}
+        onOpenChange={(open) => !open && setRestableciendo(null)}
+        title="Restablecer contraseña"
+        description={
+          restableciendo
+            ? `La contraseña de ${restableciendo.nombre} volverá a ser la predeterminada y se cerrarán sus sesiones abiertas. Luego podrá cambiarla desde "Mi perfil".`
+            : undefined
+        }
+        confirmLabel="Restablecer"
+        destructive
+        isPending={restablecer.isPending}
+        onConfirm={() => {
+          if (!restableciendo) return
+          restablecer.mutate(restableciendo.id, {
+            onSuccess: (res) => {
+              toast.success(res?.mensaje ?? "Contraseña restablecida a la predeterminada.")
+              setRestableciendo(null)
+            },
+            onError: (error) =>
+              toast.error(error instanceof Error ? error.message : "No fue posible restablecer la contraseña."),
           })
         }}
       />
