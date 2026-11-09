@@ -14,6 +14,8 @@ export const PlantillaSchema = z.object({
   asunto: z.string(),
   cuerpo: z.string(),
   diseno: z.string().nullable().optional(),
+  tieneImagen: z.boolean().optional(),
+  imagenVersion: z.number().nullable().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 })

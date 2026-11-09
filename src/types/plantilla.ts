@@ -7,7 +7,7 @@
  */
 
 /** Diseños visuales disponibles (deben coincidir con DISENOS_CORREO del backend). */
-export const DISENOS_CORREO = ['CLASICO', 'REFORESTA', 'SELVA_CENTRAL', 'REFORESTA_EDUCA'] as const
+export const DISENOS_CORREO = ['CLASICO', 'REFORESTA', 'SELVA_CENTRAL', 'REFORESTA_EDUCA', 'IMAGEN'] as const
 export type DisenoCorreo = (typeof DISENOS_CORREO)[number]
 
 export const DISENO_CORREO_INFO: Record<
@@ -33,6 +33,21 @@ export const DISENO_CORREO_INFO: Record<
     descripcion: 'Diseño en HTML: reforestación + educación, aporte desde S/ 6,000 y certificado de donación.',
     miniatura: '/images/plantillas/reforesta-educa.jpg',
   },
+  IMAGEN: {
+    label: 'Imagen propia',
+    descripcion: 'Sube tu propia pieza gráfica (JPG, PNG o WEBP) + texto editable + botón "Agenda tu cita".',
+  },
+}
+
+/** Banner que todas las plantillas incluyen al final del correo. */
+export const BANNER_CERTIFICADO = '/images/plantillas/certificado-donacion.png'
+
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '')
+
+/** URL pública de la imagen propia de una plantilla (diseño IMAGEN), o null. */
+export function urlImagenPlantilla(p: Pick<Plantilla, 'id' | 'tieneImagen' | 'imagenVersion'>): string | null {
+  if (!p.tieneImagen) return null
+  return `${API_URL}/plantillas/${p.id}/imagen?v=${p.imagenVersion ?? 0}`
 }
 
 /** Los diseños de campaña están pensados para empresas (vista previa con {empresa}). */
@@ -54,6 +69,10 @@ export interface Plantilla {
   cuerpo: string
   /** Diseño visual del correo. Ausente en backends antiguos → CLASICO. */
   diseno?: string | null
+  /** true si tiene imagen propia (diseño IMAGEN). */
+  tieneImagen?: boolean
+  /** Cambia al reemplazar la imagen (para refrescar la caché del navegador). */
+  imagenVersion?: number | null
   createdAt?: string
   updatedAt?: string
 }
@@ -65,6 +84,10 @@ export interface CrearPlantillaInput {
   asunto: string
   cuerpo: string
   diseno?: DisenoCorreo
+  /** Imagen nueva como data URL (diseño IMAGEN). */
+  imagenBase64?: string
+  /** true para quitar la imagen guardada. */
+  quitarImagen?: boolean
 }
 
 /** Body de PATCH /plantillas/:id (cuerpo parcial). */
