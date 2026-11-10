@@ -51,14 +51,19 @@ const SECCIONES: Seccion[] = [
     ruta: "Menú › Dashboard",
     icono: Home,
     intro:
-      "Resumen del estado del sistema de embajadores. Solo lo ve el administrador. Muestra únicamente embajadores validados y se actualiza sola cada minuto.",
+      "Resumen de la actividad del sistema de embajadores. Solo lo ve el administrador. Se actualiza sola cada minuto.",
     tarjetas: [
-      { icono: CalendarClock, titulo: "Filtros de mes y año", texto: "Elige un periodo arriba a la derecha. Los gráficos y el resumen se recalculan para ese mes." },
-      { icono: Mail, titulo: "Correos enviados", texto: "Cuántos correos salieron en el mes, por día y por usuario. El límite es de 300 correos por día entre todos los usuarios." },
-      { icono: Video, titulo: "Reuniones agendadas", texto: "Reuniones del mes, por semana." },
-      { icono: Building2, titulo: "Empresas e influencers contactados", texto: "Cuántas empresas e influencers recibieron contacto en el periodo." },
+      { icono: CalendarClock, titulo: "Mes y año", texto: "Arriba a la derecha elige el mes y el año. Los indicadores, el embudo y los gráficos de semanas y reuniones se recalculan para ese periodo." },
+      { icono: Mail, titulo: "Correos enviados", texto: "Total de correos del mes elegido. El límite es de 300 correos por día entre todos los usuarios." },
+      { icono: Video, titulo: "Reuniones agendadas", texto: "Reuniones del mes elegido, agrupadas por semana." },
+      { icono: Building2, titulo: "Empresas e influencers contactados", texto: "Cuántas empresas e influencers fueron contactados en el periodo." },
     ],
-    nota: "Si un gráfico dice \"Aún no hay datos para este gráfico\", todavía no tiene información en el servidor. No es un error de tu parte.",
+    pasos: [
+      { titulo: "Revisa los correos por usuario", texto: "En el gráfico de barras, cada barra es un día y cada color es una persona. Pasa el cursor sobre una barra para ver cuántos correos envió cada usuario ese día." },
+      { titulo: "Elige el rango de días", texto: "Con los campos Desde y Hasta puedes elegir cualquier rango de días. El máximo es de 7 días. Al abrir, el gráfico muestra los días 1 al 7 del mes. Al cambiar el mes o el año de arriba, el rango vuelve a los primeros 7 días." },
+      { titulo: "Filtra por persona", texto: "En el menú Usuario elige a una persona para ver solo sus envíos. Debajo del gráfico aparece su resumen del rango: correos, promedio por día, día con más envíos y días con envíos." },
+    ],
+    nota: "La línea roja marca 300 correos por día. Es el total de todos los usuarios, no el de cada persona. Si un gráfico dice \"Aún no hay datos\", todavía no tiene información en el servidor. Si el periodo no tiene correos, el gráfico de usuarios lo indica.",
   },
   {
     id: "embajadores",

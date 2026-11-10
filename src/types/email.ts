@@ -34,6 +34,8 @@ export interface VistaPreviaCorreoRequest {
   cuerpo?: string
   nombre?: string
   empresa?: string
+  /** Imagen aún no guardada (data URL) para la vista previa del diseño IMAGEN. */
+  imagenBase64?: string
 }
 
 export interface VistaPreviaCorreoResponse {

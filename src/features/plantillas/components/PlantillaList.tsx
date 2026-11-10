@@ -6,6 +6,7 @@ import {
   Eye,
   FileText,
   ImageIcon,
+  ImagePlus,
   LayoutTemplate,
   Loader2,
   Mail,
@@ -34,6 +35,7 @@ import {
   DISENO_CORREO_INFO,
   normalizarDiseno,
   tipoPreviaDeDiseno,
+  urlImagenPlantilla,
   type DisenoCorreo,
   type Plantilla,
 } from "@/types/plantilla"
@@ -73,11 +75,12 @@ function TextoConVariables({ texto }: { texto: string }) {
 function PortadaPlantilla({ plantilla }: { plantilla: Plantilla }) {
   const diseno = normalizarDiseno(plantilla.diseno)
   const info = DISENO_CORREO_INFO[diseno]
-  if (info.miniatura) {
+  const src = urlImagenPlantilla(plantilla) ?? info.miniatura
+  if (src) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={info.miniatura}
+        src={src}
         alt={info.label}
         className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
         loading="lazy"
@@ -147,7 +150,8 @@ function DialogoVistaPrevia({ plantilla, onClose }: { plantilla: Plantilla; onCl
 
 export function PlantillaList() {
 
-  const [creando, setCreando] = useState(false)
+  /** null = cerrado; `diseno` preselecciona el diseño (IMAGEN al importar imagen). */
+  const [creando, setCreando] = useState<{ diseno?: DisenoCorreo } | null>(null)
   const [editando, setEditando] = useState<Plantilla | null>(null)
   const [eliminando, setEliminando] = useState<Plantilla | null>(null)
   const [viendo, setViendo] = useState<Plantilla | null>(null)
@@ -174,10 +178,27 @@ export function PlantillaList() {
     })
   }, [plantillas, buscar, filtro])
 
-  function duplicar(p: Plantilla) {
+  async function duplicar(p: Plantilla) {
     const nombres = new Set(plantillas.map((x) => x.nombre))
     let nombre = `${p.nombre} (copia)`
     for (let i = 2; nombres.has(nombre); i++) nombre = `${p.nombre} (copia ${i})`
+    // Las plantillas con imagen propia copian también su imagen.
+    let imagenBase64: string | undefined
+    const urlImagen = urlImagenPlantilla(p)
+    if (urlImagen) {
+      try {
+        const blob = await (await fetch(urlImagen)).blob()
+        imagenBase64 = await new Promise<string>((resolve, reject) => {
+          const lector = new FileReader()
+          lector.onload = () => resolve(String(lector.result))
+          lector.onerror = () => reject(new Error("No se pudo copiar la imagen."))
+          lector.readAsDataURL(blob)
+        })
+      } catch {
+        toast.error("No se pudo copiar la imagen de la plantilla.")
+        return
+      }
+    }
     crear.mutate(
       {
         nombre,
@@ -185,6 +206,7 @@ export function PlantillaList() {
         asunto: p.asunto,
         cuerpo: p.cuerpo,
         diseno: normalizarDiseno(p.diseno),
+        imagenBase64,
       },
       {
         onSuccess: () => toast.success(`Se creó "${nombre}".`),
@@ -200,10 +222,16 @@ export function PlantillaList() {
         description="Diseños y textos que se usan al invitar a embajadores, empresas y contactos."
         backHref="/dashboard"
         actions={
-          <Button onClick={() => setCreando(true)}>
-            <Plus size={16} />
-            Nueva plantilla
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setCreando({ diseno: "IMAGEN" })}>
+              <ImagePlus size={16} />
+              Importar imagen
+            </Button>
+            <Button onClick={() => setCreando({})}>
+              <Plus size={16} />
+              Nueva plantilla
+            </Button>
+          </div>
         }
       />
 
@@ -338,7 +366,7 @@ export function PlantillaList() {
                       title="Duplicar"
                       aria-label="Duplicar"
                       disabled={crear.isPending}
-                      onClick={() => duplicar(p)}
+                      onClick={() => void duplicar(p)}
                     >
                       <Copy size={14} />
                     </Button>
@@ -358,18 +386,31 @@ export function PlantillaList() {
             )
           })}
 
-          {/* Tarjeta para crear */}
-          <button
-            type="button"
-            onClick={() => setCreando(true)}
-            className="flex min-h-[340px] flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed text-muted-foreground transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
-          >
-            <span className="flex size-12 items-center justify-center rounded-2xl bg-muted">
-              <Plus size={22} />
-            </span>
-            <span className="font-semibold">Nueva plantilla</span>
-            <span className="max-w-[220px] text-center text-xs">Elige un diseño, escribe el texto y mira la vista previa al instante.</span>
-          </button>
+          {/* Tarjetas para crear */}
+          <div className="grid min-h-[340px] grid-rows-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setCreando({})}
+              className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed text-muted-foreground transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
+            >
+              <span className="flex size-10 items-center justify-center rounded-2xl bg-muted">
+                <Plus size={20} />
+              </span>
+              <span className="font-semibold">Nueva plantilla</span>
+              <span className="max-w-[220px] text-center text-xs">Elige un diseño, escribe el texto y mira la vista previa.</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCreando({ diseno: "IMAGEN" })}
+              className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed text-muted-foreground transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
+            >
+              <span className="flex size-10 items-center justify-center rounded-2xl bg-muted">
+                <ImagePlus size={20} />
+              </span>
+              <span className="font-semibold">Importar imagen</span>
+              <span className="max-w-[220px] text-center text-xs">Sube tu propia pieza gráfica y crea un nuevo modelo.</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -379,13 +420,23 @@ export function PlantillaList() {
 
       {viendo && <DialogoVistaPrevia plantilla={viendo} onClose={() => setViendo(null)} />}
 
-      <Dialog open={creando} onOpenChange={(open) => !open && setCreando(false)}>
+      <Dialog open={Boolean(creando)} onOpenChange={(open) => !open && setCreando(null)}>
         <DialogContent className="max-h-[94vh] overflow-y-auto sm:max-w-5xl">
           <DialogHeader>
-            <DialogTitle>Nueva plantilla</DialogTitle>
-            <DialogDescription>Elige un diseño y escribe el texto del correo.</DialogDescription>
+            <DialogTitle>{creando?.diseno === "IMAGEN" ? "Nueva plantilla con imagen" : "Nueva plantilla"}</DialogTitle>
+            <DialogDescription>
+              {creando?.diseno === "IMAGEN"
+                ? "Importa tu imagen, escribe el texto y revisa cómo llegará el correo."
+                : "Elige un diseño y escribe el texto del correo."}
+            </DialogDescription>
           </DialogHeader>
-          <PlantillaForm onSuccess={() => setCreando(false)} onCancel={() => setCreando(false)} />
+          {creando && (
+            <PlantillaForm
+              disenoInicial={creando.diseno}
+              onSuccess={() => setCreando(null)}
+              onCancel={() => setCreando(null)}
+            />
+          )}
         </DialogContent>
       </Dialog>
 

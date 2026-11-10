@@ -5,7 +5,7 @@
 
 import { useRef } from "react"
 import Link from "next/link"
-import { Check, Loader2, PenLine, RotateCcw } from "lucide-react"
+import { Check, ImagePlus, Loader2, PenLine, RotateCcw } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,6 +18,7 @@ import type { TipoDestinoCorreo } from "@/types/email"
 import {
   DISENO_CORREO_INFO,
   normalizarDiseno,
+  urlImagenPlantilla,
   type DisenoCorreo,
   type Plantilla,
 } from "@/types/plantilla"
@@ -57,17 +58,33 @@ const VARIABLES: { token: string; label: string; tipos: TipoDestinoCorreo[] }[] 
   { token: "{{nombre_voluntario}}", label: "Tu nombre", tipos: ["INFLUENCER", "EMPRESA"] },
 ]
 
-export function MiniaturaDiseno({ diseno }: { diseno: DisenoCorreo }) {
+export function MiniaturaDiseno({
+  diseno,
+  imagenUrl,
+}: {
+  diseno: DisenoCorreo
+  /** Imagen propia de la plantilla (diseño IMAGEN). */
+  imagenUrl?: string | null
+}) {
   const info = DISENO_CORREO_INFO[diseno]
-  if (info.miniatura) {
+  const src = imagenUrl ?? info.miniatura
+  if (src) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={info.miniatura}
+        src={src}
         alt={info.label}
         className="h-full w-full object-cover object-top"
         loading="lazy"
       />
+    )
+  }
+  if (diseno === "IMAGEN") {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-gradient-to-br from-[#0F2A1E] to-[#1C3D2D] text-[#B5E061]">
+        <ImagePlus className="size-5" />
+        <span className="text-[10px] font-semibold">Tu imagen</span>
+      </div>
     )
   }
   // Boceto del diseño clásico (cabecera blanca, hero verde, texto, botón).
@@ -134,7 +151,7 @@ function ListaPlantillas({
               )}
             >
               <div className="h-24 w-full overflow-hidden border-b bg-muted">
-                <MiniaturaDiseno diseno={diseno} />
+                <MiniaturaDiseno diseno={diseno} imagenUrl={urlImagenPlantilla(p)} />
               </div>
               <div className="flex flex-col gap-0.5 p-2">
                 <span className="line-clamp-1 text-xs font-semibold">{p.nombre}</span>
