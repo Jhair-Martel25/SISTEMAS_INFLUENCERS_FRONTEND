@@ -257,7 +257,9 @@ export function RedactarCorreoEmpresarial() {
                       <span className="truncate">{d.nombre}</span>
                     </div>
                     <small className="block truncate text-xs text-muted-foreground">
-                      {d.cargo ? `${d.cargo} · ${d.empresa}` : d.empresa}
+                      {[d.cargo, d.empresa, d.ranking === null ? null : `Ranking ${d.ranking}`]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </small>
                   </div>
                   <span className="truncate font-mono text-xs text-foreground/90">{d.email}</span>

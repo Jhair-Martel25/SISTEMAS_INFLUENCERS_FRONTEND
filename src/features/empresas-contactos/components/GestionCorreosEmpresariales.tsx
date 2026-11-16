@@ -9,15 +9,44 @@ import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/shared/page-header'
 import { useEmpresas } from '../hooks/useEmpresasContactos'
 import { DestinatarioItem, guardarSeleccionCorreos } from '../utils/seleccion-correos'
-import { SECTORES_FILTRO, SIN_SECTOR, sectorDeEmpresa } from '../utils/sectores'
+import { SIN_SECTOR, ordenarSectores, sectorDeEmpresa } from '../utils/sectores'
 
 type TipoDestinatario = 'TODOS' | 'EMPRESA' | 'CONTACTO'
+type Filtro = 'tipo' | 'sector' | 'razonSocial' | 'cargo'
+
+interface Opcion {
+  valor: string
+  total: number
+}
+
+function contar(items: DestinatarioItem[], clave: (d: DestinatarioItem) => string) {
+  const conteo = new Map<string, number>()
+  for (const item of items) {
+    const valor = clave(item)
+    conteo.set(valor, (conteo.get(valor) ?? 0) + 1)
+  }
+  return conteo
+}
+
+function ordenarOpciones(conteo: Map<string, number>): Opcion[] {
+  return [...conteo.entries()]
+    .map(([valor, total]) => ({ valor, total }))
+    .sort((a, b) => a.valor.localeCompare(b.valor, 'es'))
+}
+
+/** Mantiene visible la opcion elegida aunque los demas filtros la dejen sin resultados. */
+function conSeleccion(opciones: Opcion[], seleccion: string): Opcion[] {
+  if (seleccion === 'TODOS' || opciones.some((o) => o.valor === seleccion)) return opciones
+  return [...opciones, { valor: seleccion, total: 0 }].sort((a, b) => a.valor.localeCompare(b.valor, 'es'))
+}
 
 export function GestionCorreosEmpresariales() {
   const router = useRouter()
   const [buscar, setBuscar] = useState('')
   const [filtroTipo, setFiltroTipo] = useState<TipoDestinatario>('TODOS')
   const [filtroSector, setFiltroSector] = useState<string>('TODOS')
+  const [filtroRazonSocial, setFiltroRazonSocial] = useState<string>('TODOS')
+  const [filtroCargo, setFiltroCargo] = useState<string>('TODOS')
   const [seleccionados, setSeleccionados] = useState<string[]>([])
 
   const { data, isLoading } = useEmpresas('')
@@ -28,10 +57,10 @@ export function GestionCorreosEmpresariales() {
 
     for (const empresa of data) {
       const sector = sectorDeEmpresa({
-        ciiu: empresa.ciiu,
         descripcion: empresa.descripcion,
         sector: empresa.sector,
       })
+      const ranking = typeof empresa.ranking === 'number' ? empresa.ranking : null
 
       if (empresa.email?.trim()) {
         items.push({
@@ -45,6 +74,7 @@ export function GestionCorreosEmpresariales() {
           email: empresa.email.trim(),
           estadoCorreo: empresa.estadoCorreo === 'ENVIADO' ? 'ENVIADO' : 'PENDIENTE',
           sector,
+          ranking,
         })
       }
 
@@ -61,6 +91,7 @@ export function GestionCorreosEmpresariales() {
             email: contacto.email.trim(),
             estadoCorreo: contacto.estadoCorreo === 'ENVIADO' ? 'ENVIADO' : 'PENDIENTE',
             sector,
+            ranking,
           })
         }
       }
@@ -69,33 +100,54 @@ export function GestionCorreosEmpresariales() {
     return items
   }, [data])
 
-  // Cantidad de destinatarios por sector, para mostrar en el selector
-  const conteoPorSector = useMemo(() => {
-    const conteo = new Map<string, number>()
-    for (const d of destinatarios) {
-      conteo.set(d.sector, (conteo.get(d.sector) ?? 0) + 1)
-    }
-    return conteo
-  }, [destinatarios])
-
-  // Los filtros (tipo, sector y búsqueda) se combinan y alimentan la lista
-  const filtrados = useMemo(() => {
-    let lista = destinatarios
-    if (filtroTipo !== 'TODOS') {
-      lista = lista.filter((d) => d.tipo === filtroTipo)
-    }
-    if (filtroSector !== 'TODOS') {
-      lista = lista.filter((d) => d.sector === filtroSector)
-    }
+  /**
+   * Aplica todos los filtros activos. Con `omitir` se deja uno fuera, para
+   * poder calcular las opciones de ese desplegable segun los demas filtros.
+   */
+  const filtrarDestinatarios = useMemo(() => {
     const termino = buscar.trim().toLowerCase()
-    if (!termino) return lista
 
-    return lista.filter((destinatario) =>
-      `${destinatario.nombre} ${destinatario.cargo} ${destinatario.empresa} ${destinatario.email}`
-        .toLowerCase()
-        .includes(termino)
-    )
-  }, [buscar, destinatarios, filtroTipo, filtroSector])
+    return (omitir?: Filtro) =>
+      destinatarios.filter((d) => {
+        if (omitir !== 'tipo' && filtroTipo !== 'TODOS' && d.tipo !== filtroTipo) return false
+        if (omitir !== 'sector' && filtroSector !== 'TODOS' && d.sector !== filtroSector) return false
+        if (omitir !== 'razonSocial' && filtroRazonSocial !== 'TODOS' && d.empresa !== filtroRazonSocial) return false
+        if (omitir !== 'cargo' && filtroCargo !== 'TODOS' && d.cargo !== filtroCargo) return false
+        if (!termino) return true
+        return `${d.nombre} ${d.cargo} ${d.empresa} ${d.email}`.toLowerCase().includes(termino)
+      })
+  }, [buscar, destinatarios, filtroTipo, filtroSector, filtroRazonSocial, filtroCargo])
+
+  const filtrados = useMemo(() => filtrarDestinatarios(), [filtrarDestinatarios])
+
+  // Sectores CIIU disponibles segun los demas filtros
+  const sectoresDisponibles = useMemo(() => {
+    const conteo = contar(filtrarDestinatarios('sector'), (d) => d.sector)
+    const opciones = ordenarSectores(conteo.keys()).map((valor) => ({ valor, total: conteo.get(valor) ?? 0 }))
+    return conSeleccion(opciones, filtroSector)
+  }, [filtrarDestinatarios, filtroSector])
+
+  // Razones sociales disponibles segun los demas filtros
+  const razonesSocialesDisponibles = useMemo(
+    () => conSeleccion(ordenarOpciones(contar(filtrarDestinatarios('razonSocial'), (d) => d.empresa)), filtroRazonSocial),
+    [filtrarDestinatarios, filtroRazonSocial]
+  )
+
+  // Cargos disponibles segun los demas filtros
+  const cargosDisponibles = useMemo(
+    () => conSeleccion(ordenarOpciones(contar(filtrarDestinatarios('cargo'), (d) => d.cargo)), filtroCargo),
+    [filtrarDestinatarios, filtroCargo]
+  )
+
+  const hayFiltrosActivos =
+    filtroSector !== 'TODOS' || filtroRazonSocial !== 'TODOS' || filtroCargo !== 'TODOS' || buscar.trim() !== ''
+
+  function limpiarFiltros() {
+    setFiltroSector('TODOS')
+    setFiltroRazonSocial('TODOS')
+    setFiltroCargo('TODOS')
+    setBuscar('')
+  }
 
   const todosFiltradosSeleccionados =
     filtrados.length > 0 && filtrados.every((destinatario) => seleccionados.includes(destinatario.id))
@@ -135,30 +187,70 @@ export function GestionCorreosEmpresariales() {
       {/* Destinatarios: ocupa todo el ancho */}
       <section className="w-full overflow-hidden rounded-xl border bg-card shadow-sm">
         <div className="border-b p-4">
-          {/* Cabecera: título, filtro de sector y contadores */}
+          {/* Cabecera: título y contadores */}
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 font-semibold">
               <Users size={18} />
               <h2>Destinatarios ({seleccionados.length})</h2>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <select
-                value={filtroSector}
-                onChange={(event) => setFiltroSector(event.target.value)}
-                className="h-9 rounded-md border bg-background px-3 text-sm"
-                aria-label="Filtrar por sector"
-              >
-                <option value="TODOS">Todos los sectores ({destinatarios.length})</option>
-                {SECTORES_FILTRO.map((sector) => (
-                  <option key={sector} value={sector} disabled={!conteoPorSector.get(sector)}>
-                    {sector} ({conteoPorSector.get(sector) ?? 0})
-                  </option>
-                ))}
-              </select>
-              <div className="text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <span>
                 {totalEmpresas} empresa{totalEmpresas === 1 ? '' : 's'} · {totalContactos} contacto{totalContactos === 1 ? '' : 's'}
-              </div>
+              </span>
+              {hayFiltrosActivos && (
+                <>
+                  <span className="font-medium text-foreground">{filtrados.length} visibles</span>
+                  <button type="button" onClick={limpiarFiltros} className="font-medium text-primary hover:underline">
+                    Limpiar filtros
+                  </button>
+                </>
+              )}
             </div>
+          </div>
+
+          {/* Filtros: sector CIIU, razón social y cargo */}
+          <div className="mb-3 grid gap-2 md:grid-cols-3">
+            <select
+              value={filtroSector}
+              onChange={(event) => setFiltroSector(event.target.value)}
+              className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+              aria-label="Filtrar por sector CIIU"
+            >
+              <option value="TODOS">Todos los sectores CIIU</option>
+              {sectoresDisponibles.map(({ valor, total }) => (
+                <option key={valor} value={valor}>
+                  {valor} ({total})
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filtroRazonSocial}
+              onChange={(event) => setFiltroRazonSocial(event.target.value)}
+              className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+              aria-label="Filtrar por razón social"
+            >
+              <option value="TODOS">Todas las razones sociales</option>
+              {razonesSocialesDisponibles.map(({ valor, total }) => (
+                <option key={valor} value={valor}>
+                  {valor} ({total})
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filtroCargo}
+              onChange={(event) => setFiltroCargo(event.target.value)}
+              className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+              aria-label="Filtrar por cargo"
+            >
+              <option value="TODOS">Todos los cargos</option>
+              {cargosDisponibles.map(({ valor, total }) => (
+                <option key={valor} value={valor}>
+                  {valor} ({total})
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Pestañas de tipo de destinatario */}
@@ -207,7 +299,7 @@ export function GestionCorreosEmpresariales() {
         </div>
 
         <div className="max-h-[580px] overflow-auto">
-          <div className="grid grid-cols-[32px_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_auto] items-center gap-2 border-b bg-muted/40 px-4 py-3 text-xs font-medium text-muted-foreground">
+          <div className="grid grid-cols-[32px_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.2fr)_92px_minmax(0,1.3fr)_96px] items-center gap-2 border-b bg-muted/40 px-4 py-3 text-xs font-medium text-muted-foreground">
             <Checkbox
               checked={todosFiltradosSeleccionados}
               onCheckedChange={(valor) => cambiarTodos(valor === true)}
@@ -216,8 +308,9 @@ export function GestionCorreosEmpresariales() {
             <span>Persona encargada</span>
             <span>Cargo</span>
             <span>Razón social</span>
+            <span className="text-center">Ranking</span>
             <span>Correo</span>
-            <span>Estado</span>
+            <span className="text-right">Estado</span>
           </div>
 
           {isLoading ? (
@@ -233,7 +326,7 @@ export function GestionCorreosEmpresariales() {
             filtrados.map((destinatario) => (
               <label
                 key={destinatario.id}
-                className="grid cursor-pointer grid-cols-[32px_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_auto] items-center gap-2 border-b px-4 py-3 text-sm hover:bg-muted/30 transition-colors"
+                className="grid cursor-pointer grid-cols-[32px_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.2fr)_92px_minmax(0,1.3fr)_96px] items-center gap-2 border-b px-4 py-3 text-sm hover:bg-muted/30 transition-colors"
               >
                 <Checkbox
                   checked={seleccionados.includes(destinatario.id)}
@@ -272,9 +365,21 @@ export function GestionCorreosEmpresariales() {
                 <span className="truncate text-sm text-muted-foreground" title={destinatario.empresa}>
                   {destinatario.empresa}
                 </span>
+                <span
+                  className="flex justify-center"
+                  title={destinatario.ranking === null ? 'Sin ranking registrado' : 'Ranking 2025'}
+                >
+                  {destinatario.ranking === null ? (
+                    <span className="text-xs text-muted-foreground/60">—</span>
+                  ) : (
+                    <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-foreground/80">
+                      {destinatario.ranking}
+                    </span>
+                  )}
+                </span>
                 <span className="truncate font-mono text-xs text-foreground/90">{destinatario.email}</span>
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                  className={`justify-self-end rounded-full px-2 py-0.5 text-[11px] font-medium ${
                     destinatario.estadoCorreo === 'ENVIADO'
                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
                       : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'

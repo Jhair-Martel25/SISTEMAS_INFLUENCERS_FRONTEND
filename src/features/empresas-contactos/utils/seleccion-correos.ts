@@ -9,6 +9,7 @@ export interface DestinatarioItem {
   email: string
   estadoCorreo: 'ENVIADO' | 'PENDIENTE'
   sector: string
+  ranking: number | null
 }
 
 const CLAVE_SELECCION = 'sp_correos_seleccionados'
